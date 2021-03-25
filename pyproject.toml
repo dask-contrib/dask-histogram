@@ -7,11 +7,5 @@ requires = [
 
 build-backend = "setuptools.build_meta"
 
-[tool.pytest.ini_options]
-norecursedirs = ["extern"]
-markers = [
-    "misci: Miscellaneous",
-]
-
 [tool.setuptools_scm]
 write_to = "src/dask_histogram/version.py"
