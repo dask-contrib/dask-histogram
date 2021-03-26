@@ -1,9 +1,12 @@
+# stdlib
 from typing import Any, Optional
+
+# boost-histogram and dask
 import boost_histogram as bh
-from dask.highlevelgraph import HighLevelGraph
 import dask.array as da
-from dask.base import tokenize
-from dask.core import flatten
+from dask.delayed import delayed, Delayed
+
+# additional third party
 import numpy as np
 
 
@@ -18,23 +21,13 @@ def blocked_fill(
 def fill_graph(
     hist: bh.Histogram, data: da.Array, weight: Optional[da.Array] = None
 ) -> HighLevelGraph:
-    name = f"filled-{tokenize(hist, data, weight)}"
-    dkeys = flatten(data.__dask_keys__())
-    if weight is not None:
-        wkeys = flatten(weight.__dask_keys__())
-    dsk = {
-        (name, i, 0): (blocked_fill, hist, dk, wk)
-        for i, (dk, wk) in enumerate(zip(dkeys, wkeys))
-    }
-    deps = (
-        data,
-        weight,
-    )
-    graph = HighLevelGraph.from_collections(name, dsk, dependencies=deps)
-    return graph
+    d_data = data.to_delayed()
+    d_histograms = [delayed(blocked_fill)(hist, a) for a in d_data]
+    s = delayed(sum)(d_histograms)
+    return s
 
 
 h = bh.Histogram(bh.axis.Regular(50, -5.0, 5.0), storage=bh.storage.Weight())
 x = da.random.standard_normal(size=(10_000_000,), chunks=1_000_000)
 w = da.random.uniform(size=(10_000_000), chunks=x.chunksize[0])
-graph = fill_graph(h, x, weight=w)
+delayed_hist = fill_graph(h, x, weight=w)
