@@ -1,0 +1,17 @@
+image: archlinux
+packages:
+  - python
+  - python-pip
+  - python-setuptools
+  - python-wheel
+  - python-pytest
+  - python-dask
+sources:
+  - https://git.sr.ht/~ddavis/dask-histogram
+tasks:
+  - setup: |
+      cd dask-histogram
+      python3 -m pip install . -vv
+  - test: |
+      cd dask-histogram
+      python3 -m pytest
