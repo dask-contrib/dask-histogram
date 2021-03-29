@@ -1,6 +1,7 @@
 import boost_histogram as bh
 import dask.array as da
 import dask_histogram.core as dh
+import numpy as np
 
 
 def test_simple():
@@ -54,3 +55,61 @@ def test_simple_nd():
     h.fill(x, y, z, weight=w)
 
     assert repr(h.sum()) == repr(result.sum())
+
+
+def test_class():
+    h = dh.Histogram(
+        bh.axis.Regular(20, -3.5, 3.5),
+        bh.axis.Regular(25, -3.2, 3.2),
+        bh.axis.Regular(12, 0.4, 0.6),
+        storage=bh.storage.Weight(),
+    )
+    x = da.random.standard_normal(size=(200,), chunks=25)
+    y = da.random.standard_normal(size=(200,), chunks=25)
+    z = da.random.uniform(0.4, 0.6, size=(200,), chunks=25)
+    w = da.random.uniform(0.2, 1.1, size=(200,), chunks=25)
+    h.fill(x, y, z, weight=w)
+    h.compute()
+
+    h2 = bh.Histogram(
+        bh.axis.Regular(20, -3.5, 3.5),
+        bh.axis.Regular(25, -3.2, 3.2),
+        bh.axis.Regular(12, 0.4, 0.6),
+        storage=bh.storage.Weight(),
+    )
+    h2.fill(x.compute(), y.compute(), z.compute(), weight=w.compute())
+
+    assert repr(h) == repr(h2)
+
+
+def test_class_2():
+    h = dh.Histogram(
+        bh.axis.Regular(20, -3.5, 3.5),
+        bh.axis.Regular(25, -3.2, 3.2),
+        bh.axis.Regular(12, 0.4, 0.6),
+        storage=bh.storage.Weight(),
+    )
+    x = da.random.standard_normal(size=(200,), chunks=25)
+    y = da.random.standard_normal(size=(200,), chunks=25)
+    z = da.random.uniform(0.4, 0.6, size=(200,), chunks=25)
+    w = da.random.uniform(0.2, 1.1, size=(200,), chunks=25)
+    h.fill(x, y, z, weight=w)
+    h.fill(x, y, z, weight=w)
+    h.compute()
+    h.fill(x, y, z, weight=w)
+    h.compute()
+
+    h2 = bh.Histogram(
+        bh.axis.Regular(20, -3.5, 3.5),
+        bh.axis.Regular(25, -3.2, 3.2),
+        bh.axis.Regular(12, 0.4, 0.6),
+        storage=bh.storage.Weight(),
+    )
+    h2.fill(x.compute(), y.compute(), z.compute(), weight=w.compute())
+    h2.fill(x.compute(), y.compute(), z.compute(), weight=w.compute())
+    h2.fill(x.compute(), y.compute(), z.compute(), weight=w.compute())
+
+    assert repr(h) == repr(h2)
+
+    assert np.allclose(h.counts(), h2.counts())
+    assert np.allclose(h.variances(), h2.variances())
