@@ -5,6 +5,7 @@ packages:
   - python-setuptools
   - python-wheel
   - python-pytest
+  - python-toolz
   - python-dask
 sources:
   - https://git.sr.ht/~ddavis/dask-histogram
