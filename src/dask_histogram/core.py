@@ -105,7 +105,8 @@ class Histogram(bh.Histogram, family=dask_histogram):
 
         Returns
         -------
-
+        Histogram
+            The class instance.
 
         """
         new_fill = fill_nd(*args, hist=self, weight=weight)
