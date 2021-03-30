@@ -8,9 +8,15 @@ dask-histogram
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Documentation
 
    quick.rst
+
+.. toctree::
+   :maxdepth: 2
+   :caption: API Reference
+
+   api.rst
 
 .. Indices and tables
 .. ==================
