@@ -1,3 +1,5 @@
 # dask-histogram
 
-Histograms with [dask](https://github.com/dask/dask).
+Connecting [Dask](https://dask.org) to Python histogramming libraries.
+
+**Everything in this package is experimental.**
