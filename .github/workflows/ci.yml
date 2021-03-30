@@ -1,0 +1,29 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  pytest:
+    strategy:
+      matrix:
+        platform: [ubuntu-latest, macos-latest]
+        python-version: [3.7, 3.8, 3.9]
+    runs-on: ${{matrix.platform}}
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        submodules: true
+    - name: setup Python ${{matrix.python-version}}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{matrix.python-version}}
+    - name: install
+      run: |
+        python -m pip install pip setuptools pytest numpy dask[array,delayed,dataframe] -U
+        pip install --ignore-installed -U -q --no-cache-dir -e .
+        pip list
+    - name: test
+      run: |
+        python -m pytest
