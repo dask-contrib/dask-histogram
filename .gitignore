@@ -1,6 +1,10 @@
 # Emacs
 .dir-locals.el
 
+# personal sandbox
+sandbox.org
+sandbox.html
+
 # setuptools_scm generated
 src/dask_histogram/version.py
 
