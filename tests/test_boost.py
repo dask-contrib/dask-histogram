@@ -1,6 +1,6 @@
 import boost_histogram as bh
 import dask.array as da
-from dask_histogram.core import fill_nd
+from dask_histogram.boost import fill_nd
 import dask_histogram as dh
 import numpy as np
 

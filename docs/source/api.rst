@@ -1,7 +1,7 @@
 dask_histogram
 --------------
 
-.. currentmodule:: dask_histogram.core
+.. currentmodule:: dask_histogram
 
 .. autoclass:: Histogram
    :members:

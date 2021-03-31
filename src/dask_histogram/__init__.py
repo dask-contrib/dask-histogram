@@ -1,5 +1,5 @@
 from .version import version as __version__
-from .core import Histogram
+from .boost import Histogram
 
 version_info = tuple(__version__.split("."))
 
