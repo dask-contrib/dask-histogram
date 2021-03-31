@@ -1,27 +1,43 @@
 import boost_histogram as bh
 import dask.array as da
-import dask_histogram.core as dh
+from dask_histogram.core import fill_nd
+import dask_histogram as dh
 import numpy as np
 
 
 def test_simple():
     h = bh.Histogram(bh.axis.Regular(12, -3.0, 3.0))
     x = da.random.standard_normal(size=(200,), chunks=50)
-    delayed_hist = dh.fill_nd(x, hist=h)
+    delayed_hist = fill_nd(x, hist=h)
     result = delayed_hist.compute()
 
     x = x.compute()
     h = bh.Histogram(bh.axis.Regular(12, -3.0, 3.0))
     h.fill(x)
 
+    assert np.allclose(h.counts(), result.counts())
     assert h.sum() == result.sum()
+
+
+def test_simple_flow():
+    h = bh.Histogram(
+        bh.axis.Regular(20, -3.2, 3.2),
+        bh.axis.Regular(20, -2.9, 2.9),
+    )
+    x = da.random.standard_normal(size=(100_000, 2), chunks=5_000)
+    h.fill(*x.compute().T)
+
+    delayed_hist = fill_nd(*x.T, hist=h)
+    result = delayed_hist.compute()
+
+    assert np.allclose(h.counts(flow=True), result.counts(flow=True))
 
 
 def test_simple_weighted():
     h = bh.Histogram(bh.axis.Regular(12, -3.0, 3.0), storage=bh.storage.Weight())
     x = da.random.standard_normal(size=(200,), chunks=50)
     w = da.random.uniform(0.2, 0.5, size=x.shape, chunks=x.chunksize[0])
-    delayed_hist = dh.fill_nd(x, hist=h, weight=w)
+    delayed_hist = fill_nd(x, hist=h, weight=w)
     result = delayed_hist.compute()
 
     x = x.compute()
@@ -44,7 +60,7 @@ def test_simple_nd():
     z = da.random.uniform(0.4, 0.6, size=(200,), chunks=25)
     w = da.random.uniform(0.2, 1.1, size=(200,), chunks=25)
 
-    delayed_hist = dh.fill_nd(x, y, z, hist=h, weight=w)
+    delayed_hist = fill_nd(x, y, z, hist=h, weight=w)
     result = delayed_hist.compute()
 
     x = x.compute()
@@ -110,6 +126,5 @@ def test_class_2():
     h2.fill(x.compute(), y.compute(), z.compute(), weight=w.compute())
 
     assert repr(h) == repr(h2)
-
     assert np.allclose(h.counts(), h2.counts())
-    assert np.allclose(h.variances(), h2.variances())
+    assert np.allclose(h.variances(flow=True), h2.variances(flow=True))

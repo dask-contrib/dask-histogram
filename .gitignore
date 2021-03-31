@@ -5,6 +5,9 @@
 sandbox.org
 sandbox.html
 
+# dask
+mydask.png
+
 # setuptools_scm generated
 src/dask_histogram/version.py
 
