@@ -75,10 +75,10 @@ def test_simple_nd():
 
 def test_class():
     h = dh.Histogram(
-        bh.axis.Regular(20, -3.5, 3.5),
-        bh.axis.Regular(25, -3.2, 3.2),
-        bh.axis.Regular(12, 0.4, 0.6),
-        storage=bh.storage.Weight(),
+        dh.axis.Regular(20, -3.5, 3.5),
+        dh.axis.Regular(25, -3.2, 3.2),
+        dh.axis.Regular(12, 0.4, 0.6),
+        storage=dh.storage.Weight(),
     )
     x = da.random.standard_normal(size=(200,), chunks=25)
     y = da.random.standard_normal(size=(200,), chunks=25)
@@ -94,8 +94,11 @@ def test_class():
         storage=bh.storage.Weight(),
     )
     h2.fill(x.compute(), y.compute(), z.compute(), weight=w.compute())
-
     assert repr(h) == repr(h2)
+    assert np.allclose(h.counts(flow=True), h2.counts(flow=True))
+    assert np.allclose(h.variances(flow=True), h2.variances(flow=True))
+    assert np.allclose(h.counts(), h2.counts())
+    assert np.allclose(h.variances(), h2.variances())
 
 
 def test_class_2():

@@ -127,7 +127,12 @@ class Histogram(bh.Histogram, family=dask_histogram):
         self[...] = result_view
         self._dq = None
 
-    @property
-    def dq(self) -> Delayed:
-        """Delayed object holding the queued fills."""
-        return self._dq
+    def staged_fills(self) -> bool:
+        """bool: True if histogram has been some staged lazy fills."""
+        return self._dq is not None
+
+    def to_delayed(self) -> Delayed:
+        """dask.delayed.Delayed: convert to a delayed Dask object."""
+        if self.staged_fills():
+            return self._dq
+        return delayed(self)
