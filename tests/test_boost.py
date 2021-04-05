@@ -1,8 +1,9 @@
 import boost_histogram as bh
 import dask.array as da
-from dask_histogram.boost import fill_nd
-import dask_histogram as dh
 import numpy as np
+
+import dask_histogram as dh
+from dask_histogram.boost import fill_nd
 
 
 def test_simple():

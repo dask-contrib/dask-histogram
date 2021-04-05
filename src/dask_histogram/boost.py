@@ -1,4 +1,5 @@
-from typing import Optional
+import operator
+from typing import List, Optional
 
 import boost_histogram as bh
 import dask.array as da
@@ -6,6 +7,26 @@ import numpy as np
 from dask.delayed import Delayed, delayed
 
 import dask_histogram
+
+
+def tree_sum(histograms):
+    hist_list = histograms
+    while len(hist_list) > 1:
+        updated_list = []
+        # even N, do all
+        if len(hist_list) % 2 == 0:
+            for i in range(0, len(hist_list), 2):
+                lazy_comp = delayed(operator.add)(hist_list[i], hist_list[i + 1])
+                updated_list.append(lazy_comp)
+        # odd N, hold back the tail and add it later
+        else:
+            for i in range(0, len(hist_list[:-1]), 2):
+                lazy_comp = delayed(operator.add)(hist_list[i], hist_list[i + 1])
+                updated_list.append(lazy_comp)
+            updated_list.append(hist_list[-1])
+
+        hist_list = updated_list
+    return hist_list[0]
 
 
 @delayed
@@ -26,8 +47,7 @@ def fill_1d(
     else:
         d_weight = weight.to_delayed()
         d_histograms = [blocked_fill_1d(a, hist, w) for a, w in zip(d_data, d_weight)]
-    s = delayed(sum)(d_histograms)
-    return s
+    return tree_sum(d_histograms)
 
 
 @delayed
@@ -44,6 +64,11 @@ def fill_nd(
 ) -> Delayed:
     # total number of dimensions
     D = len(args)
+
+    # if D == 1 go to simpler implementation.
+    if D == 1:
+        return fill_1d(*args, hist, weight)
+
     # each entry is data along a specific dimension
     stack_of_delayeds = [a.to_delayed() for a in args]
     # we assume all dimensions are chunked identically
@@ -66,28 +91,31 @@ def fill_nd(
             blocked_fill_nd(*d, hist=hist, weight=w)
             for d, w in zip(partitioned_fused_coordinates, d_weight)
         ]
-    s = delayed(sum)(d_histograms)
-    return s
+
+    return tree_sum(d_histograms)
 
 
 class Histogram(bh.Histogram, family=dask_histogram):
     __slots__ = ("_dq",)
 
-    def __init__(self, *axes, storage, metadata=None) -> None:
+    def __init__(self, *axes, storage=None, metadata=None) -> None:
         """Construct new histogram fillable with Dask collections.
 
         Parameters
         ---------
         *axes : boost_histogram.Axis
             Provide one or more boost_histogram.Axes objects.
-        storage : boost_histogram.storage
-            Select a storage to use in the histogram.
+        storage : boost_histogram.storage, optional
+            Select a storage to use in the histogram. The default
+            option (``None``) will use :py:class:`bh.storage.Double`.
         metadata : Any
             Data that is passed along if a new histogram is created.
 
         """
+        if storage is None:
+            storage = bh.storage.Double()
         super().__init__(*axes, storage=storage, metadata=metadata)
-        self._dq = None
+        self._dq: Optional[List[Delayed]] = None
 
     def fill(self, *args, weight: Optional[da.Array] = None, sample=None, threads=None):
         """Queue up a fill call with a Dask collection.
@@ -113,19 +141,20 @@ class Histogram(bh.Histogram, family=dask_histogram):
         if self._dq is None:
             self._dq = new_fill
         else:
-            self._dq = delayed(sum)([self._dq, new_fill])
+            self._dq = tree_sum([self._dq, new_fill])
         return self
 
-    def compute(self) -> None:
+    def compute(self):
         """Compute any queued (delayed) fills."""
         if self._dq is None:
-            return
+            return self
         if not self.empty():
             result_view = self.view(flow=True) + self._dq.compute().view(flow=True)
         else:
             result_view = self._dq.compute().view(flow=True)
         self[...] = result_view
         self._dq = None
+        return self
 
     def staged_fills(self) -> bool:
         """bool: True if histogram has been some staged lazy fills."""
