@@ -141,7 +141,7 @@ class Histogram(bh.Histogram, family=dask_histogram):
 
         """
         super().__init__(*axes, storage=storage, metadata=metadata)
-        self._dq: Optional[List[Delayed]] = None
+        self._dq: Optional[Delayed] = None
 
     def concrete_fill(
         self, *args: Any, weight: Optional[Any] = None, sample=None, threads=None
