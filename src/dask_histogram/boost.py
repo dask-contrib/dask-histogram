@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import operator
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import boost_histogram as bh
 import dask.array as da
