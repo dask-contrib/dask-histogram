@@ -19,7 +19,7 @@ import dask_histogram
 # -- Project information -----------------------------------------------------
 
 project = "dask-histogram"
-copyright = "2021, Anaconda, Inc."
+copyright = "2021, Dask contributors"
 author = "Doug Davis"
 
 version = dask_histogram.__version__
