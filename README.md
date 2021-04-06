@@ -4,4 +4,4 @@
 
 Connecting [Dask](https://dask.org) to Python histogramming libraries.
 
-**_Everything in this package is experimental_**
+**_This library is pre-alpha and experimental_**
