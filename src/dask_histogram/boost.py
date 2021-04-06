@@ -1,3 +1,5 @@
+"""Lazy boost-histogram API."""
+
 from __future__ import annotations
 
 import operator
@@ -11,8 +13,21 @@ from dask.delayed import Delayed, delayed
 import dask_histogram
 
 
-def tree_sum(histograms):
-    hist_list = histograms
+def tree_aggregate(dhists: List[Delayed]) -> Delayed:
+    """Tree summation of delayed histogram objects.
+
+    Parameters
+    ----------
+    dhists : List[Delayed]
+        Delayed histograms to be aggregated.
+
+    Returns
+    -------
+    Delayed
+        Final histogram aggregation.
+
+    """
+    hist_list = dhists
     while len(hist_list) > 1:
         updated_list = []
         # even N, do all
@@ -35,6 +50,7 @@ def tree_sum(histograms):
 def blocked_fill_1d(
     data: np.ndarray, hist: Histogram, weight: Optional[da.Array] = None
 ):
+    """Single delayed (1D) histogram concrete fill."""
     hist_for_block = Histogram(*hist.axes, storage=hist._storage_type())
     hist_for_block.concrete_fill(data, weight=weight)
     return hist_for_block
@@ -43,19 +59,21 @@ def blocked_fill_1d(
 def fill_1d(
     data: da.Array, hist: Histogram, weight: Optional[da.Array] = None
 ) -> Delayed:
+    """Prepare a set of delayed one dimensional histogram fills."""
     d_data = data.to_delayed()
     if weight is None:
         d_histograms = [blocked_fill_1d(a, hist) for a in d_data]
     else:
         d_weight = weight.to_delayed()
         d_histograms = [blocked_fill_1d(a, hist, w) for a, w in zip(d_data, d_weight)]
-    return tree_sum(d_histograms)
+    return tree_aggregate(d_histograms)
 
 
 @delayed
 def blocked_fill_nd(
     *args: np.ndarray, hist: Histogram, weight: Optional[da.Array] = None
 ):
+    """Single delayed (nD) histogram concrete fills."""
     hist_for_block = Histogram(*hist.axes, storage=hist._storage_type())
     hist_for_block.concrete_fill(*args, weight=weight)
     return hist_for_block
@@ -64,6 +82,7 @@ def blocked_fill_nd(
 def fill_nd(
     *args: da.Array, hist: bh.Histogram, weight: Optional[da.Array] = None
 ) -> Delayed:
+    """Prepare a set of delayed n-dimensional histogram fills."""
     # total number of dimensions
     D = len(args)
 
@@ -94,10 +113,12 @@ def fill_nd(
             for d, w in zip(partitioned_fused_coordinates, d_weight)
         ]
 
-    return tree_sum(d_histograms)
+    return tree_aggregate(d_histograms)
 
 
 class Histogram(bh.Histogram, family=dask_histogram):
+    """Histogram capable of lazy computation."""
+
     __slots__ = ("_dq",)
 
     def __init__(
@@ -143,6 +164,11 @@ class Histogram(bh.Histogram, family=dask_histogram):
             activate threaded filling. Using 0 will automatically pick
             the number of available threads (usually two per core).
 
+        Returns
+        -------
+        dask_histogram.Histogram
+            Class instance now filled with concrete data.
+
         """
         super().fill(*args, weight=weight, sample=sample, threads=threads)
         return self
@@ -163,16 +189,28 @@ class Histogram(bh.Histogram, family=dask_histogram):
         threads : Any
             Unsupported argument from boost_histogram.Histogram.fill
 
+        Returns
+        -------
+        dask_histogram.Histogram
+            Class instance with a queued delayed fill added.
+
         """
         new_fill = fill_nd(*args, hist=self, weight=weight)
         if self._dq is None:
             self._dq = new_fill
         else:
-            self._dq = tree_sum([self._dq, new_fill])
+            self._dq = tree_aggregate([self._dq, new_fill])
         return self
 
     def compute(self) -> Histogram:
-        """Compute any queued (delayed) fills."""
+        """Compute any queued (delayed) fills.
+
+        Returns
+        -------
+        dask_histogram.Histogram
+            Concrete histogram with all queued fills executed.
+
+        """
         if self._dq is None:
             return self
         if not self.empty():
@@ -183,12 +221,44 @@ class Histogram(bh.Histogram, family=dask_histogram):
         self._dq = None
         return self
 
-    def staged_fills(self) -> bool:
-        """bool: True if histogram has been some staged lazy fills."""
+    def pending_fills(self) -> bool:
+        """Check if histogram has pending fills.
+
+        Returns
+        -------
+        bool
+            True of instance contains pending delayed fills.
+
+        """
         return self._dq is not None
 
     def to_delayed(self) -> Delayed:
-        """dask.delayed.Delayed: convert to a delayed Dask object."""
-        if self.staged_fills():
+        """Histogram as a delayed object.
+
+        Wraps the current state of the Histogram in
+        :py:func:`dask.delayed.delayed` if no fills are pending;
+        otherwise, the most downstream delayed Histogram is returned,
+        such that
+
+        .. code-block:: python
+
+            dask.compute(h.to_delayed())
+
+        yields a histogram with the same counts and variances yielded by
+
+        .. code-block:: python
+
+            h.compute()
+
+        In both cases if ``h`` doesn't have any queued fill calls,
+        then no concrete fill computations will be triggered.
+
+        Returns
+        -------
+        dask.delayed.Delayed
+            Wrapping of the histogram as a delayed object.
+
+        """
+        if self.pending_fills():
             return self._dq
         return delayed(self)
