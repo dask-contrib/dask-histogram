@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import operator
 from typing import List, Optional
 
@@ -31,15 +33,15 @@ def tree_sum(histograms):
 
 @delayed
 def blocked_fill_1d(
-    data: np.ndarray, hist: bh.Histogram, weight: Optional[da.Array] = None
+    data: np.ndarray, hist: Histogram, weight: Optional[da.Array] = None
 ):
-    hist_for_block = bh.Histogram(*hist.axes, storage=hist._storage_type())
-    hist_for_block.fill(data, weight=weight)
+    hist_for_block = Histogram(*hist.axes, storage=hist._storage_type())
+    hist_for_block.concrete_fill(data, weight=weight)
     return hist_for_block
 
 
 def fill_1d(
-    data: da.Array, hist: bh.Histogram, weight: Optional[da.Array] = None
+    data: da.Array, hist: Histogram, weight: Optional[da.Array] = None
 ) -> Delayed:
     d_data = data.to_delayed()
     if weight is None:
@@ -52,10 +54,10 @@ def fill_1d(
 
 @delayed
 def blocked_fill_nd(
-    *args: np.ndarray, hist: bh.Histogram, weight: Optional[da.Array] = None
+    *args: np.ndarray, hist: Histogram, weight: Optional[da.Array] = None
 ):
-    hist_for_block = bh.Histogram(*hist.axes, storage=hist._storage_type())
-    hist_for_block.fill(*args, weight=weight)
+    hist_for_block = Histogram(*hist.axes, storage=hist._storage_type())
+    hist_for_block.concrete_fill(*args, weight=weight)
     return hist_for_block
 
 
@@ -98,27 +100,57 @@ def fill_nd(
 class Histogram(bh.Histogram, family=dask_histogram):
     __slots__ = ("_dq",)
 
-    def __init__(self, *axes, storage=None, metadata=None) -> None:
+    def __init__(
+        self,
+        *axes: bh.axis.Axis,
+        storage: bh.storage.Storage = bh.storage.Double(),
+        metadata: Any = None,
+    ) -> None:
         """Construct new histogram fillable with Dask collections.
 
         Parameters
         ---------
-        *axes : boost_histogram.Axis
-            Provide one or more boost_histogram.Axes objects.
+        *axes : boost_histogram.axis.Axis
+            Provide one or more Axis objects.
         storage : boost_histogram.storage, optional
             Select a storage to use in the histogram. The default
-            option (``None``) will use :py:class:`bh.storage.Double`.
+            storage type is :py:class:`bh.storage.Double`.
         metadata : Any
             Data that is passed along if a new histogram is created.
 
         """
-        if storage is None:
-            storage = bh.storage.Double()
         super().__init__(*axes, storage=storage, metadata=metadata)
         self._dq: Optional[List[Delayed]] = None
 
-    def fill(self, *args, weight: Optional[da.Array] = None, sample=None, threads=None):
-        """Queue up a fill call with a Dask collection.
+    def concrete_fill(
+        self, *args: Any, weight: Optional[Any] = None, sample=None, threads=None
+    ) -> Histogram:
+        """Fill the histogram with concrete data (not a Dask collection).
+
+        Calls the super class fill function
+        :py:func:`boost_histogram.Histogram.fill`.
+
+        Parameters
+        ----------
+        *args : array_like
+            Provide one value or array per dimension
+        weight : array_like, optional
+            Provide weights (only if the storage supports them)
+        sample : array_like
+            Provide samples (only if the storage supports them)
+        threads : int, optional
+            Fill with threads. Defaults to None, which does not
+            activate threaded filling. Using 0 will automatically pick
+            the number of available threads (usually two per core).
+
+        """
+        super().fill(*args, weight=weight, sample=sample, threads=threads)
+        return self
+
+    def fill(
+        self, *args, weight: Optional[da.Array] = None, sample=None, threads=None
+    ) -> Histogram:
+        """Queue a fill call using a Dask collection as input.
 
         Parameters
         ----------
@@ -131,11 +163,6 @@ class Histogram(bh.Histogram, family=dask_histogram):
         threads : Any
             Unsupported argument from boost_histogram.Histogram.fill
 
-        Returns
-        -------
-        Histogram
-            The class instance.
-
         """
         new_fill = fill_nd(*args, hist=self, weight=weight)
         if self._dq is None:
@@ -144,7 +171,7 @@ class Histogram(bh.Histogram, family=dask_histogram):
             self._dq = tree_sum([self._dq, new_fill])
         return self
 
-    def compute(self):
+    def compute(self) -> Histogram:
         """Compute any queued (delayed) fills."""
         if self._dq is None:
             return self
