@@ -221,13 +221,13 @@ class Histogram(bh.Histogram, family=dask_histogram):
         self._dq = None
         return self
 
-    def pending_fills(self) -> bool:
-        """Check if histogram has pending fills.
+    def staged_fills(self) -> bool:
+        """Check if histogram has staged fills.
 
         Returns
         -------
         bool
-            True of instance contains pending delayed fills.
+            True if the object contains staged delayed fills.
 
         """
         return self._dq is not None
@@ -236,15 +236,16 @@ class Histogram(bh.Histogram, family=dask_histogram):
         """Histogram as a delayed object.
 
         Wraps the current state of the Histogram in
-        :py:func:`dask.delayed.delayed` if no fills are pending;
+        :py:func:`dask.delayed.delayed` if no fills are staged;
         otherwise, the most downstream delayed Histogram is returned,
-        such that
+        such that:
 
         .. code-block:: python
 
             dask.compute(h.to_delayed())
 
-        yields a histogram with the same counts and variances yielded by
+        will yield a histogram with the same counts and variances
+        yielded by:
 
         .. code-block:: python
 
@@ -259,6 +260,37 @@ class Histogram(bh.Histogram, family=dask_histogram):
             Wrapping of the histogram as a delayed object.
 
         """
-        if self.pending_fills():
+        if self.staged_fills() and not self.empty():
+            return delayed(operator.add)(delayed(self), self._dq)
+        elif self.staged_filled():
             return self._dq
         return delayed(self)
+
+    def __repr__(self) -> str:
+        newline = "\n  "
+        sep = "," if len(self.axes) > 0 else ""
+        ret = "{self.__class__.__name__}({newline}".format(
+            self=self, newline=newline if len(self.axes) > 1 else ""
+        )
+        ret += f",{newline}".join(repr(ax) for ax in self.axes)
+        ret += "{comma}{newline}storage={storage}".format(
+            storage=self._storage_type(),
+            newline=newline
+            if len(self.axes) > 1
+            else " "
+            if len(self.axes) > 0
+            else "",
+            comma=sep,
+        )
+        ret += ")"
+        outer = self.sum(flow=True)
+        if outer:
+            inner = self.sum(flow=False)
+            ret += f" # Sum: {inner}"
+            if inner != outer:
+                ret += f" ({outer} with flow)"
+        if self.staged_fills() and outer:
+            ret += " (has staged fills)"
+        elif self.staged_fills():
+            ret += " # (has staged fills)"
+        return ret
