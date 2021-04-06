@@ -1,4 +1,4 @@
-"""Lazy boost-histogram API."""
+"""Dask compatible boost-histogram API."""
 
 from __future__ import annotations
 
