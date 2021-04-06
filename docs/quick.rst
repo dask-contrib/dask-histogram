@@ -8,7 +8,7 @@ Install dask-histogram with pip:
 
 .. code-block::
 
-   pip install .
+   pip install dask-histogram
 
 Simple Object Example
 ^^^^^^^^^^^^^^^^^^^^^
