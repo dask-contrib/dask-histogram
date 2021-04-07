@@ -266,7 +266,7 @@ class Histogram(bh.Histogram, family=dask_histogram):
             return self._dq
         return delayed(self)
 
-    def __repr__(self) -> str:
+    def __repr__(self) -> str:  # noqa: D105
         newline = "\n  "
         sep = "," if len(self.axes) > 0 else ""
         ret = "{self.__class__.__name__}({newline}".format(
