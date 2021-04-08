@@ -2,7 +2,13 @@ import setuptools
 from setuptools import setup
 
 
+extras_require = {
+    "test": ["pytest", "dask[dataframe]"],
+    "docs": ["sphinx", "dask-sphinx-theme"],
+}
+
+extras_require["complete"] = sorted(set(sum(extras_require.values(), [])))
+
 setup(
-    use_scm_version=True,
-    setup_requires=["setuptools_scm"],
+    extras_require=extras_require,
 )
