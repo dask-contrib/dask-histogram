@@ -50,53 +50,92 @@ def tree_reduce(hists: List[Delayed]) -> Delayed:
 
 
 @delayed
-def blocked_fill_1d(
-    data: np.ndarray, hist: DH, weight: Optional[da.Array] = None
-):
+def blocked_fill_1d(data: np.ndarray, meta_hist: DH, weight: Optional[da.Array] = None):
     """Single delayed (1D) histogram concrete fill."""
-    hist_for_block = Histogram(*hist.axes, storage=hist._storage_type())
-    hist_for_block.concrete_fill(data, weight=weight)
-    return hist_for_block
+    hfb = Histogram(*meta_hist.axes, storage=meta_hist._storage_type())
+    hfb.concrete_fill(data, weight=weight)
+    return hfb
 
 
 def fill_1d(
-    data: da.Array, hist: DH, weight: Optional[da.Array] = None
+    data: da.Array, meta_hist: DH, weight: Optional[da.Array] = None
 ) -> Delayed:
     """Prepare a set of delayed one dimensional histogram fills."""
     d_data = data.to_delayed()
     if weight is None:
-        d_histograms = [blocked_fill_1d(a, hist) for a in d_data]
+        d_histograms = [blocked_fill_1d(a, meta_hist) for a in d_data]
     else:
         d_weight = weight.to_delayed()
-        d_histograms = [blocked_fill_1d(a, hist, w) for a, w in zip(d_data, d_weight)]
+        d_histograms = [
+            blocked_fill_1d(a, meta_hist, w) for a, w in zip(d_data, d_weight)
+        ]
     return tree_reduce(d_histograms)
 
 
 @delayed
 def blocked_fill_nd(
-    *args: np.ndarray, hist: DH, weight: Optional[da.Array] = None
+    *args: np.ndarray, meta_hist: DH, weight: Optional[da.Array] = None
 ):
-    """Single delayed (nD) histogram concrete fills."""
-    hist_for_block = Histogram(*hist.axes, storage=hist._storage_type())
-    hist_for_block.concrete_fill(*args, weight=weight)
-    return hist_for_block
+    """Single delayed (nD) histogram concrete fill."""
+    hfb = Histogram(*meta_hist.axes, storage=meta_hist._storage_type())
+    hfb.concrete_fill(*args, weight=weight)
+    return hfb
 
 
-def fill_nd(
-    *args: da.Array, hist: DH, weight: Optional[da.Array] = None
+# @delayed
+# def blocked_fill_nd_rectangular(
+#     sample: np.ndarray,
+#     meta_hist: DH,
+#     weight: Optional[da.Array] = None,
+# ):
+#     """Single delayed (nD) histogram concrete fill with transpose call."""
+#     hfb = Histogram(*meta_hist.axes, storage=meta_hist._storage_type())
+#     print(sample.T.shape)
+#     hfb.concrete_fill(*(sample.T), weight=weight)
+#     return hfb
+
+
+# def fill_nd_rectangular(
+#     sample: da.Array,
+#     meta_hist: DH,
+#     weight: Optional[Any] = None,
+# ) -> Delayed:
+#     """Fill nD histogram given a rectangular (multi-column) sample."""
+#     delayeds = sample.to_delayed()
+#     print(len(meta_hist.axes))
+#     print(sample.shape)
+#     if weight is None:
+#         d_histograms = [
+#             blocked_fill_nd_rectangular(s, meta_hist=meta_hist, weight=None)
+#             for s in delayeds
+#         ]
+#     else:
+#         d_weight = weight.to_delayed()
+#         if len(d_weight) != len(delayeds):
+#             raise ValueError(
+#                 "data sample and weight must have the same number of chunks"
+#             )
+#         d_histograms = [
+#             blocked_fill_nd_rectangular(s, meta_hist=meta_hist, weight=w)
+#             for s, w in zip(delayeds, d_weight)
+#         ]
+#     return tree_reduce(d_histograms)
+
+
+def fill_nd_multiarg(
+    *samples: da.Array,
+    meta_hist: DH,
+    weight: Optional[Any] = None,
 ) -> Delayed:
-    """Prepare a set of delayed n-dimensional histogram fills."""
-    # total number of dimensions
-    D = len(args)
-
-    # if D == 1 go to simpler implementation.
-    if D == 1:
-        return fill_1d(args[0], hist=hist, weight=weight)
-
+    """Fill nD histogram given a multiarg (vectors) sample."""
+    D = len(samples)
     # each entry is data along a specific dimension
-    stack_of_delayeds = [a.to_delayed() for a in args]
-    # we assume all dimensions are chunked identically
+    stack_of_delayeds = [a.to_delayed() for a in samples]
+    # check that all dimensions are chunked identically
     npartitions = len(stack_of_delayeds[0])
+    for i in range(1, D):
+        if len(stack_of_delayeds[i]) != npartitions:
+            raise ValueError("All dimensions must be chunked identically")
     # we need to create a data structure that will connect coordinate
     # chunks we loop over the number of partitions and connect the
     # ith chunk along each dimension (loop over j is the loop over
@@ -107,16 +146,34 @@ def fill_nd(
 
     if weight is None:
         d_histograms = [
-            blocked_fill_nd(*d, hist=hist) for d in partitioned_fused_coordinates
+            blocked_fill_nd(*d, meta_hist=meta_hist)
+            for d in partitioned_fused_coordinates
         ]
     else:
         d_weight = weight.to_delayed()
+        if len(d_weight) != npartitions:
+            raise ValueError(
+                "data sample and weight must have the same number of chunks"
+            )
         d_histograms = [
-            blocked_fill_nd(*d, hist=hist, weight=w)
+            blocked_fill_nd(*d, meta_hist=meta_hist, weight=w)
             for d, w in zip(partitioned_fused_coordinates, d_weight)
         ]
 
     return tree_reduce(d_histograms)
+
+
+def fill_nd(
+    *args: da.Array, meta_hist: DH, weight: Optional[da.Array] = None
+) -> Delayed:
+    """Prepare a set of delayed n-dimensional histogram fills."""
+    if len(args) == 1 and args[0].ndim == 1:
+        return fill_1d(args[0], meta_hist=meta_hist, weight=weight)
+    elif len(args) == 1 and args[0].ndim > 1:
+        # return fill_nd_rectangular(args[0], meta_hist=meta_hist, weight=weight)
+        raise NotImplementedError("Rectangular input is not supported yet.")
+    else:
+        return fill_nd_multiarg(*args, meta_hist=meta_hist, weight=weight)
 
 
 class Histogram(bh.Histogram, family=dask_histogram):
@@ -198,7 +255,7 @@ class Histogram(bh.Histogram, family=dask_histogram):
             Class instance with a queued delayed fill added.
 
         """
-        new_fill = fill_nd(*args, hist=self, weight=weight)
+        new_fill = fill_nd(*args, meta_hist=self, weight=weight)
         if self._dq is None:
             self._dq = new_fill
         else:
