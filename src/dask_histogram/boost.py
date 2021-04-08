@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import operator
-from typing import Any, List, Optional
+from typing import Any, List, TypeVar, Optional
 
 import boost_histogram as bh
 import dask.array as da
@@ -13,12 +13,15 @@ from dask.delayed import Delayed, delayed
 import dask_histogram
 
 
-def tree_aggregate(dhists: List[Delayed]) -> Delayed:
+DH = TypeVar("DH", bound="Histogram")
+
+
+def tree_reduce(hists: List[Delayed]) -> Delayed:
     """Tree summation of delayed histogram objects.
 
     Parameters
     ----------
-    dhists : List[Delayed]
+    hists : List[Delayed]
         Delayed histograms to be aggregated.
 
     Returns
@@ -27,7 +30,7 @@ def tree_aggregate(dhists: List[Delayed]) -> Delayed:
         Final histogram aggregation.
 
     """
-    hist_list = dhists
+    hist_list = hists
     while len(hist_list) > 1:
         updated_list = []
         # even N, do all
@@ -48,7 +51,7 @@ def tree_aggregate(dhists: List[Delayed]) -> Delayed:
 
 @delayed
 def blocked_fill_1d(
-    data: np.ndarray, hist: Histogram, weight: Optional[da.Array] = None
+    data: np.ndarray, hist: DH, weight: Optional[da.Array] = None
 ):
     """Single delayed (1D) histogram concrete fill."""
     hist_for_block = Histogram(*hist.axes, storage=hist._storage_type())
@@ -57,7 +60,7 @@ def blocked_fill_1d(
 
 
 def fill_1d(
-    data: da.Array, hist: Histogram, weight: Optional[da.Array] = None
+    data: da.Array, hist: DH, weight: Optional[da.Array] = None
 ) -> Delayed:
     """Prepare a set of delayed one dimensional histogram fills."""
     d_data = data.to_delayed()
@@ -66,12 +69,12 @@ def fill_1d(
     else:
         d_weight = weight.to_delayed()
         d_histograms = [blocked_fill_1d(a, hist, w) for a, w in zip(d_data, d_weight)]
-    return tree_aggregate(d_histograms)
+    return tree_reduce(d_histograms)
 
 
 @delayed
 def blocked_fill_nd(
-    *args: np.ndarray, hist: Histogram, weight: Optional[da.Array] = None
+    *args: np.ndarray, hist: DH, weight: Optional[da.Array] = None
 ):
     """Single delayed (nD) histogram concrete fills."""
     hist_for_block = Histogram(*hist.axes, storage=hist._storage_type())
@@ -80,7 +83,7 @@ def blocked_fill_nd(
 
 
 def fill_nd(
-    *args: da.Array, hist: bh.Histogram, weight: Optional[da.Array] = None
+    *args: da.Array, hist: DH, weight: Optional[da.Array] = None
 ) -> Delayed:
     """Prepare a set of delayed n-dimensional histogram fills."""
     # total number of dimensions
@@ -88,7 +91,7 @@ def fill_nd(
 
     # if D == 1 go to simpler implementation.
     if D == 1:
-        return fill_1d(*args, hist, weight)
+        return fill_1d(args[0], hist=hist, weight=weight)
 
     # each entry is data along a specific dimension
     stack_of_delayeds = [a.to_delayed() for a in args]
@@ -113,7 +116,7 @@ def fill_nd(
             for d, w in zip(partitioned_fused_coordinates, d_weight)
         ]
 
-    return tree_aggregate(d_histograms)
+    return tree_reduce(d_histograms)
 
 
 class Histogram(bh.Histogram, family=dask_histogram):
@@ -199,7 +202,7 @@ class Histogram(bh.Histogram, family=dask_histogram):
         if self._dq is None:
             self._dq = new_fill
         else:
-            self._dq = tree_aggregate([self._dq, new_fill])
+            self._dq = tree_reduce([self._dq, new_fill])
         return self
 
     def compute(self) -> Histogram:
@@ -262,11 +265,18 @@ class Histogram(bh.Histogram, family=dask_histogram):
         """
         if self.staged_fills() and not self.empty():
             return delayed(operator.add)(delayed(self), self._dq)
-        elif self.staged_filled():
+        elif self.staged_fills():
             return self._dq
         return delayed(self)
 
-    def __repr__(self) -> str:  # noqa: D105
+    def __repr__(self) -> str:
+        """Text representation of the histogram.
+
+        Mostly copied from the parent boost_histogram.Histogram class;
+        appeneded to the end of the string information about staged
+        fills.
+
+        """
         newline = "\n  "
         sep = "," if len(self.axes) > 0 else ""
         ret = "{self.__class__.__name__}({newline}".format(
