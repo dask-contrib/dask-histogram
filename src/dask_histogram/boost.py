@@ -362,10 +362,10 @@ class Histogram(bh.Histogram, family=dask_histogram):
             ret += " # (has staged fills)"
         return ret
 
-    def visualize(self, *args, **kwargs) -> None:
+    def visualize(self, **kwargs) -> None:
         """Render the task graph with graphviz.
 
         See :py:func:`dask.visualize`.
 
         """
-        return self.to_delayed().visualize(*args, **kwargs)
+        return self.to_delayed().visualize(**kwargs)
