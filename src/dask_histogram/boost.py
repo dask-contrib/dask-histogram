@@ -190,7 +190,7 @@ class Histogram(bh.Histogram, family=dask_histogram):
         """Construct new histogram fillable with Dask collections.
 
         Parameters
-        ---------
+        ----------
         *axes : boost_histogram.axis.Axis
             Provide one or more Axis objects.
         storage : boost_histogram.storage, optional
