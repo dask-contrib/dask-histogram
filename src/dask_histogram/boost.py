@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import operator
-from typing import Any, List, TypeVar, Optional
+from typing import Any, List, Optional
 
 import boost_histogram as bh
 import dask.array as da
@@ -11,9 +11,6 @@ import numpy as np
 from dask.delayed import Delayed, delayed
 
 import dask_histogram
-
-
-DH = TypeVar("DH", bound="Histogram")
 
 
 def tree_reduce(hists: List[Delayed]) -> Delayed:
@@ -50,7 +47,9 @@ def tree_reduce(hists: List[Delayed]) -> Delayed:
 
 
 @delayed
-def blocked_fill_1d(data: np.ndarray, meta_hist: DH, weight: Optional[da.Array] = None):
+def blocked_fill_1d(
+    data: np.ndarray, meta_hist: Histogram, weight: Optional[da.Array] = None
+):
     """Single delayed (1D) histogram concrete fill."""
     hfb = Histogram(*meta_hist.axes, storage=meta_hist._storage_type())
     hfb.concrete_fill(data, weight=weight)
@@ -58,7 +57,7 @@ def blocked_fill_1d(data: np.ndarray, meta_hist: DH, weight: Optional[da.Array] 
 
 
 def fill_1d(
-    data: da.Array, meta_hist: DH, weight: Optional[da.Array] = None
+    data: da.Array, meta_hist: Histogram, weight: Optional[da.Array] = None
 ) -> Delayed:
     """Prepare a set of delayed one dimensional histogram fills."""
     d_data = data.to_delayed()
@@ -74,7 +73,7 @@ def fill_1d(
 
 @delayed
 def blocked_fill_nd(
-    *args: np.ndarray, meta_hist: DH, weight: Optional[da.Array] = None
+    *args: np.ndarray, meta_hist: Histogram, weight: Optional[da.Array] = None
 ):
     """Single delayed (nD) histogram concrete fill."""
     hfb = Histogram(*meta_hist.axes, storage=meta_hist._storage_type())
@@ -85,7 +84,7 @@ def blocked_fill_nd(
 # @delayed
 # def blocked_fill_nd_rectangular(
 #     sample: np.ndarray,
-#     meta_hist: DH,
+#     meta_hist: Histogram,
 #     weight: Optional[da.Array] = None,
 # ):
 #     """Single delayed (nD) histogram concrete fill with transpose call."""
@@ -97,7 +96,7 @@ def blocked_fill_nd(
 
 # def fill_nd_rectangular(
 #     sample: da.Array,
-#     meta_hist: DH,
+#     meta_hist: Histogram,
 #     weight: Optional[Any] = None,
 # ) -> Delayed:
 #     """Fill nD histogram given a rectangular (multi-column) sample."""
@@ -124,7 +123,7 @@ def blocked_fill_nd(
 
 def fill_nd_multiarg(
     *samples: da.Array,
-    meta_hist: DH,
+    meta_hist: Histogram,
     weight: Optional[Any] = None,
 ) -> Delayed:
     """Fill nD histogram given a multiarg (vectors) sample."""
@@ -164,7 +163,7 @@ def fill_nd_multiarg(
 
 
 def fill_nd(
-    *args: da.Array, meta_hist: DH, weight: Optional[da.Array] = None
+    *args: da.Array, meta_hist: Histogram, weight: Optional[da.Array] = None
 ) -> Delayed:
     """Prepare a set of delayed n-dimensional histogram fills."""
     if len(args) == 1 and args[0].ndim == 1:
