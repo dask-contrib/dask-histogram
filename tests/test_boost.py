@@ -3,9 +3,7 @@ import dask.array as da
 import numpy as np
 import pytest
 
-
 import dask_histogram as dh
-from dask_histogram.boost import fill_nd
 
 
 @pytest.mark.parametrize("use_weights", [True, False])
@@ -91,74 +89,6 @@ def test_obj_3D_rectangular(use_weights):
     assert np.allclose(h.counts(), control.counts())
     if use_weights:
         assert np.allclose(h.variances(), control.variances())
-
-
-def test_simple():
-    h = bh.Histogram(bh.axis.Regular(12, -3.0, 3.0))
-    x = da.random.standard_normal(size=(200,), chunks=50)
-    delayed_hist = fill_nd(x, meta_hist=h)
-    result = delayed_hist.compute()
-
-    x = x.compute()
-    h = bh.Histogram(bh.axis.Regular(12, -3.0, 3.0))
-    h.fill(x)
-
-    assert np.allclose(h.counts(), result.counts())
-    assert h.sum() == result.sum()
-
-
-def test_simple_flow():
-    h = bh.Histogram(
-        bh.axis.Regular(20, -3.2, 3.2),
-        bh.axis.Regular(20, -2.9, 2.9),
-    )
-    x = da.random.standard_normal(size=(100_000, 2), chunks=5_000)
-    h.fill(*x.compute().T)
-
-    delayed_hist = fill_nd(*x.T, meta_hist=h)
-    result = delayed_hist.compute()
-
-    assert np.allclose(h.counts(flow=True), result.counts(flow=True))
-
-
-def test_simple_weighted():
-    h = bh.Histogram(bh.axis.Regular(12, -3.0, 3.0), storage=bh.storage.Weight())
-    x = da.random.standard_normal(size=(200,), chunks=50)
-    w = da.random.uniform(0.2, 0.5, size=x.shape, chunks=x.chunksize[0])
-    delayed_hist = fill_nd(x, meta_hist=h, weight=w)
-    result = delayed_hist.compute()
-
-    x = x.compute()
-    w = w.compute()
-    h = bh.Histogram(bh.axis.Regular(12, -3.0, 3.0), storage=bh.storage.Weight())
-    h.fill(x, weight=w)
-
-    assert repr(h.sum()) == repr(result.sum())
-
-
-def test_simple_nd():
-    h = bh.Histogram(
-        bh.axis.Regular(20, -3.5, 3.5),
-        bh.axis.Regular(25, -3.2, 3.2),
-        bh.axis.Regular(12, 0.4, 0.6),
-        storage=bh.storage.Weight(),
-    )
-    x = da.random.standard_normal(size=(200,), chunks=25)
-    y = da.random.standard_normal(size=(200,), chunks=25)
-    z = da.random.uniform(0.4, 0.6, size=(200,), chunks=25)
-    w = da.random.uniform(0.2, 1.1, size=(200,), chunks=25)
-
-    delayed_hist = fill_nd(x, y, z, meta_hist=h, weight=w)
-    result = delayed_hist.compute()
-
-    x = x.compute()
-    y = y.compute()
-    z = z.compute()
-    w = w.compute()
-    h = bh.Histogram(*h.axes, storage=bh.storage.Weight())
-    h.fill(x, y, z, weight=w)
-
-    assert repr(h.sum()) == repr(result.sum())
 
 
 def test_class():
