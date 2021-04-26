@@ -115,20 +115,24 @@ def _fill_nd_multiarg(
     """Fill nD histogram given a multiarg (vectors) sample."""
     D = len(samples)
     # each entry is data along a specific dimension
-    samples = [a.to_delayed() for a in samples]
+    delayed_samples = [a.to_delayed() for a in samples]
     # check that all dimensions are chunked identically
-    npartitions = len(samples[0])
+    npartitions = len(delayed_samples[0])
     for i in range(1, D):
-        if len(samples[i]) != npartitions:
+        if len(delayed_samples[i]) != npartitions:
             raise ValueError("All dimensions must be chunked identically")
     # We need to create a data structure that will connect coordinate
     # chunks. We loop over the number of partitions and connect the
     # ith chunk along each dimension (the loop over j is the loop over
     # the total number of dimensions).
-    samples = [tuple(samples[j][i] for j in range(D)) for i in range(npartitions)]
+    delayed_samples = [
+        tuple(delayed_samples[j][i] for j in range(D)) for i in range(npartitions)
+    ]
 
     if weight is None:
-        hists = [_blocked_fill_nd_multiarg(*d, meta_hist=meta_hist) for d in samples]
+        hists = [
+            _blocked_fill_nd_multiarg(*d, meta_hist=meta_hist) for d in delayed_samples
+        ]
     else:
         weights = weight.to_delayed()
         if len(weights) != npartitions:
@@ -137,7 +141,7 @@ def _fill_nd_multiarg(
             )
         hists = [
             _blocked_fill_nd_multiarg(*d, meta_hist=meta_hist, weight=w)
-            for d, w in zip(samples, weights)
+            for d, w in zip(delayed_samples, weights)
         ]
 
     return delayed(sum)(hists)
@@ -343,3 +347,7 @@ class Histogram(bh.Histogram, family=dask_histogram):
 
         """
         return self.to_delayed().visualize(**kwargs)
+
+    @delayed
+    def to_numpy(self, **kwargs):
+        return super().to_numpy(**kwargs)
