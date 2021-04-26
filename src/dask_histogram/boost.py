@@ -65,53 +65,38 @@ def _fill_1d(data: Any, meta_hist: Histogram, weight: Optional[Any] = None) -> D
 
 
 # @delayed
-# def blocked_fill_nd_rectangular(
-#     sample: np.ndarray,
-#     meta_hist: Histogram,
-#     weight: Optional[np.ndarray] = None,
+# def _blocked_fill_nd_rectangular(
+#     sample: Any, meta_hist: Histogram, weight: Optional[Any]
 # ):
-#     """Single delayed (nD) histogram concrete fill with transpose call."""
 #     hfb = Histogram(*meta_hist.axes, storage=meta_hist._storage_type())
-#     print(sample.T.shape)
-#     hfb.concrete_fill(*(sample.T), weight=weight)
+#     sample = sample.T
+#     hfb.concrete_fill(*sample, weight=weight)
 #     return hfb
 
 
-# def fill_nd_rectangular(
-#     sample: da.Array,
-#     meta_hist: Histogram,
-#     weight: Optional[Any] = None,
+# def _fill_nd_rectangular(
+#     sample: Any, meta_hist: Histogram, weight: Optional[Any] = None
 # ) -> Delayed:
 #     """Fill nD histogram given a rectangular (multi-column) sample."""
-#     delayeds = sample.to_delayed()
+#     sample = sample.to_delayed()
 #     print(len(meta_hist.axes))
 #     print(sample.shape)
 #     if weight is None:
 #         hists = [
-#             blocked_fill_nd_rectangular(s, meta_hist=meta_hist, weight=None)
-#             for s in delayeds
+#             _blocked_fill_nd_rectangular(s, meta_hist=meta_hist, weight=None)
+#             for s in sample
 #         ]
 #     else:
 #         weights = weight.to_delayed()
-#         if len(weights) != len(delayeds):
+#         if len(weights) != len(sample):
 #             raise ValueError(
 #                 "data sample and weight must have the same number of chunks"
 #             )
 #         hists = [
-#             blocked_fill_nd_rectangular(s, meta_hist=meta_hist, weight=w)
-#             for s, w in zip(delayeds, weights)
+#             _blocked_fill_nd_rectangular(s, meta_hist=meta_hist, weight=w)
+#             for s, w in zip(sample, weights)
 #         ]
-#     return _tree_reduce(hists)
-
-
-@delayed
-def _blocked_fill_nd_rectangular(
-    sample: Any, meta_hist: Histogram, weight: Optional[Any]
-):
-    hfb = Histogram(*meta_hist.axes, storage=meta_hist._storage_type())
-    sample = sample.T
-    hfb.concrete_fill(*sample, weight=weight)
-    return hfb
+#     return delayed(sum)(hists)
 
 
 @delayed
@@ -125,9 +110,7 @@ def _blocked_fill_nd_multiarg(
 
 
 def _fill_nd_multiarg(
-    *samples: Any,
-    meta_hist: Histogram,
-    weight: Optional[Any] = None,
+    *samples: Any, meta_hist: Histogram, weight: Optional[Any] = None
 ) -> Delayed:
     """Fill nD histogram given a multiarg (vectors) sample."""
     D = len(samples)
@@ -158,17 +141,6 @@ def _fill_nd_multiarg(
         ]
 
     return delayed(sum)(hists)
-
-
-def _fill_nd(*args: Any, meta_hist: Histogram, weight: Optional[Any] = None) -> Delayed:
-    """Prepare a set of delayed n-dimensional histogram fills."""
-    if len(args) == 1 and args[0].ndim == 1:
-        return _fill_1d(args[0], meta_hist=meta_hist, weight=weight)
-    elif len(args) == 1 and args[0].ndim > 1:
-        # return fill_nd_rectangular(args[0], meta_hist=meta_hist, weight=weight)
-        raise NotImplementedError("Rectangular input is not supported yet.")
-    else:
-        return _fill_nd_multiarg(*args, meta_hist=meta_hist, weight=weight)
 
 
 class Histogram(bh.Histogram, family=dask_histogram):
@@ -250,11 +222,18 @@ class Histogram(bh.Histogram, family=dask_histogram):
             Class instance with a queued delayed fill added.
 
         """
-        new_fill = _fill_nd(*args, meta_hist=self, weight=weight)
+        if len(args) == 1 and args[0].ndim == 1:
+            new_fill = _fill_1d(args[0], meta_hist=self, weight=weight)
+        elif len(args) == 1 and args[0].ndim > 1:
+            # return _fill_nd_rectangular(args[0], meta_hist=self, weight=weight)
+            raise NotImplementedError("Rectangular input is not supported yet.")
+        else:
+            new_fill = _fill_nd_multiarg(*args, meta_hist=self, weight=weight)
+
         if self._dq is None:
             self._dq = new_fill
         else:
-            self._dq = _tree_reduce([self._dq, new_fill])
+            self._dq = delayed(sum)([self._dq, new_fill])
         return self
 
     def compute(self) -> Histogram:
