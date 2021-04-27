@@ -1,4 +1,4 @@
-"""Dask compatible boost-histogram dask.array like API"""
+"""Dask compatible boost-histogram dask.array like API."""
 
 from __future__ import annotations
 
@@ -27,6 +27,7 @@ def histogramdd(
     storage: _storage.Storage = _storage.Double(),
     threads: Optional[int] = None,
 ) -> Any:
+    """Histogram data in multiple dimensions."""
     if normed is not None:
         raise KeyError(
             "normed=True is deprecated in NumPy and not supported by dask-histogram."
@@ -94,6 +95,7 @@ def histogram2d(
     storage: _storage.Storage = _storage.Double(),
     threads: Optional[int] = None,
 ) -> Any:
+    """Histogram data in two dimensions."""
     pass
 
 
@@ -109,4 +111,5 @@ def histogram(
     storage: Optional[_storage.Storage] = None,
     threads: Optional[int] = None,
 ) -> Any:
+    """Histogram data in one dimension."""
     pass
