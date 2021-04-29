@@ -46,12 +46,16 @@ def histogramdd(
 
     rank = len(a)
 
-    try:
-        bins = (int(bins),) * rank  # type: ignore
+    scalar_bins = False
+    if isinstance(bins, (list, tuple)):
+        if len(bins) != rank:
+            raise ValueError(
+                "Total number of defined bins must be equal to the dimension of the sample."
+            )
+        scalar_bins = all(isinstance(b, int) for b in bins)
+    if isinstance(bins, int):
+        bins = (bins,) * rank
         scalar_bins = True
-    except TypeError:
-        scalar_bins = False
-        range = (None,) * rank  # type: ignore
 
     if scalar_bins:
         if range is None:
@@ -73,13 +77,10 @@ def histogramdd(
         if r is None:
             axes.append(_axis.Variable(b))
         else:
-            axes.append(_axis.Regular(bins=bins, start=r[0], stop=r[1]))
+            axes.append(_axis.Regular(bins=b, start=r[0], stop=r[1]))
 
     hist = Histogram(*axes, storage=storage).fill(*a, weight=weights)
-    if histogram is not None:
-        return hist
-    else:
-        return hist.to_numpy(view=True, dd=True)
+    return hist
 
 
 def histogram2d(

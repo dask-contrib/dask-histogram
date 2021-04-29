@@ -347,7 +347,3 @@ class Histogram(bh.Histogram, family=dask_histogram):
 
         """
         return self.to_delayed().visualize(**kwargs)
-
-    @delayed
-    def to_numpy(self, **kwargs):
-        return super().to_numpy(**kwargs)
