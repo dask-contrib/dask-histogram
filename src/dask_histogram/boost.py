@@ -148,7 +148,7 @@ def _fill_nd_multiarg(
 
 
 class Histogram(bh.Histogram, family=dask_histogram):
-    """Histogram capable of lazy computation."""
+    """Histogram object capable of lazy computation."""
 
     __slots__ = ("_dq",)
 

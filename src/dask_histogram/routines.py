@@ -23,7 +23,75 @@ def histogramdd(
     storage=_storage.Double(),
     threads=None,
 ):
-    """Histogram data in multiple dimensions."""
+    """Histogram dask data in multiple dimensions.
+
+    Parameters
+    ----------
+    a : dask.array.Array or tuple of dask collections
+        Data to histogram. Acceptable input data can be of the form:
+
+        * A dask.array.Array of shape (N, D) where each row is a
+          sample and each column is a specific coordinate for the
+          samples.
+        * A sequence of dask collections where each collection (e.g.
+          array or series) contains all values for one coordinate of
+          all samples.
+    bins : sequence of arrays, int, or sequence of ints
+        The bin specification.
+
+        The possible binning configurations are:
+
+        * A sequence of arrays describing the monotonically increasing
+          bin edges along each dimension.
+        * A single int describing the total number of bins that will
+          be used in each dimension (this requires the ``range``
+          argument to be defined).
+        * A sequence of ints describing the total number of bins to be
+          used in each dimension (this requires the ``range`` argument
+          to be defined).
+
+        When bins are described by arrays, the rightmost edge is
+        included. Bins described by arrays also allows for non-uniform
+        bin widths.
+    range : sequence of pairs, optional
+        A sequence of length D, each a (min, max) tuple giving the
+        outer bin edges to be used if the edges are not given
+        explicitly in ``bins``. If defined, this argument is required
+        to have an entry for each dimension. Unlike
+        :func:`numpy.histogramdd`, if `bins` does not define bin
+        edges, this argument is required (this function will not
+        automatically use the min and max of of the value in a given
+        dimension because the input data may be lazy in dask).
+    normed : bool, optional
+        An unsupported argument that has been deprecated in the NumPy
+        API (preserved to maintain calls dependent on argument order).
+    weights : dask collection, optional
+        An array of values weighing each sample in the input data. The
+        chunks of the weights must be identical to the chunking along
+        the 0th (row) axis of the data sample.
+    density : bool
+        If ``False`` (default), the returned array represents the
+        number of samples in each bin. If ``True``, the returned array
+        represents the probability density function at each bin.
+    histogram : Any, optional
+        If dh.Histogram, object based output is enabled.
+    storage : FIXME: Add type.
+        Define the storage used by the :py:class:`Histogram` object.
+    threads : FIXME: Add type.
+        Enable threading on :py:func:`Histogram.fill` calls.
+
+    Raises
+    ------
+    ValueError
+        FIXME: Add docs.
+    KeyError
+        FIXME: Add docs.
+
+    Examples
+    --------
+    FIXME: Add docs.
+
+    """
     if normed is not None:
         raise KeyError(
             "normed=True is deprecated in NumPy and not supported by dask-histogram."
