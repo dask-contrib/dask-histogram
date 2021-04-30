@@ -41,7 +41,7 @@ def histogramdd(
         a = a.T
     else:
         for entry in a:
-            if not is_dask_collection(a):
+            if not is_dask_collection(entry):
                 raise ValueError("non-dask collection was passed")
 
     D = len(a)
