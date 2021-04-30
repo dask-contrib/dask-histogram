@@ -2,65 +2,27 @@
 
 from __future__ import annotations
 
-from enum import Enum
-from typing import Any, Optional, Sequence, Tuple, Type, Union
-
 import boost_histogram.axis as _axis
 import boost_histogram.storage as _storage
 import dask.array as da
-import numpy as np
+from dask.base import is_dask_collection
 
+from .bins import BinsStyle, RangeStyle, bins_range_styles
 from .boost import Histogram
 
 
-class BinsStyle(Enum):
-    """Styles for the bins argument in histogramming functions."""
-
-    Undetermined = 0
-    SingleScalar = 1
-    MultiScalar = 2
-    SingleSequence = 3
-    MultiSequence = 4
-
-
-class RangeStyle(Enum):
-    """Styles for the range argument in histogramming functions."""
-
-    Undetermined = 0
-    IsNone = 1
-    SingleTuple = 2
-    MultiTuple = 3
-
-
-def bins_and_range_styles(bins: Any, range: Any) -> Tuple[BinsStyle, RangeStyle]:
-    """Determine the style of the bins and range arguments."""
-    bins_style, range_style = BinsStyle.Undetermined, RangeStyle.Undetermined
-    if isinstance(bins, int):
-        bins_style = BinsStyle.SingleScalar
-    elif isinstance(bins, (tuple, list)):
-        if all(isinstance(b, int) for b in bins):
-            bins_style = BinsStyle.MultiScalar
-        else:
-            bins_style = BinsStyle.MultiSequence
-    elif isinstance(bins, np.ndarray):
-        if bins.ndim == 1:
-            bins_style = BinsStyle.SingleSequence
-
-    return bins_style, range_style
-
-
 def histogramdd(
-    a: Tuple[Any, ...],
-    bins: Union[int, Tuple[int, ...]] = 10,
-    range: Optional[Sequence[Tuple[float, float]]] = None,
-    normed: None = None,
-    weights: Optional[Any] = None,
-    density: bool = False,
+    a,
+    bins=10,
+    range=None,
+    normed=None,
+    weights=None,
+    density=False,
     *,
-    histogram: Optional[Type[Histogram]] = None,
-    storage: _storage.Storage = _storage.Double(),
-    threads: Optional[int] = None,
-) -> Any:
+    histogram=None,
+    storage=_storage.Double(),
+    threads=None,
+):
     """Histogram data in multiple dimensions."""
     if normed is not None:
         raise KeyError(
@@ -77,34 +39,20 @@ def histogramdd(
     # dataset; This is a NumPy design choice.
     if isinstance(a, da.Array):
         a = a.T
-
-    rank = len(a)
-
-    scalar_bins = False
-    if isinstance(bins, (list, tuple)):
-        if len(bins) != rank:
-            raise ValueError(
-                "Total number of defined bins must be equal to the dimension of the sample."
-            )
-        scalar_bins = all(isinstance(b, int) for b in bins)
-    if isinstance(bins, int):
-        bins = (bins,) * rank
-        scalar_bins = True
-
-    if scalar_bins:
-        if range is None:
-            raise TypeError("Integer bins requires range definition(s) (non-None)")
-        if len(range) != len(bins):
-            raise TypeError(
-                "bins and range must have the same number of definitions received; "
-                f"{len(bins)} bins and {len(range)} ranges."
-            )
     else:
-        if len(bins) != rank:
-            raise TypeError(
-                f"Total number of binning definitions ({len(bins)}) is incompatible "
-                f"with data dimensionality ({rank})."
-            )
+        for entry in a:
+            if not is_dask_collection(a):
+                raise ValueError("non-dask collection was passed")
+
+    D = len(a)
+
+    b_style, r_style = bins_range_styles(D=D, bins=bins, range=range)
+    if b_style == BinsStyle.SingleScalar:
+        bins = (bins,) * D
+    if r_style == RangeStyle.SinglePair:
+        range = (range,) * D
+    if b_style == BinsStyle.SingleSequence:
+        bins = (bins,) * D
 
     axes = []
     for i, (b, r) in enumerate(zip(bins, range)):
@@ -118,33 +66,53 @@ def histogramdd(
 
 
 def histogram2d(
-    x: Any,
-    y: Any,
-    bins: Union[int, Tuple[int, int]] = 10,
-    range: Optional[Sequence[Tuple[float, float]]] = None,
-    normed: None = None,
-    weights: Optional[Any] = None,
-    density: bool = False,
+    x,
+    y,
+    bins=10,
+    range=None,
+    normed=None,
+    weights=None,
+    density=False,
     *,
-    histogram: Optional[Type[Histogram]] = None,
-    storage: _storage.Storage = _storage.Double(),
-    threads: Optional[int] = None,
-) -> Any:
+    histogram=None,
+    storage=_storage.Double(),
+    threads=None,
+):
     """Histogram data in two dimensions."""
-    pass
+    return histogramdd(
+        (x, y),
+        bins=bins,
+        range=range,
+        normed=normed,
+        weights=weights,
+        density=density,
+        histogram=histogram,
+        storage=storage,
+        threads=threads,
+    )
 
 
 def histogram(
-    a: Any,
-    bins: int = 10,
-    range: Optional[Tuple[float, float]] = None,
-    normed: None = None,
-    weights: Optional[Any] = None,
-    density: bool = False,
+    a,
+    bins=10,
+    range=None,
+    normed=None,
+    weights=None,
+    density=False,
     *,
-    histogram: Optional[Type[Histogram]] = None,
-    storage: Optional[_storage.Storage] = None,
-    threads: Optional[int] = None,
-) -> Any:
+    histogram=None,
+    storage=None,
+    threads=None,
+):
     """Histogram data in one dimension."""
-    pass
+    return histogramdd(
+        (a,),
+        bins=bins,
+        range=range,
+        normed=normed,
+        weights=weights,
+        density=density,
+        histogram=histogram,
+        storage=storage,
+        threads=threads,
+    )
