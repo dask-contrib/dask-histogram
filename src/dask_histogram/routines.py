@@ -1,4 +1,4 @@
-"""Dask compatible boost-histogram dask.array like API."""
+"""Routines for staging histogram computations."""
 
 from __future__ import annotations
 
