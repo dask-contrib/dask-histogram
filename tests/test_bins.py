@@ -78,19 +78,19 @@ def test_bins_range_styles():
 
     with pytest.raises(
         ValueError,
-        match="range cannot be None when bins argument is a scalar or sequence of scalars."
+        match="range cannot be None when bins argument is a scalar or sequence of scalars.",
     ):
         bins_range_styles(D=1, bins=3, range=None)
 
     with pytest.raises(
         ValueError,
-        match="range cannot be None when bins argument is a scalar or sequence of scalars."
+        match="range cannot be None when bins argument is a scalar or sequence of scalars.",
     ):
         bins_range_styles(D=2, bins=3, range=None)
 
     with pytest.raises(
         ValueError,
-        match="range cannot be None when bins argument is a scalar or sequence of scalars."
+        match="range cannot be None when bins argument is a scalar or sequence of scalars.",
     ):
         bins_range_styles(D=2, bins=(3, 8), range=None)
 
