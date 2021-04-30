@@ -1,6 +1,7 @@
+import dask.array as da
+
 import dask_histogram as dh
 import dask_histogram.array as dha
-import dask.array as da
 
 x = da.random.standard_normal(size=(10_000,), chunks=2_000)
 y = da.random.standard_normal(size=(10_000,), chunks=2_000)

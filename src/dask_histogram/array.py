@@ -2,17 +2,51 @@
 
 from __future__ import annotations
 
+from enum import Enum
 from typing import Any, Optional, Sequence, Tuple, Type, Union
 
-import dask.array as da
-import boost_histogram.storage as _storage
 import boost_histogram.axis as _axis
-
+import boost_histogram.storage as _storage
+import dask.array as da
+import numpy as np
 
 from .boost import Histogram
 
 
-__all__ = ("histogramdd", "histogram2d", "histogram")
+class BinsStyle(Enum):
+    """Styles for the bins argument in histogramming functions."""
+
+    Undetermined = 0
+    SingleScalar = 1
+    MultiScalar = 2
+    SingleSequence = 3
+    MultiSequence = 4
+
+
+class RangeStyle(Enum):
+    """Styles for the range argument in histogramming functions."""
+
+    Undetermined = 0
+    IsNone = 1
+    SingleTuple = 2
+    MultiTuple = 3
+
+
+def bins_and_range_styles(bins: Any, range: Any) -> Tuple[BinsStyle, RangeStyle]:
+    """Determine the style of the bins and range arguments."""
+    bins_style, range_style = BinsStyle.Undetermined, RangeStyle.Undetermined
+    if isinstance(bins, int):
+        bins_style = BinsStyle.SingleScalar
+    elif isinstance(bins, (tuple, list)):
+        if all(isinstance(b, int) for b in bins):
+            bins_style = BinsStyle.MultiScalar
+        else:
+            bins_style = BinsStyle.MultiSequence
+    elif isinstance(bins, np.ndarray):
+        if bins.ndim == 1:
+            bins_style = BinsStyle.SingleSequence
+
+    return bins_style, range_style
 
 
 def histogramdd(
