@@ -10,45 +10,24 @@ Install dask-histogram with pip:
 
    pip install dask-histogram
 
-Simple Object Example
-^^^^^^^^^^^^^^^^^^^^^
+The only dependencies are Dask_ and boost-histogram_.
 
-Filling a histogram with two dimensional Gaussian data (see the
-`boost-histogram`_ docs for an introduction to the API).
+Overview
+^^^^^^^^
 
-.. code-block:: python
+Dask-histogram aims to reproduce the API provided by boost-histogram_,
+but with support for :doc:`dask collections <dask:user-interfaces>` as
+input data. The core component is the
+:class:`dask_histogram.Histogram` class. Additional components include
+the NumPy-like :func:`dask_histogram.histogram`,
+:func:`dask_histogram.histogram2d`, and
+:func:`dask_histogram.histogramdd` functions.
 
-   >>> import dask_histogram as dh
-   >>> import dask.array as da
-   >>> x = da.random.standard_normal(size=(100_000_000, 2), chunks=(10_000_000, 2))
-   >>> h = dh.Histogram(
-   ...     dh.axis.Regular(10, -3, 3),
-   ...     dh.axis.Regular(10, -3, 3),
-   ...     storage=dh.storage.Double(),
-   ... )
-   >>> h.fill(*x.T)  # <-- no computation occurs
-   Histogram(
-     Regular(50, -3, 3),
-     Regular(50, -3, 3),
-     storage=Double()) # (has staged fills)
-   >>> h.empty()
-   True
-   >>> h.compute()   # <-- trigger computation
-   Histogram(
-     Regular(50, -3, 3),
-     Regular(50, -3, 3),
-     storage=Double()) # Sum: 99459483.0 (100000000.0 with flow)
-   >>> h.fill(*x.T)  # fill again; notice the repr tells us we have staged fills.
-   Histogram(
-     Regular(50, -3, 3),
-     Regular(50, -3, 3),
-     storage=Double()) # Sum: 99459483.0 (100000000.0 with flow) (has staged fills)
-   >>> import dask
-   >>> dask.compute(h.to_delayed())  # <-- convert to delayed and use dask.compute
-   (Histogram(
-     Regular(50, -3, 3),
-     Regular(50, -3, 3),
-     storage=Double()) # Sum: 198918966.0 (200000000.0 with flow),)
-
+The :class:`dask_histogram.Histogram` class inherits from
+:class:`boost_histogram.Histogram`, overriding the ``fill`` function
+such that it is aware of chunked Dask collections. The NumPy-like API
+providing histogramming functions exists to mirror what is provided by
+the :py:mod:`boost_histogram.numpy`.
 
 .. _boost-histogram: https://boost-histogram.readthedocs.io/en/latest/
+.. _Dask: https://docs.dask.org/en/latest/

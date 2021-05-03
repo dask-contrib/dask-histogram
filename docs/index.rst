@@ -11,6 +11,7 @@ dask-histogram
    :caption: Documentation
 
    intro.rst
+   examples.rst
 
 .. toctree::
    :maxdepth: 2
