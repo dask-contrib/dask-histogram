@@ -66,7 +66,7 @@ def test_histogram2d():
 def test_histogram():
     x = da.random.standard_normal(size=(10_000,), chunks=2_000)
     w = da.random.uniform(0.1, 0.5, size=(10_000,), chunks=2_000)
-    bins = 4
+    bins = 7
     range = (-2.5, 2.5)
     h1 = dh.histogram(
         x,

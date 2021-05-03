@@ -92,6 +92,7 @@ def histogramdd(
     FIXME: Add docs.
 
     """
+    # Check for invalid argument combinations.
     if normed is not None:
         raise KeyError(
             "normed=True is deprecated in NumPy and not supported by dask-histogram."
@@ -102,18 +103,25 @@ def histogramdd(
             "dask-histogram object."
         )
 
-    # In this case the input is a matrix where the each column is an
-    # array representing one coordinate in the multidimensional
+    # In the case where the input is a matrix with the each column as
+    # an array representing one coordinate in the multidimensional
     # dataset; This is a NumPy design choice.
     if isinstance(a, da.Array):
         a = a.T
     else:
         for entry in a:
             if not is_dask_collection(entry):
-                raise ValueError("non-dask collection was passed")
+                raise ValueError(
+                    "non-dask collection was passed; this function only supports dask "
+                    "collections as input"
+                )
 
+    # Total number of dimensions is based on the structure of the
+    # input data.
     D = len(a)
 
+    # Determine the style of the bins= and range= arguments; then
+    # adjust the values accordingly.
     b_style, r_style = bins_range_styles(D=D, bins=bins, range=range)
     if b_style == BinsStyle.SingleScalar:
         bins = (bins,) * D
@@ -122,6 +130,7 @@ def histogramdd(
     if b_style == BinsStyle.SingleSequence:
         bins = (bins,) * D
 
+    # Create the axes based on the bins and range values.
     axes = []
     for i, (b, r) in enumerate(zip(bins, range)):
         if r is None:
@@ -129,6 +138,7 @@ def histogramdd(
         else:
             axes.append(_axis.Regular(bins=b, start=r[0], stop=r[1]))
 
+    # Finally create and fill the histogram object.
     hist = Histogram(*axes, storage=storage).fill(*a, weight=weights)
     return hist
 
