@@ -343,7 +343,7 @@ class Histogram(bh.Histogram, family=dask_histogram):
     def visualize(self, **kwargs) -> None:
         """Render the task graph with graphviz.
 
-        See :py:func:`dask.visualize` for available keyword arguments.
+        See :py:func:`dask.visualize` for supported keyword arguments.
 
         """
         return self.to_delayed().visualize(**kwargs)

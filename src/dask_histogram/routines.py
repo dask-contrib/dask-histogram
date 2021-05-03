@@ -73,19 +73,12 @@ def histogramdd(
         If ``False`` (default), the returned array represents the
         number of samples in each bin. If ``True``, the returned array
         represents the probability density function at each bin.
-    histogram : Any, optional
-        If dh.Histogram, object based output is enabled.
-    storage : FIXME: Add type.
+    histogram : dask_histogram.Histogram, optional
+        If `dh.Histogram`, object based output is enabled.
+    storage : boost_histogram.storage.Storage
         Define the storage used by the :py:class:`Histogram` object.
-    threads : FIXME: Add type.
+    threads : int, optional
         Enable threading on :py:func:`Histogram.fill` calls.
-
-    Raises
-    ------
-    ValueError
-        FIXME: Add docs.
-    KeyError
-        FIXME: Add docs.
 
     Examples
     --------
@@ -156,7 +149,55 @@ def histogram2d(
     storage=_storage.Double(),
     threads=None,
 ):
-    """Histogram data in two dimensions."""
+    """Histogram data in two dimensions.
+
+    Parameters
+    ----------
+    x : dask.array.Array
+        Array representing the `x` coordinates of the points to the
+        histogrammed.
+    y : dask.array.Array
+        Array representing the `y` coordinates of the points to the
+        histogrammed.
+    bins : int, (int, int), array, (array, array), optional
+        The bin specification:
+
+        * If a singe int, both dimensions will that that number of bins
+        * If a pair of ints, the first int is the total number of bins
+          along the `x`-axis, and the second is the total number of
+          bins along the `y`-axis.
+        * If a single array, the array represents the bin edges along
+          each dimension.
+        * If a pair of arrays, the first array corresponds to the
+          edges along `x`-axis, the second corresponds to the edges
+          along the `y`-axis.
+    range : tuple(tuple(float, float))
+        If integers are passed to the `bins` argument, `range` is
+        required to define the min and max of each axis, that is:
+        `((xmin, xmax), (ymin, ymax))`.
+    normed : bool, optional
+        An unsupported argument that has been deprecated in the NumPy
+        API (preserved to maintain calls dependent on argument order).
+    weights : dask collection, optional
+        An array of values weighing each sample in the input data. The
+        chunks of the weights must be identical to the chunking along
+        the 0th (row) axis of the data sample.
+    density : bool
+        If ``False`` (default), the returned array represents the
+        number of samples in each bin. If ``True``, the returned array
+        represents the probability density function at each bin.
+    histogram : dask_histogram.Histogram, optional
+        If `dh.Histogram`, object based output is enabled.
+    storage : boost_histogram.storage.Storage
+        Define the storage used by the :py:class:`Histogram` object.
+    threads : int, optional
+        Enable threading on :py:func:`Histogram.fill` calls.
+
+    Examples
+    --------
+    FIXME: Add docs.
+
+    """
     return histogramdd(
         (x, y),
         bins=bins,
@@ -182,7 +223,42 @@ def histogram(
     storage=None,
     threads=None,
 ):
-    """Histogram data in one dimension."""
+    """Histogram dask data in one dimension.
+
+    Parameters
+    ----------
+    x : dask.array.Array
+        Data to be histogrammed.
+    bins : int or sequence of scalars.
+        If `bins` is an int, it defines the total number of bins to be
+        used (this requires the `range` argument to be defined). If
+        `bins` is a sequence of scalars (e.g. an array) then it
+        defines the bin edges.
+    range : (float, float)
+        The minimum and maximum of the histogram axis.
+    normed : bool, optional
+        An unsupported argument that has been deprecated in the NumPy
+        API (preserved to maintain calls dependent on argument order).
+    weights : dask collection, optional
+        An array of values weighing each sample in the input data. The
+        chunks of the weights must be identical to the chunking along
+        the 0th (row) axis of the data sample.
+    density : bool
+        If ``False`` (default), the returned array represents the
+        number of samples in each bin. If ``True``, the returned array
+        represents the probability density function at each bin.
+    histogram : dask_histogram.Histogram, optional
+        If `dh.Histogram`, object based output is enabled.
+    storage : boost_histogram.storage.Storage
+        Define the storage used by the :py:class:`Histogram` object.
+    threads : int, optional
+        Enable threading on :py:func:`Histogram.fill` calls.
+
+    Examples
+    --------
+    FIXME: Add docs.
+
+    """
     return histogramdd(
         (a,),
         bins=bins,

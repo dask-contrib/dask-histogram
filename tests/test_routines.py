@@ -30,8 +30,8 @@ def test_histogramdd():
         storage=bh.storage.Weight(),
     )
     h1 = h1.compute()
-    np.testing.assert_allclose(h1.view()["value"], h2.view()["value"])
-    np.testing.assert_allclose(h1.view()["variance"], h2.view()["variance"])
+    np.testing.assert_array_almost_equal(h1.view()["value"], h2.view()["value"])
+    np.testing.assert_array_almost_equal(h1.view()["variance"], h2.view()["variance"])
 
 
 def test_histogram2d():
@@ -59,8 +59,8 @@ def test_histogram2d():
         storage=bh.storage.Weight(),
     )
     h1 = h1.compute()
-    np.testing.assert_allclose(h1.view()["value"], h2.view()["value"])
-    np.testing.assert_allclose(h1.view()["variance"], h2.view()["variance"])
+    np.testing.assert_array_almost_equal(h1.view()["value"], h2.view()["value"])
+    np.testing.assert_array_almost_equal(h1.view()["variance"], h2.view()["variance"])
 
 
 def test_histogram():
@@ -85,5 +85,5 @@ def test_histogram():
         storage=bh.storage.Weight(),
     )
     h1 = h1.compute()
-    np.testing.assert_allclose(h1.view()["value"], h2.view()["value"])
-    np.testing.assert_allclose(h1.view()["variance"], h2.view()["variance"])
+    np.testing.assert_array_almost_equal(h1.view()["value"], h2.view()["value"])
+    np.testing.assert_array_almost_equal(h1.view()["variance"], h2.view()["variance"])
