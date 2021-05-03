@@ -1,5 +1,5 @@
-Quick Start
------------
+Introduction
+------------
 
 Installation
 ^^^^^^^^^^^^

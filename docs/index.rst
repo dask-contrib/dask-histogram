@@ -10,7 +10,7 @@ dask-histogram
    :maxdepth: 2
    :caption: Documentation
 
-   quick.rst
+   intro.rst
 
 .. toctree::
    :maxdepth: 2
