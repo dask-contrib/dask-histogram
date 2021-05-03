@@ -6,6 +6,10 @@
 dask-histogram
 ==============
 
+This is the documentation for dask-histogram, a Python library for
+computing histograms with Dask_ collections. The project is hosted on
+`GitHub <gh_>`_.
+
 .. toctree::
    :maxdepth: 2
    :caption: Documentation
@@ -25,3 +29,7 @@ dask-histogram
 .. * :ref:`genindex`
 .. * :ref:`modindex`
 .. * :ref:`search`
+
+.. _boost-histogram: https://boost-histogram.readthedocs.io/en/latest/
+.. _Dask: https://docs.dask.org/en/latest/
+.. _gh: https://github.com/douglasdavis/dask-histogram
