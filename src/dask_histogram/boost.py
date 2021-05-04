@@ -5,6 +5,7 @@ from __future__ import annotations
 import operator
 from typing import Any, List, Optional
 
+import dask.array as da
 import boost_histogram as bh
 import numpy as np
 from dask.delayed import Delayed, delayed
@@ -64,39 +65,48 @@ def _fill_1d(data: Any, meta_hist: Histogram, weight: Optional[Any] = None) -> D
     return delayed(sum)(hists)
 
 
-# @delayed
-# def _blocked_fill_nd_rectangular(
-#     sample: Any, meta_hist: Histogram, weight: Optional[Any]
-# ):
-#     hfb = Histogram(*meta_hist.axes, storage=meta_hist._storage_type())
-#     sample = sample.T
-#     hfb.concrete_fill(*sample, weight=weight)
-#     return hfb
+@delayed
+def _blocked_fill_nd_rectangular(
+    sample: Any, meta_hist: Histogram, weight: Optional[Any]
+):
+    hfb = Histogram(*meta_hist.axes, storage=meta_hist._storage_type())
+    sample = sample.T
+    hfb.concrete_fill(*sample, weight=weight)
+    return hfb
 
 
-# def _fill_nd_rectangular(
-#     sample: Any, meta_hist: Histogram, weight: Optional[Any] = None
-# ) -> Delayed:
-#     """Fill nD histogram given a rectangular (multi-column) sample."""
-#     sample = sample.to_delayed()
-#     print(len(meta_hist.axes))
-#     print(sample.shape)
-#     if weight is None:
-#         hists = [
-#             _blocked_fill_nd_rectangular(s, meta_hist=meta_hist, weight=None)
-#             for s in sample
-#         ]
-#     else:
-#         weights = weight.to_delayed()
-#         if len(weights) != len(sample):
-#             raise ValueError(
-#                 "data sample and weight must have the same number of chunks"
-#             )
-#         hists = [
-#             _blocked_fill_nd_rectangular(s, meta_hist=meta_hist, weight=w)
-#             for s, w in zip(sample, weights)
-#         ]
-#     return delayed(sum)(hists)
+def _fill_nd_rectangular(
+    sample: da.Array, meta_hist: Histogram, weight: Optional[Any] = None
+) -> Delayed:
+    """Fill nD histogram given a rectangular (multi-column) sample.
+
+    If a multi-column dask.array.Array is passed to `fill`, we want to
+    avoid having to compute the transpose of the _entire collection_
+    (this may be an expensive and unncessary computation).
+
+    For this to work the input data can be chunked only along the row
+    axis; we convert the array to delayed, transpose the array of
+    Delayed objects, and pass each component of the multidimensional
+    stack to a delayed concrete fill call.
+
+    """
+    sample = sample.to_delayed().T[0]
+    if weight is None:
+        hists = [
+            _blocked_fill_nd_rectangular(s, meta_hist=meta_hist, weight=None)
+            for s in sample
+        ]
+    else:
+        weights = weight.to_delayed()
+        if len(weights) != len(sample):
+            raise ValueError(
+                "data sample and weight must have the same number of chunks"
+            )
+        hists = [
+            _blocked_fill_nd_rectangular(s, meta_hist=meta_hist, weight=w)
+            for s, w in zip(sample, weights)
+        ]
+    return delayed(sum)(hists)
 
 
 @delayed
@@ -229,8 +239,7 @@ class Histogram(bh.Histogram, family=dask_histogram):
         if len(args) == 1 and args[0].ndim == 1:
             new_fill = _fill_1d(args[0], meta_hist=self, weight=weight)
         elif len(args) == 1 and args[0].ndim > 1:
-            # return _fill_nd_rectangular(args[0], meta_hist=self, weight=weight)
-            raise NotImplementedError("Rectangular input is not supported yet.")
+            new_fill = _fill_nd_rectangular(args[0], meta_hist=self, weight=weight)
         else:
             new_fill = _fill_nd_multiarg(*args, meta_hist=self, weight=weight)
 
