@@ -85,9 +85,16 @@ def _fill_nd_rectangular(
     (this may be an expensive and unncessary computation).
 
     For this to work the input data can be chunked only along the row
-    axis; we convert the array to delayed, transpose the array of
-    Delayed objects, and pass each component of the multidimensional
-    stack to a delayed concrete fill call.
+    axis; we convert the whole collection (nD array) to delayed which
+    gives us a 2D array of Delayed objects with a shape of the form
+    (n_row_chunks, n_column_chunks). We transpose this and take the
+    first and only element along the n_column_chunks dimension. This
+    gives us a list of Delayed objects along the row dimension (each
+    object wraps a multidimensional NumPy array).
+
+    Finally, we loop over the list of Delayed objects and compute the
+    transpose on each chunk _as necessary_ when the materialized array
+    (a subset of the original complete collection) is used.
 
     """
     sample = sample.to_delayed().T[0]
