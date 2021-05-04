@@ -7,7 +7,7 @@ import boost_histogram.storage as _storage
 import dask.array as da
 from dask.base import is_dask_collection
 
-from .bins import BinsStyle, RangeStyle, bins_range_styles
+from .bins import normalize_bins_range
 from .boost import Histogram
 
 
@@ -96,10 +96,10 @@ def histogramdd(
             "dask-histogram object."
         )
 
-    # In the case where the input is a matrix with the each column as
-    # an array representing one coordinate in the multidimensional
-    # dataset; This is a NumPy design choice.
-    if isinstance(a, da.Array):
+    # If the input data is a 2D matrix with one column for each
+    # coordinate, we must transpose the array such that each row is a
+    # coordinate. This maintains compatibility with NumPy's design.
+    if isinstance(a, da.Array) and a.ndim > 1:
         a = a.T
     else:
         for entry in a:
@@ -111,17 +111,8 @@ def histogramdd(
 
     # Total number of dimensions is based on the structure of the
     # input data.
-    D = len(a)
-
-    # Determine the style of the bins= and range= arguments; then
-    # adjust the values accordingly.
-    b_style, r_style = bins_range_styles(D=D, bins=bins, range=range)
-    if b_style == BinsStyle.SingleScalar:
-        bins = (bins,) * D
-    if r_style == RangeStyle.SinglePair:
-        range = (range,) * D
-    if b_style == BinsStyle.SingleSequence:
-        bins = (bins,) * D
+    ndim = len(a)
+    bins, range = normalize_bins_range(ndim, bins, range)
 
     # Create the axes based on the bins and range values.
     axes = []

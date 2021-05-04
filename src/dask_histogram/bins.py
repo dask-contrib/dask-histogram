@@ -25,24 +25,24 @@ class RangeStyle(Enum):
     MultiPair = 3
 
 
-def bins_style(D: int, bins: Any) -> BinsStyle:
+def bins_style(ndim: int, bins: Any) -> BinsStyle:
     """Determine the style of the bins argument."""
     if isinstance(bins, int):
         return BinsStyle.SingleScalar
     elif isinstance(bins, (tuple, list)):
         # all integers in the tuple of list
         if all(isinstance(b, int) for b in bins):
-            if len(bins) != D and D != 1:
+            if len(bins) != ndim and ndim != 1:
                 raise ValueError(
                     "Total number of bins definitions must be equal to the "
                     "dimensionality of the histogram."
                 )
-            if D == 1:
+            if ndim == 1:
                 return BinsStyle.SingleSequence
             return BinsStyle.MultiScalar
         # sequence of sequences
         else:
-            if len(bins) != D:
+            if len(bins) != ndim:
                 raise ValueError(
                     "Total number of bins definitions must be equal to the "
                     "dimensionality of the histogram."
@@ -51,16 +51,23 @@ def bins_style(D: int, bins: Any) -> BinsStyle:
     elif isinstance(bins, np.ndarray):
         if bins.ndim == 1:
             return BinsStyle.SingleSequence
+        elif bins.ndim == 2:
+            if len(bins) != ndim:
+                raise ValueError(
+                    "Total number of bins definitions must be equal to the "
+                    "dimensionality of the histogram."
+                )
+            return BinsStyle.MultiSequence
 
     raise ValueError(f"Could not determine bin style from bins={bins}")
 
 
-def bins_range_styles(D: int, bins: Any, range: Any) -> Tuple[BinsStyle, RangeStyle]:
+def bins_range_styles(ndim: int, bins: Any, range: Any) -> Tuple[BinsStyle, RangeStyle]:
     """Determine the style of the bins and range arguments.
 
     Parameters
     ----------
-    D : int
+    ndim : int
         The dimensionality of the histogram to be created by the bin
         and range defintions.
     bins : int, sequence if ints, array, or sequence of arrays
@@ -82,13 +89,13 @@ def bins_range_styles(D: int, bins: Any, range: Any) -> Tuple[BinsStyle, RangeSt
         The style of the range argument
 
     """
-    b_style = bins_style(D, bins)
+    b_style = bins_style(ndim, bins)
     r_style = RangeStyle.Undetermined
 
     # If range is None we can return or raise if the bins are defined by scalars.
     if range is None:
         r_style = RangeStyle.IsNone
-        if b_style in [BinsStyle.SingleSequence, BinsStyle.MultiSequence]:
+        if b_style in (BinsStyle.SingleSequence, BinsStyle.MultiSequence):
             return b_style, r_style
         else:
             raise ValueError(
@@ -109,7 +116,7 @@ def bins_range_styles(D: int, bins: Any, range: Any) -> Tuple[BinsStyle, RangeSt
         r_style = RangeStyle.SinglePair
 
     elif b_style == BinsStyle.MultiScalar:
-        if len(range) != D:
+        if len(range) != ndim:
             ValueError(
                 "Total number of range pairs must be equal to the dimensionality of the histogram."
             )
@@ -119,3 +126,19 @@ def bins_range_styles(D: int, bins: Any, range: Any) -> Tuple[BinsStyle, RangeSt
         r_style = RangeStyle.MultiPair
 
     return b_style, r_style
+
+
+def normalize_bins_range(ndim: int, bins: Any, range: Any) -> Tuple[Any, Any]:
+    """Normalize the bins and range arguments for consistent use."""
+    b_style, r_style = bins_range_styles(ndim=ndim, bins=bins, range=range)
+
+    if b_style == BinsStyle.SingleScalar:
+        bins = (bins,) * ndim
+    if r_style == RangeStyle.SinglePair:
+        range = (range,) * ndim
+    if b_style == BinsStyle.SingleSequence:
+        bins = (bins,) * ndim
+    if r_style == RangeStyle.IsNone:
+        range = (None,) * ndim
+
+    return bins, range
