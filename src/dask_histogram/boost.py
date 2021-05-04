@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import operator
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 import dask.array as da
 import boost_histogram as bh
@@ -11,39 +11,6 @@ import numpy as np
 from dask.delayed import Delayed, delayed
 
 import dask_histogram
-
-
-def _tree_reduce(hists: List[Delayed]) -> Delayed:
-    """Tree summation of delayed histogram objects.
-
-    Parameters
-    ----------
-    hists : List[Delayed]
-        Delayed histograms to be aggregated.
-
-    Returns
-    -------
-    Delayed
-        Final histogram aggregation.
-
-    """
-    hist_list = hists
-    while len(hist_list) > 1:
-        updated_list = []
-        # even N, do all
-        if len(hist_list) % 2 == 0:
-            for i in range(0, len(hist_list), 2):
-                lazy_comp = delayed(operator.add)(hist_list[i], hist_list[i + 1])
-                updated_list.append(lazy_comp)
-        # odd N, hold back the tail and add it later
-        else:
-            for i in range(0, len(hist_list[:-1]), 2):
-                lazy_comp = delayed(operator.add)(hist_list[i], hist_list[i + 1])
-                updated_list.append(lazy_comp)
-            updated_list.append(hist_list[-1])
-
-        hist_list = updated_list
-    return hist_list[0]
 
 
 @delayed
@@ -363,3 +330,36 @@ class Histogram(bh.Histogram, family=dask_histogram):
 
         """
         return self.to_delayed().visualize(**kwargs)
+
+
+# def _tree_reduce(hists: List[Delayed]) -> Delayed:
+#     """Tree summation of delayed histogram objects.
+
+#     Parameters
+#     ----------
+#     hists : List[Delayed]
+#         Delayed histograms to be aggregated.
+
+#     Returns
+#     -------
+#     Delayed
+#         Final histogram aggregation.
+
+#     """
+#     hist_list = hists
+#     while len(hist_list) > 1:
+#         updated_list = []
+#         # even N, do all
+#         if len(hist_list) % 2 == 0:
+#             for i in range(0, len(hist_list), 2):
+#                 lazy_comp = delayed(operator.add)(hist_list[i], hist_list[i + 1])
+#                 updated_list.append(lazy_comp)
+#         # odd N, hold back the tail and add it later
+#         else:
+#             for i in range(0, len(hist_list[:-1]), 2):
+#                 lazy_comp = delayed(operator.add)(hist_list[i], hist_list[i + 1])
+#                 updated_list.append(lazy_comp)
+#             updated_list.append(hist_list[-1])
+
+#         hist_list = updated_list
+#     return hist_list[0]
