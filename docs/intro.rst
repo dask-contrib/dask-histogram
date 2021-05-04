@@ -17,17 +17,17 @@ Overview
 
 Dask-histogram aims to reproduce the API provided by boost-histogram_,
 but with support for :doc:`dask collections <dask:user-interfaces>` as
-input data. The core component is the
-:class:`dask_histogram.Histogram` class. Additional components include
-the NumPy-like :func:`dask_histogram.histogram`,
-:func:`dask_histogram.histogram2d`, and
-:func:`dask_histogram.histogramdd` functions.
+input data. The documentation assumes that you have some familiarity
+with both Dask and boost-histogram.
 
-The :class:`dask_histogram.Histogram` class inherits from
-:class:`boost_histogram.Histogram`, overriding the ``fill`` function
-such that it is aware of chunked Dask collections. The NumPy-like API
-providing histogramming functions exists to mirror what is provided by
-the :py:mod:`boost_histogram.numpy`.
+The core component is the :class:`dask_histogram.Histogram` class,
+which inherits from :class:`boost_histogram.Histogram` and overrides
+the ``fill`` function such that it is aware of chunked/partitioned
+Dask collections. Additional components include the NumPy-like
+:func:`dask_histogram.histogram`, :func:`dask_histogram.histogram2d`,
+and :func:`dask_histogram.histogramdd` functions. These functions
+exist to mirror what is provided by the
+:py:mod:`boost_histogram.numpy` module.
 
 .. _boost-histogram: https://boost-histogram.readthedocs.io/en/latest/
 .. _Dask: https://docs.dask.org/en/latest/
