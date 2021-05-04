@@ -78,6 +78,11 @@ def test_bins_range_styles():
     assert bs == BinsStyle.SingleSequence
     assert rs == RangeStyle.IsNone
 
+    bins = np.array([[1, 2, 3], [2, 5, 6]])
+    bs, rs = bins_range_styles(ndim=2, bins=bins, range=None)
+    assert bs == BinsStyle.MultiSequence
+    assert rs == RangeStyle.IsNone
+
     with pytest.raises(
         ValueError,
         match="range cannot be None when bins argument is a scalar or sequence of scalars.",
