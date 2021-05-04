@@ -96,12 +96,13 @@ def histogramdd(
             "dask-histogram object."
         )
 
-    # If the input data is a 2D matrix with one column for each
-    # coordinate, we must transpose the array such that each row is a
-    # coordinate. This maintains compatibility with NumPy's design.
+    # If input is a multidimensional array, wrap it in a tuple that
+    # will be passed to fill and unrolled in the backend.
     if isinstance(a, da.Array) and a.ndim > 1:
-        a = a.T
+        ndim = a.shape[1]
+        a = (a,)
     else:
+        ndim = len(a)
         for entry in a:
             if not is_dask_collection(entry):
                 raise ValueError(
@@ -109,9 +110,6 @@ def histogramdd(
                     "collections as input"
                 )
 
-    # Total number of dimensions is based on the structure of the
-    # input data.
-    ndim = len(a)
     bins, range = normalize_bins_range(ndim, bins, range)
 
     # Create the axes based on the bins and range values.
