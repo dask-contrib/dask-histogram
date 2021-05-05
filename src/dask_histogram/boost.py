@@ -12,6 +12,9 @@ from dask.delayed import Delayed, delayed
 
 import dask_histogram
 
+__all__ = ("Histogram",)
+
+
 @delayed
 def _blocked_fill_1d(data: Any, meta_hist: Histogram, weight: Optional[Any] = None):
     """Single delayed (1D) histogram concrete fill."""

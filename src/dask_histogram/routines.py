@@ -2,26 +2,36 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any, Optional, Tuple, Union
+
 import boost_histogram.axis as _axis
 import boost_histogram.storage as _storage
-import dask.array as da
 from dask.base import is_dask_collection
+import dask.array as da
+
+if TYPE_CHECKING:
+    import dask.dataframe as dd
+
+    DaskCollection = Union[da.Array, dd.Series]
 
 from .bins import normalize_bins_range, BinType, RangeType
 from .boost import Histogram
 
 
+__all__ = ("histogramdd", "histogram2d", "histogram")
+
+
 def histogramdd(
-    a,
-    bins=10,
-    range=None,
-    normed=None,
-    weights=None,
-    density=False,
+    a: Union[DaskCollection, Tuple[DaskCollection, ...]],
+    bins: BinType = 10,
+    range: RangeType = None,
+    normed: Optional[bool] = None,
+    weights: Optional[DaskCollection] = None,
+    density: bool = False,
     *,
-    histogram=None,
-    storage=_storage.Double(),
-    threads=None,
+    histogram: Optional[Any] = None,
+    storage: _storage.Storage = _storage.Double(),
+    threads: Optional[int] = None,
 ):
     """Histogram dask data in multiple dimensions.
 
@@ -114,11 +124,11 @@ def histogramdd(
 
     # Create the axes based on the bins and range values.
     axes = []
-    for i, (b, r) in enumerate(zip(bins, range)):
+    for i, (b, r) in enumerate(zip(bins, range)):  # type: ignore
         if r is None:
-            axes.append(_axis.Variable(b))
+            axes.append(_axis.Variable(b))  # type: ignore
         else:
-            axes.append(_axis.Regular(bins=b, start=r[0], stop=r[1]))
+            axes.append(_axis.Regular(bins=b, start=r[0], stop=r[1]))  # type: ignore
 
     # Finally create and fill the histogram object.
     hist = Histogram(*axes, storage=storage).fill(*a, weight=weights)
@@ -126,17 +136,17 @@ def histogramdd(
 
 
 def histogram2d(
-    x,
-    y,
-    bins=10,
-    range=None,
-    normed=None,
-    weights=None,
-    density=False,
+    x: DaskCollection,
+    y: DaskCollection,
+    bins: BinType = 10,
+    range: RangeType = None,
+    normed: Optional[bool] = None,
+    weights: Optional[DaskCollection] = None,
+    density: bool = False,
     *,
-    histogram=None,
-    storage=_storage.Double(),
-    threads=None,
+    histogram: Optional[Any] = None,
+    storage: _storage.Storage = _storage.Double(),
+    threads: Optional[int] = None,
 ):
     """Histogram data in two dimensions.
 
@@ -201,16 +211,16 @@ def histogram2d(
 
 
 def histogram(
-    a,
-    bins=10,
-    range=None,
-    normed=None,
-    weights=None,
-    density=False,
+    x: DaskCollection,
+    bins: BinType = 10,
+    range: RangeType = None,
+    normed: Optional[bool] = None,
+    weights: Optional[DaskCollection] = None,
+    density: bool = False,
     *,
-    histogram=None,
-    storage=None,
-    threads=None,
+    histogram: Optional[Any] = None,
+    storage: _storage.Storage = _storage.Double(),
+    threads: Optional[int] = None,
 ):
     """Histogram dask data in one dimension.
 
@@ -249,7 +259,7 @@ def histogram(
 
     """
     return histogramdd(
-        (a,),
+        (x,),
         bins=bins,
         range=range,
         normed=normed,
