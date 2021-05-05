@@ -9,10 +9,14 @@ version_info = tuple(__version__.split("."))
 
 
 axis = _axis
-"""Alias to boost_histogram.axis for import simplicity."""
+"""
+module: Alias to boost_histogram.axis for import simplicity.
+"""
 
 storage = _storage
-"""Alias to boost_histogram.storage for import simplicity."""
+"""
+module: Alias to boost_histogram.storage for import simplicity.
+"""
 
 
 __all__ = (

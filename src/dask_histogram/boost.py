@@ -186,7 +186,39 @@ def _fill_multiarg(
 
 
 class Histogram(bh.Histogram, family=dask_histogram):
-    """Histogram object capable of lazy computation."""
+    """Histogram object capable of lazy computation.
+
+    Parameters
+    ----------
+    *axes : boost_histogram.axis.Axis
+        Provide one or more Axis objects. Note that, for convenience,
+        the ``boost_histogram.axis`` namespace is mirrored as
+        ``dask_histogram.axis``.
+    storage : boost_histogram.storage.Storage, optional
+        Select a storage to use in the histogram. The default storage
+        type is :py:class:`boost_histogram.storage.Double`. Note that, for
+        convenience, the ``boost_histogram.storage`` namespace is
+        mirrored as ``dask_histogram.storage``.
+    metadata : Any
+        Data that is passed along if a new histogram is created.
+
+    Examples
+    --------
+    A two dimensional histogram with one fixed bin width axis and
+    another variable bin width axis:
+
+    >>> import dask.array as da
+    >>> import dask_histogram as dh
+    >>> x = da.random.standard_normal(size=(1000,), chunks=200)
+    >>> y = da.random.standard_normal(size=(1000,), chunks=200)
+    >>> w = da.random.uniform(0.2, 0.8, size=(1000,), chunks=200)
+    >>> h = dh.Histogram(
+    ...     dh.axis.Regular(10, -3, 3),
+    ...     dh.axis.Variable([-3, -2, -1, 0, 1.1, 2.2, 3.3]),
+    ...     storage=dh.storage.Weights()
+    ... ).fill(x, y, weight=w).compute()
+
+    """
 
     __slots__ = ("_dq",)
 
@@ -196,19 +228,6 @@ class Histogram(bh.Histogram, family=dask_histogram):
         storage: bh.storage.Storage = bh.storage.Double(),
         metadata: Any = None,
     ) -> None:
-        """Construct new histogram fillable with Dask collections.
-
-        Parameters
-        ----------
-        *axes : boost_histogram.axis.Axis
-            Provide one or more Axis objects.
-        storage : boost_histogram.storage, optional
-            Select a storage to use in the histogram. The default
-            storage type is :py:class:`bh.storage.Double`.
-        metadata : Any
-            Data that is passed along if a new histogram is created.
-
-        """
         super().__init__(*axes, storage=storage, metadata=metadata)
         self._dq: Optional[Delayed] = None
 
@@ -295,6 +314,10 @@ class Histogram(bh.Histogram, family=dask_histogram):
         self[...] = result_view
         self._dq = None
         return self
+
+    def clear_fills(self) -> None:
+        """Drop any uncomputed fills."""
+        self._dq = None
 
     def staged_fills(self) -> bool:
         """Check if histogram has staged fills.

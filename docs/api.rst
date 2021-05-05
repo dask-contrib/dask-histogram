@@ -3,22 +3,25 @@ dask_histogram
 
 .. currentmodule:: dask_histogram
 
-Object API
-^^^^^^^^^^
+Object Summary
+^^^^^^^^^^^^^^
 
 .. autosummary::
    Histogram
 
-.. autoclass:: Histogram
-   :members:
-
-NumPy-like API
-^^^^^^^^^^^^^^
+NumPy-like Summary
+^^^^^^^^^^^^^^^^^^
 
 .. autosummary::
    histogram
    histogram2d
    histogramdd
+
+Reference
+^^^^^^^^^
+
+.. autoclass:: Histogram
+   :members:
 
 .. autofunction:: histogram
 .. autofunction:: histogram2d
