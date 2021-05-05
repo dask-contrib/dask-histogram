@@ -77,7 +77,7 @@ def test_obj_3D_rectangular(use_weights):
         dh.axis.Regular(9, -3.2, 3.2),
         storage=storage,
     )
-    h.fill(*x.T, weight=weights)
+    h.fill(x, weight=weights)
     h.compute()
 
     control = bh.Histogram(*h.axes, storage=h._storage_type())
@@ -89,3 +89,15 @@ def test_obj_3D_rectangular(use_weights):
     assert np.allclose(h.counts(), control.counts())
     if use_weights:
         assert np.allclose(h.variances(), control.variances())
+
+
+def test_clear_fills():
+    x = da.random.standard_normal(size=(8, 2), chunks=(4, 2))
+    h = dh.Histogram(
+        dh.axis.Regular(8, -3.5, 3.5),
+        dh.axis.Regular(9, -3.2, 3.2),
+    )
+    h.fill(x)
+    assert h.staged_fills()
+    h.clear_fills()
+    assert not h.staged_fills()
