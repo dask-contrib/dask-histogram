@@ -7,7 +7,7 @@ import boost_histogram.storage as _storage
 import dask.array as da
 from dask.base import is_dask_collection
 
-from .bins import normalize_bins_range
+from .bins import normalize_bins_range, BinType, RangeType
 from .boost import Histogram
 
 

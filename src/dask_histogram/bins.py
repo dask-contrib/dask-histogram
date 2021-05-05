@@ -1,9 +1,19 @@
 """Help determining bin definitions."""
 
 from enum import Enum
-from typing import Any, Tuple
+from typing import TYPE_CHECKING, Optional, Sequence, Tuple, Union
+
+if TYPE_CHECKING:
+    from numpy.typing import ArrayLike
+else:
+    ArrayLike = object
 
 import numpy as np
+
+RangePair = Tuple[float, float]
+
+BinType = Union[int, Sequence[int], ArrayLike, Sequence[ArrayLike]]
+RangeType = Optional[Union[RangePair, Sequence[RangePair]]]
 
 
 class BinsStyle(Enum):
@@ -25,8 +35,28 @@ class RangeStyle(Enum):
     MultiPair = 3
 
 
-def bins_style(ndim: int, bins: Any) -> BinsStyle:
-    """Determine the style of the bins argument."""
+def bins_style(ndim: int, bins: BinType) -> BinsStyle:
+    """Determine bin style from a bins argument and histogram dimensions.
+
+    Parameters
+    ----------
+    ndim : int
+        Total dimensions of the eventual histogram.
+    bins : BinType
+        Raw bins argument.
+
+    Returns
+    -------
+    BinsStyle
+        The determined BinStyle.
+
+    Raises
+    ------
+    ValueError
+        If `bins` is not compatible with `ndim` or the style is
+        undetermined.
+
+    """
     if isinstance(bins, int):
         return BinsStyle.SingleScalar
     elif isinstance(bins, (tuple, list)):
@@ -62,7 +92,9 @@ def bins_style(ndim: int, bins: Any) -> BinsStyle:
     raise ValueError(f"Could not determine bin style from bins={bins}")
 
 
-def bins_range_styles(ndim: int, bins: Any, range: Any) -> Tuple[BinsStyle, RangeStyle]:
+def bins_range_styles(
+    ndim: int, bins: BinType, range: RangeType
+) -> Tuple[BinsStyle, RangeStyle]:
     """Determine the style of the bins and range arguments.
 
     Parameters
@@ -121,24 +153,42 @@ def bins_range_styles(ndim: int, bins: Any, range: Any) -> Tuple[BinsStyle, Rang
                 "Total number of range pairs must be equal to the dimensionality of the histogram."
             )
         for entry in range:
-            if len(entry) != 2:
+            if len(entry) != 2:  # type: ignore
                 raise ValueError("Each range definition must be a pair of numbers.")
         r_style = RangeStyle.MultiPair
 
     return b_style, r_style
 
 
-def normalize_bins_range(ndim: int, bins: Any, range: Any) -> Tuple[Any, Any]:
-    """Normalize the bins and range arguments for consistent use."""
+def normalize_bins_range(
+    ndim: int, bins: BinType, range: RangeType
+) -> Tuple[BinType, RangeType]:
+    """Normalize bins and range arguments to tuples.
+
+    Parameters
+    ----------
+    ndim : int
+        Total dimensions of the eventual histogram.
+    bins : BinType
+        Raw bins argument.
+    range : RangeType
+        Raw range argument
+
+    Returns
+    -------
+    Tuple[BinType, RangeType]
+        Normalized bins and range arguments.
+
+    """
     b_style, r_style = bins_range_styles(ndim=ndim, bins=bins, range=range)
 
     if b_style == BinsStyle.SingleScalar:
-        bins = (bins,) * ndim
+        bins = (bins,) * ndim  # type: ignore
     if r_style == RangeStyle.SinglePair:
-        range = (range,) * ndim
+        range = (range,) * ndim  # type: ignore
     if b_style == BinsStyle.SingleSequence:
-        bins = (bins,) * ndim
+        bins = (bins,) * ndim  # type: ignore
     if r_style == RangeStyle.IsNone:
-        range = (None,) * ndim
+        range = (None,) * ndim  # type: ignore
 
     return bins, range
