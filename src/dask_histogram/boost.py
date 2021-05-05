@@ -24,7 +24,12 @@ def _blocked_fill_1d(data: Any, meta_hist: Histogram, weight: Optional[Any] = No
 
 
 def _fill_1d(data: Any, meta_hist: Histogram, weight: Optional[Any] = None) -> Delayed:
-    """Prepare a set of delayed one dimensional histogram fills."""
+    """Fill a one dimensional histogram.
+
+    This function is compatible with dask.array.Array objects and
+    dask.dataframe.Series objects.
+
+    """
     data = data.to_delayed()
     if weight is None:
         hists = [_blocked_fill_1d(a, meta_hist) for a in data]
@@ -44,10 +49,22 @@ def _blocked_fill_nd_rectangular(
     return hfb
 
 
+@delayed
+def _blocked_fill_nd_dataframe(
+    sample: Any, meta_hist: Histogram, weight: Optional[Any]
+):
+    hfb = Histogram(*meta_hist.axes, storage=meta_hist._storage_type())
+    sample = (sample[c] for c in sample.columns)
+    hfb.concrete_fill(*sample, weight=weight)
+
+
 def _fill_nd_rectangular(
     sample: da.Array, meta_hist: Histogram, weight: Optional[Any] = None
 ) -> Delayed:
     """Fill nD histogram given a rectangular (multi-column) sample.
+
+    Array Input
+    -----------
 
     If a multi-column dask.array.Array is passed to `fill`, we want to
     avoid having to compute the transpose of the _entire collection_
@@ -65,11 +82,25 @@ def _fill_nd_rectangular(
     transpose on each chunk _as necessary_ when the materialized array
     (a subset of the original complete collection) is used.
 
+    DataFrame Input
+    ---------------
+
+    DataFrames are a bit simpler; we just use to_delayed() and pass to
+    the dedicated @delayed fill function.
+
     """
-    sample = sample.to_delayed().T[0]
+    # if dask.array.Array
+    if isinstance(sample, da.Array):
+        sample = sample.to_delayed().T[0]
+        ff = _blocked_fill_nd_rectangular
+    # else we have dask.dataframe.DataFrame
+    else:
+        sample = sample.to_delayed()
+        ff = _blocked_fill_nd_dataframe
+
     if weight is None:
         hists = [
-            _blocked_fill_nd_rectangular(s, meta_hist=meta_hist, weight=None)
+            ff(s, meta_hist=meta_hist, weight=None)
             for s in sample
         ]
     else:
@@ -79,9 +110,10 @@ def _fill_nd_rectangular(
                 "data sample and weight must have the same number of chunks"
             )
         hists = [
-            _blocked_fill_nd_rectangular(s, meta_hist=meta_hist, weight=w)
+            ff(s, meta_hist=meta_hist, weight=w)
             for s, w in zip(sample, weights)
         ]
+
     return delayed(sum)(hists)
 
 
@@ -98,7 +130,13 @@ def _blocked_fill_nd_multiarg(
 def _fill_nd_multiarg(
     *samples: Any, meta_hist: Histogram, weight: Optional[Any] = None
 ) -> Delayed:
-    """Fill nD histogram given a multiarg (vectors) sample."""
+    """Fill nD histogram given a multiarg (vectors) sample.
+
+    This function is compatible with multiple one dimensional
+    dask.array.Array objects as well as multiple dask.dataframe.Series
+    objects; they just must have equally sized chunks/partitions.
+
+    """
     D = len(samples)
     # each entry is data along a specific dimension
     delayed_samples = [a.to_delayed() for a in samples]

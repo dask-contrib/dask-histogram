@@ -36,9 +36,7 @@ def test_histogramdd():
 
 def test_histogramdd_multicolumn_input():
     x = da.random.standard_normal(size=(10_000, 3), chunks=(2_500, 3))
-    bins = [[-3, -2, 2, 3],
-            [-4, -1, 1, 4],
-            [-2, -1, 1, 2]]
+    bins = [[-3, -2, 2, 3], [-4, -1, 1, 4], [-2, -1, 1, 2]]
     h1 = dh.histogramdd(x, bins=bins, histogram=dh.Histogram)
     h2 = bhnp.histogramdd(x.compute(), bins=bins, histogram=bh.Histogram)
     h1 = h1.compute()

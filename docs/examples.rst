@@ -1,11 +1,11 @@
 Examples
 --------
 
-Simple Object Example
-^^^^^^^^^^^^^^^^^^^^^
+Object Example
+^^^^^^^^^^^^^^
 
-Filling a histogram with two dimensional Gaussian data (see the
-`boost-histogram`_ docs for an introduction to the API).
+In this example we will fill a 2D histogram with Gaussian data in both
+dimensions
 
 .. code-block:: python
 
@@ -17,7 +17,7 @@ Filling a histogram with two dimensional Gaussian data (see the
    ...     dh.axis.Regular(10, -3, 3),
    ...     storage=dh.storage.Double(),
    ... )
-   >>> h.fill(*x.T)  # <-- no computation occurs
+   >>> h.fill(x)  # <-- no computation occurs
    Histogram(
      Regular(50, -3, 3),
      Regular(50, -3, 3),
@@ -29,7 +29,7 @@ Filling a histogram with two dimensional Gaussian data (see the
      Regular(50, -3, 3),
      Regular(50, -3, 3),
      storage=Double()) # Sum: 99459483.0 (100000000.0 with flow)
-   >>> h.fill(*x.T)  # fill again; notice the repr tells us we have staged fills.
+   >>> h.fill(x)  # fill again; notice the repr tells us we have staged fills.
    Histogram(
      Regular(50, -3, 3),
      Regular(50, -3, 3),
@@ -43,3 +43,8 @@ Filling a histogram with two dimensional Gaussian data (see the
 
 .. _boost-histogram: https://boost-histogram.readthedocs.io/en/latest/
 .. _Dask: https://docs.dask.org/en/latest/
+
+NumPy-like Examples
+^^^^^^^^^^^^^^^^^^^
+
+TODO.

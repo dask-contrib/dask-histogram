@@ -13,6 +13,8 @@ if TYPE_CHECKING:
     import dask.dataframe as dd
 
     DaskCollection = Union[da.Array, dd.Series]
+else:
+    DaskCollection = object
 
 from .bins import normalize_bins_range, BinType, RangeType
 from .boost import Histogram
