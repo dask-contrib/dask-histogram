@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, Optional, Tuple, Union
 import boost_histogram.axis as _axis
 import boost_histogram.storage as _storage
 from dask.base import is_dask_collection
+from dask.utils import is_arraylike, is_dataframe_like
 import dask.array as da
 
 if TYPE_CHECKING:
@@ -108,10 +109,10 @@ def histogramdd(
             "dask-histogram object."
         )
 
-    # If input is a multidimensional array, wrap it in a tuple that
-    # will be passed to fill and unrolled in the backend.
-    if isinstance(a, da.Array) and a.ndim > 1:
-        ndim = a.shape[1]
+    # If input is a multidimensional array or dataframe, we wrap it in
+    # a tuple that will be passed to fill and unrolled in the backend.
+    if (is_arraylike(a) and a.ndim > 1) or is_dataframe_like(a):  # type: ignore
+        ndim = a.shape[1]  # type: ignore
         a = (a,)
     else:
         ndim = len(a)
