@@ -134,7 +134,7 @@ def bins_range_styles(
                 "range cannot be None when bins argument is a scalar or sequence of scalars."
             )
 
-    if b_style == BinsStyle.SingleScalar:
+    if b_style is BinsStyle.SingleScalar:
         if len(range) != 2:
             raise ValueError(
                 "For a single scalar bin definition, one range tuple must be defined."
@@ -147,7 +147,7 @@ def bins_range_styles(
             )
         r_style = RangeStyle.SinglePair
 
-    elif b_style == BinsStyle.MultiScalar:
+    elif b_style is BinsStyle.MultiScalar:
         if len(range) != ndim:
             ValueError(
                 "Total number of range pairs must be equal to the dimensionality of the histogram."
@@ -182,13 +182,13 @@ def normalize_bins_range(
     """
     b_style, r_style = bins_range_styles(ndim=ndim, bins=bins, range=range)
 
-    if b_style == BinsStyle.SingleScalar:
+    if b_style is BinsStyle.SingleScalar:
         bins = (bins,) * ndim  # type: ignore
-    if r_style == RangeStyle.SinglePair:
+    if r_style is RangeStyle.SinglePair:
         range = (range,) * ndim  # type: ignore
-    if b_style == BinsStyle.SingleSequence:
+    if b_style is BinsStyle.SingleSequence:
         bins = (bins,) * ndim  # type: ignore
-    if r_style == RangeStyle.IsNone:
+    if r_style is RangeStyle.IsNone:
         range = (None,) * ndim  # type: ignore
 
     return bins, range

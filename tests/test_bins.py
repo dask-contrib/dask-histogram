@@ -7,9 +7,9 @@ from dask_histogram.bins import BinsStyle, RangeStyle
 
 def test_bins_styles_scalar():
     # Valid
-    assert bins_style(ndim=1, bins=5) == BinsStyle.SingleScalar
-    assert bins_style(ndim=2, bins=(2, 5)) == BinsStyle.MultiScalar
-    assert bins_style(ndim=2, bins=[3, 4]) == BinsStyle.MultiScalar
+    assert bins_style(ndim=1, bins=5) is BinsStyle.SingleScalar
+    assert bins_style(ndim=2, bins=(2, 5)) is BinsStyle.MultiScalar
+    assert bins_style(ndim=2, bins=[3, 4]) is BinsStyle.MultiScalar
 
     # Invalid
     with pytest.raises(
@@ -25,16 +25,16 @@ def test_bins_styles_scalar():
 
 
 def test_bins_styles_sequence():
-    assert bins_style(ndim=1, bins=np.array([1, 2, 3])) == BinsStyle.SingleSequence
-    assert bins_style(ndim=1, bins=[1, 2, 3]) == BinsStyle.SingleSequence
-    assert bins_style(ndim=1, bins=(4, 5, 6)) == BinsStyle.SingleSequence
-    assert bins_style(ndim=2, bins=[[1, 2, 3], [4, 5, 7]]) == BinsStyle.MultiSequence
+    assert bins_style(ndim=1, bins=np.array([1, 2, 3])) is BinsStyle.SingleSequence
+    assert bins_style(ndim=1, bins=[1, 2, 3]) is BinsStyle.SingleSequence
+    assert bins_style(ndim=1, bins=(4, 5, 6)) is BinsStyle.SingleSequence
+    assert bins_style(ndim=2, bins=[[1, 2, 3], [4, 5, 7]]) is BinsStyle.MultiSequence
 
     bins = [[1, 2, 6, 7], [1, 2, 3], [4, 7, 11, 12, 13]]
-    assert bins_style(ndim=3, bins=bins) == BinsStyle.MultiSequence
+    assert bins_style(ndim=3, bins=bins) is BinsStyle.MultiSequence
 
     bins = (np.array([1.1, 2.2]), np.array([2.2, 4.4, 6.6]))
-    assert BinsStyle.MultiSequence == bins_style(ndim=2, bins=bins)
+    assert BinsStyle.MultiSequence is bins_style(ndim=2, bins=bins)
 
     with pytest.raises(
         ValueError,
@@ -63,25 +63,25 @@ def test_bins_style_cannot_determine():
 
 def test_bins_range_styles():
     bs, rs = bins_range_styles(ndim=2, bins=(3, 4), range=((0, 1), (0, 1)))
-    assert bs == BinsStyle.MultiScalar
-    assert rs == RangeStyle.MultiPair
+    assert bs is BinsStyle.MultiScalar
+    assert rs is RangeStyle.MultiPair
 
     bs, rs = bins_range_styles(ndim=1, bins=10, range=(0, 1))
-    assert bs == BinsStyle.SingleScalar
-    assert rs == RangeStyle.SinglePair
+    assert bs is BinsStyle.SingleScalar
+    assert rs is RangeStyle.SinglePair
 
     bs, rs = bins_range_styles(ndim=2, bins=[[1, 2, 3], [4, 5, 6]], range=None)
-    assert bs == BinsStyle.MultiSequence
-    assert rs == RangeStyle.IsNone
+    assert bs is BinsStyle.MultiSequence
+    assert rs is RangeStyle.IsNone
 
     bs, rs = bins_range_styles(ndim=1, bins=[1, 2, 3], range=None)
-    assert bs == BinsStyle.SingleSequence
-    assert rs == RangeStyle.IsNone
+    assert bs is BinsStyle.SingleSequence
+    assert rs is RangeStyle.IsNone
 
     bins = np.array([[1, 2, 3], [2, 5, 6]])
     bs, rs = bins_range_styles(ndim=2, bins=bins, range=None)
-    assert bs == BinsStyle.MultiSequence
-    assert rs == RangeStyle.IsNone
+    assert bs is BinsStyle.MultiSequence
+    assert rs is RangeStyle.IsNone
 
     with pytest.raises(
         ValueError,
