@@ -5,11 +5,11 @@ from __future__ import annotations
 import operator
 from typing import TYPE_CHECKING, Any, Optional, Union
 
-import dask.array as da
 import boost_histogram as bh
+import dask.array as da
 import numpy as np
 from dask.delayed import Delayed, delayed
-from dask.utils import is_dataframe_like, is_arraylike
+from dask.utils import is_arraylike, is_dataframe_like
 
 if TYPE_CHECKING:
     import dask.dataframe as dd

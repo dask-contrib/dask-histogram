@@ -6,9 +6,9 @@ from typing import TYPE_CHECKING, Any, Optional, Tuple, Union
 
 import boost_histogram.axis as _axis
 import boost_histogram.storage as _storage
+import dask.array as da
 from dask.base import is_dask_collection
 from dask.utils import is_arraylike, is_dataframe_like
-import dask.array as da
 
 if TYPE_CHECKING:
     import dask.dataframe as dd
@@ -17,9 +17,8 @@ if TYPE_CHECKING:
 else:
     DaskCollection = object
 
-from .bins import normalize_bins_range, BinType, RangeType
+from .bins import BinType, RangeType, normalize_bins_range
 from .boost import Histogram
-
 
 __all__ = ("histogramdd", "histogram2d", "histogram")
 
