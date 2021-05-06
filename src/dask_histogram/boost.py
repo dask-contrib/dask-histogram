@@ -81,7 +81,7 @@ def _fill_1d(
     dask.dataframe.Series objects.
 
     """
-    data = data.to_delayed()
+    data = data.to_delayed()  # type: ignore
     if weight is None:
         hists = [_blocked_fill_1d(a, meta_hist) for a in data]
     else:
@@ -125,10 +125,10 @@ def _fill_rectangular(
 
     """
     if is_arraylike(sample):
-        sample = sample.to_delayed().T[0]
+        sample = sample.to_delayed().T[0]  # type: ignore
         ff = _blocked_fill_rectangular
     elif is_dataframe_like(sample):
-        sample = sample.to_delayed()
+        sample = sample.to_delayed()  # type: ignore
         ff = _blocked_fill_dataframe
     else:
         raise TypeError(
@@ -441,7 +441,7 @@ class Histogram(bh.Histogram, family=dask_histogram):
             ret += " # (has staged fills)"
         return ret
 
-    def visualize(self, **kwargs) -> None:
+    def visualize(self, **kwargs) -> Any:
         """Render the task graph with graphviz.
 
         See :py:func:`dask.visualize` for supported keyword arguments.

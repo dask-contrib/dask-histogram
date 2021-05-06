@@ -112,7 +112,7 @@ def histogramdd(
     # a tuple that will be passed to fill and unrolled in the backend.
     if (is_arraylike(a) and a.ndim > 1) or is_dataframe_like(a):  # type: ignore
         ndim = a.shape[1]  # type: ignore
-        a = (a,)
+        a = (a,)  # type: ignore
     else:
         ndim = len(a)
         for entry in a:
@@ -126,7 +126,7 @@ def histogramdd(
 
     # Create the axes based on the bins and range values.
     axes = []
-    for i, (b, r) in enumerate(zip(bins, range)):  # type: ignore
+    for _, (b, r) in enumerate(zip(bins, range)):  # type: ignore
         if r is None:
             axes.append(_axis.Variable(b))  # type: ignore
         else:
