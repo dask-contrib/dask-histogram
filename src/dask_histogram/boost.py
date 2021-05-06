@@ -3,13 +3,20 @@
 from __future__ import annotations
 
 import operator
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 import dask.array as da
 import boost_histogram as bh
 import numpy as np
 from dask.delayed import Delayed, delayed
 from dask.utils import is_dataframe_like, is_arraylike
+
+if TYPE_CHECKING:
+    import dask.dataframe as dd
+
+    DaskCollection = Union[da.Array, dd.Series, dd.DataFrame]
+else:
+    DaskCollection = object
 
 import dask_histogram
 
@@ -63,10 +70,10 @@ def _blocked_fill_multiarg(
 
 
 def _fill_1d(
-    data: Any,
+    data: DaskCollection,
     *,
     meta_hist: Histogram,
-    weight: Optional[Any] = None,
+    weight: Optional[DaskCollection] = None,
 ) -> Delayed:
     """Fill a one dimensional histogram.
 
@@ -84,10 +91,10 @@ def _fill_1d(
 
 
 def _fill_rectangular(
-    sample: da.Array,
+    sample: DaskCollection,
     *,
     meta_hist: Histogram,
-    weight: Optional[Any] = None,
+    weight: Optional[DaskCollection] = None,
 ) -> Delayed:
     """Fill nD histogram given a rectangular (multi-column) sample.
 
@@ -140,9 +147,9 @@ def _fill_rectangular(
 
 
 def _fill_multiarg(
-    *samples: Any,
+    *samples: DaskCollection,
     meta_hist: Histogram,
-    weight: Optional[Any] = None,
+    weight: Optional[DaskCollection] = None,
 ) -> Delayed:
     """Fill nD histogram given a multiarg (vectors) sample.
 
@@ -262,20 +269,50 @@ class Histogram(bh.Histogram, family=dask_histogram):
         return self
 
     def fill(
-        self, *args, weight: Optional[Any] = None, sample=None, threads=None
+        self,
+        *args: DaskCollection,
+        weight: Optional[Any] = None,
+        sample=None,
+        threads=None,
     ) -> Histogram:
         """Queue a fill call using a Dask collection as input.
 
         Parameters
         ----------
-        *args : dask.array.Array
-            Dask array for each dimension.
+        *args : one or more Dask collection
+            One or more Dask collections to fill the histogram.
+            Potential dataset forms:
+
+            * A single one dimensional collection
+              (:obj:`dask.array.Array` or
+              :obj:`dask.dataframe.Series`)
+            * Multiple one dimensional collections, each representing
+              one an array of one coordinate of the dataset to be
+              histogrammed.
+            * A single two dimensional collection
+              (:obj:`dask.array.Array` or
+              :obj:`dask.dataframe.DataFrame`), each column
+              representing one coordinate of the dataset to be
+              histogrammed.
+
+            If multiple one dimensional arguments are passed (i.e. an
+            `x` array and a `y` array for a two dimensional
+            histogram), the collections must have equal
+            chunking/partitioning.
+
+            If a single two dimensional array is passed (i.e. an array
+            of shape ``(2000000, 3)`` for a three dimensional
+            histogram), chunking can only exist along the 0th (row)
+            axis. (coordinates cannot be separated by a chunk boundry,
+            only whole individual samples can be separated).
+
         weight : dask.array.Array, optional
-            Weights associated with each sample.
+            Weights associated with each sample. The weights must be
+            chunked/partitioned in a way compatible with the dataset.
         sample : Any
-            Unsupported argument from boost_histogram.Histogram.fill
+            Unsupported argument from boost_histogram.Histogram.fill.
         threads : Any
-            Unsupported argument from boost_histogram.Histogram.fill
+            Unsupported argument from boost_histogram.Histogram.fill.
 
         Returns
         -------
@@ -284,11 +321,15 @@ class Histogram(bh.Histogram, family=dask_histogram):
 
         """
         if len(args) == 1 and args[0].ndim == 1:
-            new_fill = _fill_1d(*args, meta_hist=self, weight=weight)
-        elif len(args) == 1 and args[0].ndim > 1:
-            new_fill = _fill_rectangular(*args, meta_hist=self, weight=weight)
+            func = _fill_1d
+        elif len(args) == 1 and args[0].ndim == 2:
+            func = _fill_rectangular
+        elif len(args) > 1:
+            func = _fill_multiarg
         else:
-            new_fill = _fill_multiarg(*args, meta_hist=self, weight=weight)
+            raise ValueError(f"Cannot interpret input data: {args}")
+
+        new_fill = func(*args, meta_hist=self, weight=weight)
 
         if self._dq is None:
             self._dq = new_fill

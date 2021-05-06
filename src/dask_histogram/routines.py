@@ -13,7 +13,7 @@ import dask.array as da
 if TYPE_CHECKING:
     import dask.dataframe as dd
 
-    DaskCollection = Union[da.Array, dd.Series]
+    DaskCollection = Union[da.Array, dd.Series, dd.DataFrame]
 else:
     DaskCollection = object
 
@@ -173,7 +173,7 @@ def histogram2d(
         * If a pair of arrays, the first array corresponds to the
           edges along `x`-axis, the second corresponds to the edges
           along the `y`-axis.
-    range : tuple(tuple(float, float))
+    range : ((float, float), (float, float)), optional
         If integers are passed to the `bins` argument, `range` is
         required to define the min and max of each axis, that is:
         `((xmin, xmax), (ymin, ymax))`.

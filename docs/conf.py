@@ -70,3 +70,5 @@ intersphinx_mapping = {
     "dask": ("https://docs.dask.org/en/stable", None),
     "boost_histogram": ("https://boost-histogram.readthedocs.io/en/latest/", None),
 }
+
+autodoc_typehints = "none"
