@@ -287,7 +287,7 @@ class Histogram(bh.Histogram, family=dask_histogram):
         sample=None,
         threads=None,
     ) -> Histogram:
-        """Queue a fill call using a Dask collection as input.
+        """Stage a fill call using a Dask collection as input.
 
         If materialized NumPy ararys are passed to this function, all
         arguments are forwarded :func:`concrete_fill`.
@@ -334,7 +334,7 @@ class Histogram(bh.Histogram, family=dask_histogram):
         Returns
         -------
         dask_histogram.Histogram
-            Class instance with a queued delayed fill added.
+            Class instance with a staged (delayed) fill added.
 
         """
         # Pass to concrete fill if non-dask-collection
@@ -364,12 +364,12 @@ class Histogram(bh.Histogram, family=dask_histogram):
         return self
 
     def compute(self) -> Histogram:
-        """Compute any queued (delayed) fills.
+        """Compute any staged (delayed) fills.
 
         Returns
         -------
         dask_histogram.Histogram
-            Concrete histogram with all queued fills executed.
+            Concrete histogram with all staged (delayed) fills executed.
 
         """
         if self._dq is None:
@@ -416,8 +416,8 @@ class Histogram(bh.Histogram, family=dask_histogram):
 
             h.compute()
 
-        In both cases if ``h`` doesn't have any queued fill calls,
-        then no concrete fill computations will be triggered.
+        In both cases if ``h`` doesn't have any delayed fill calls
+        staged, then no concrete fill computations will be triggered.
 
         Returns
         -------
