@@ -22,6 +22,7 @@ Reference
 
 .. autoclass:: Histogram
    :members:
+   :autosummary:
 
 .. autofunction:: histogram
 .. autofunction:: histogram2d

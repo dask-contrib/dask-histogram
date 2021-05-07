@@ -92,6 +92,11 @@ def histogramdd(
     threads : int, optional
         Enable threading on :py:func:`Histogram.fill` calls.
 
+    See Also
+    --------
+    histogram
+    histogram2d
+
     Examples
     --------
     FIXME: Add docs.
@@ -194,6 +199,11 @@ def histogram2d(
     threads : int, optional
         Enable threading on :py:func:`Histogram.fill` calls.
 
+    See Also
+    --------
+    histogram
+    histogramdd
+
     Examples
     --------
     FIXME: Add docs.
@@ -254,6 +264,11 @@ def histogram(
         Define the storage used by the :py:class:`Histogram` object.
     threads : int, optional
         Enable threading on :py:func:`Histogram.fill` calls.
+
+    See Also
+    --------
+    histogram2d
+    histogramdd
 
     Examples
     --------
