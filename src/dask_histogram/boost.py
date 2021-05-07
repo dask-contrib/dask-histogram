@@ -10,6 +10,7 @@ import dask.array as da
 import numpy as np
 from dask.delayed import Delayed, delayed
 from dask.utils import is_arraylike, is_dataframe_like
+from dask.base import is_dask_collection
 
 if TYPE_CHECKING:
     import dask.dataframe as dd
@@ -198,21 +199,28 @@ class Histogram(bh.Histogram, family=dask_histogram):
     Parameters
     ----------
     *axes : boost_histogram.axis.Axis
-        Provide one or more Axis objects. Note that, for convenience,
-        the ``boost_histogram.axis`` namespace is mirrored as
-        ``dask_histogram.axis``.
+        Provide one or more Axis objects.
     storage : boost_histogram.storage.Storage, optional
         Select a storage to use in the histogram. The default storage
-        type is :py:class:`boost_histogram.storage.Double`. Note that, for
-        convenience, the ``boost_histogram.storage`` namespace is
-        mirrored as ``dask_histogram.storage``.
+        type is :py:class:`boost_histogram.storage.Double`.
     metadata : Any
         Data that is passed along if a new histogram is created.
+
+    See Also
+    --------
+    histogram
+    histogram2d
+    histogramdd
 
     Examples
     --------
     A two dimensional histogram with one fixed bin width axis and
     another variable bin width axis:
+
+    Note that (for convenience) the ``boost_histogram.axis`` namespace
+    is mirrored as ``dask_histogram.axis`` and the
+    ``boost_histogram.storage`` namespace is mirrored as
+    ``dask_histogram.storage``.
 
     >>> import dask.array as da
     >>> import dask_histogram as dh
@@ -265,8 +273,12 @@ class Histogram(bh.Histogram, family=dask_histogram):
             Class instance now filled with concrete data.
 
         """
-        super().fill(*args, weight=weight, sample=sample, threads=threads)
-        return self
+        if any(is_dask_collection(a) for a in args) or is_dask_collection(weight):
+            raise TypeError(
+                "concrete_fill does not support Dask collections, only materialized "
+                "data; use the Histogram.fill method."
+            )
+        return super().fill(*args, weight=weight, sample=sample, threads=threads)
 
     def fill(
         self,
@@ -277,11 +289,16 @@ class Histogram(bh.Histogram, family=dask_histogram):
     ) -> Histogram:
         """Queue a fill call using a Dask collection as input.
 
+        If materialized NumPy ararys are passed to this function, all
+        arguments are forwarded :func:`concrete_fill`.
+
         Parameters
         ----------
-        *args : one or more Dask collection
-            One or more Dask collections to fill the histogram.
-            Potential dataset forms:
+        *args : one or more Dask collections
+            Provide one dask collection per dimension, or a single
+            columnar Dask collection (DataFrame or 2D Array) where the
+            total number of columns equals to the total number of
+            histogram dimensions.
 
             * A single one dimensional collection
               (:obj:`dask.array.Array` or
@@ -301,10 +318,10 @@ class Histogram(bh.Histogram, family=dask_histogram):
             chunking/partitioning.
 
             If a single two dimensional array is passed (i.e. an array
-            of shape ``(2000000, 3)`` for a three dimensional
-            histogram), chunking can only exist along the 0th (row)
-            axis. (coordinates cannot be separated by a chunk boundry,
-            only whole individual samples can be separated).
+            of shape ``(2000, 3)`` for a three dimensional histogram),
+            chunking can only exist along the 0th (row) axis.
+            (coordinates cannot be separated by a chunk boundry, only
+            whole individual samples can be separated).
 
         weight : dask.array.Array, optional
             Weights associated with each sample. The weights must be
@@ -320,12 +337,21 @@ class Histogram(bh.Histogram, family=dask_histogram):
             Class instance with a queued delayed fill added.
 
         """
+        # Pass to concrete fill if non-dask-collection
+        if all(not is_dask_collection(a) for a in args):
+            return self.concrete_fill(
+                *args,
+                weight=weight,
+                sample=sample,
+                threads=threads,
+            )
+
         if len(args) == 1 and args[0].ndim == 1:
             func = _fill_1d
         elif len(args) == 1 and args[0].ndim == 2:
-            func = _fill_rectangular
+            func = _fill_rectangular  # type: ignore
         elif len(args) > 1:
-            func = _fill_multiarg
+            func = _fill_multiarg  # type: ignore
         else:
             raise ValueError(f"Cannot interpret input data: {args}")
 

@@ -101,3 +101,29 @@ def test_clear_fills():
     assert h.staged_fills()
     h.clear_fills()
     assert not h.staged_fills()
+
+
+def test_concrete_fill():
+    x = da.random.standard_normal(size=(500, 2), chunks=(4, 2))
+    h = dh.Histogram(
+        dh.axis.Regular(8, -3.5, 3.5),
+        dh.axis.Regular(9, -3.2, 3.2),
+    )
+
+    h.fill(x)
+    material_x = x.compute()
+    h.fill(*material_x.T)
+    h.compute()
+
+    h2 = bh.Histogram(*h.axes)
+    h2.fill(*material_x.T)
+    h2.fill(*material_x.T)
+
+    np.testing.assert_array_almost_equal(h2.values(), h.values())
+
+    with pytest.raises(
+        TypeError,
+        match="concrete_fill does not support Dask collections, "
+        "only materialized data; use the Histogram.fill method.",
+    ):
+        h.concrete_fill(x)
