@@ -70,6 +70,45 @@ def _blocked_fill_multiarg(
     return hfb
 
 
+@delayed
+def _to_numpy_0_compute(hist: Any):
+    return hist.compute()
+
+
+@delayed
+def _to_numpy_1_super_conversion(hist: Any, flow: bool = False, view: bool = False):
+    return hist._super_to_numpy(flow=flow, dd=True, view=view)
+
+
+@delayed
+def _to_numpy_2_get_array(hist: Any):
+    return hist[0]
+
+
+@delayed
+def _to_numpy_2_get_edges(hist: Any):
+    return hist[1]
+
+
+def _to_numpy(
+    hist: Histogram,
+    dtype: Any,
+    flow: bool = False,
+    dd: bool = False,
+    view: bool = False,
+):
+    shape = hist.shape
+    s0 = _to_numpy_0_compute(hist)
+    s1 = _to_numpy_1_super_conversion(s0, flow=flow, view=view)
+    s2_p1 = _to_numpy_2_get_array(s1)
+    s2_p2 = _to_numpy_2_get_edges(s1).compute()
+    s2_p1 = da.from_delayed(s2_p1, shape=shape, dtype=dtype)
+    if dd:
+        return (s2_p1, s2_p2)
+    else:
+        return (s2_p1, *s2_p2)
+
+
 def _fill_1d(
     data: DaskCollection,
     *,
@@ -323,7 +362,7 @@ class Histogram(bh.Histogram, family=dask_histogram):
             (coordinates cannot be separated by a chunk boundry, only
             whole individual samples can be separated).
 
-        weight : dask.array.Array, optional
+        weight : dask.array.Array or dask.dataframe.Series, optional
             Weights associated with each sample. The weights must be
             chunked/partitioned in a way compatible with the dataset.
         sample : Any
@@ -474,6 +513,16 @@ class Histogram(bh.Histogram, family=dask_histogram):
 
         """
         return self.to_delayed().visualize(**kwargs)
+
+    def _super_to_numpy(self, flow: bool = False, dd: bool = True, view: bool = False):
+        return super().to_numpy(flow=flow, dd=dd, view=view)
+
+    def to_dask_array(self, flow: bool = False, dd: bool = True, view: bool = False):
+        dtype = float
+        return _to_numpy(self, dtype=dtype, flow=flow, dd=dd, view=view)
+
+    def to_numpy(self, **kwargs):
+        return self.to_dask_array(**kwargs)
 
 
 # def _tree_reduce(hists: List[Delayed]) -> Delayed:

@@ -4,13 +4,19 @@ Getting Started
 Installation
 ^^^^^^^^^^^^
 
+The only dependencies are Dask_ and boost-histogram_.
+
 Install dask-histogram with pip:
 
 .. code-block::
 
    pip install dask-histogram
 
-The only dependencies are Dask_ and boost-histogram_.
+Or with conda-forge_:
+
+.. code-block::
+
+   conda install dask-histogram -c conda-forge
 
 Overview
 ^^^^^^^^
@@ -31,3 +37,4 @@ exist to mirror what is provided by the
 
 .. _boost-histogram: https://boost-histogram.readthedocs.io/en/latest/
 .. _Dask: https://docs.dask.org/en/latest/
+.. _conda-forge: https://conda-forge.org/
