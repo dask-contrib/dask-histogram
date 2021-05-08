@@ -91,36 +91,24 @@ def _to_dask_array_step2(hist: Any, flow: bool = False):
     second step: converting the Histogram object to numpy style.
 
     """
-    # return hist._super_to_numpy(flow=flow, dd=True)
-    return hist.to_numpy(flow=flow, dd=True)
+    return hist.to_numpy(flow=flow, dd=True)[0:1]
 
 
-@delayed
-def _to_dask_array_step3_array(hist: Any):
-    return hist[0]
-
-
-@delayed
-def _to_dask_array_step3_edges(hist: Any):
-    return hist[1]
-
-
-def _to_numpy(
+def _to_dask_array(
     hist: Histogram,
     dtype: Any,
     flow: bool = False,
     dd: bool = False,
 ):
     shape = hist.shape
-    s0 = _to_dask_array_step1(hist)
-    s1 = _to_dask_array_step2(s0, flow=flow)
-    s2_p1 = _to_dask_array_step3_array(s1)
-    s2_p2 = _to_dask_array_step3_edges(s1).compute()
-    s2_p1 = da.from_delayed(s2_p1, shape=shape, dtype=dtype)
+    s1 = _to_dask_array_step1(hist)
+    s2 = _to_dask_array_step2(s1, flow=flow)
+    arr = da.from_delayed(s2, shape=shape, dtype=dtype)
+    edges = (a.edges for a in hist.axes)
     if dd:
-        return (s2_p1, s2_p2)
+        return (arr, list(edges))
     else:
-        return (s2_p1, *s2_p2)
+        return (arr, *(tuple(edges)))
 
 
 def _fill_1d(
@@ -287,8 +275,6 @@ class Histogram(bh.Histogram, family=dask_histogram):
     ... ).fill(x, y, weight=w).compute()
 
     """
-
-    __slots__ = ("_dq",)
 
     def __init__(
         self,
@@ -528,9 +514,6 @@ class Histogram(bh.Histogram, family=dask_histogram):
         """
         return self.to_delayed().visualize(**kwargs)
 
-    def _super_to_numpy(self, flow: bool = False, dd: bool = True):
-        return super().to_numpy(flow=flow, dd=dd)
-
     def to_dask_array(self, flow: bool = False, dd: bool = True):
         """Convert to dask.array style of return arrays.
 
@@ -555,7 +538,7 @@ class Histogram(bh.Histogram, family=dask_histogram):
 
         """
         dtype = float
-        return _to_numpy(self, dtype=dtype, flow=flow, dd=dd)
+        return _to_dask_array(self, dtype=dtype, flow=flow, dd=dd)
 
 
 # def _tree_reduce(hists: List[Delayed]) -> Delayed:
