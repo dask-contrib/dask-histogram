@@ -129,6 +129,36 @@ def histogramdd(
       Variable([-3, -2, 0, 2, 3]),
       storage=Double()) # Sum: 9919.0 (10000.0 with flow)
 
+    Another 3D histogram example but with a different dataset form (a
+    single array with three columns), fixed bin widths, sample
+    weights, and usage of the boost-histogram ``Weight()`` storage.:
+
+    >>> import dask.array as da
+    >>> import dask_histogram as dh
+    >>> a = da.random.standard_normal(size=(10000, 3), chunks=(2000, 3))
+    >>> w = da.random.uniform(0.5, 0.7, size=(10000,), chunks=2000)
+    >>> bins = (7, 5, 6)
+    >>> range = ((-3, 3), (-2.9, 2.9), (-3.1, 3.1))
+    >>> h = dh.histogramdd(
+    ...     a,
+    ...     bins=bins,
+    ...     range=range,
+    ...     weights=w,
+    ...     histogram=dh.Histogram,
+    ...     storage=dh.storage.Weight()
+    ... )
+    >>> h
+    Histogram(
+      Regular(7, -3, 3),
+      Regular(5, -2.9, 2.9),
+      Regular(6, -3.1, 3.1),
+      storage=Weight()) # Sum: WeightedSum(value=0, variance=0) (has staged fills)
+    >>> h.staged_fills()
+    True
+    >>> h = h.compute()
+    >>> h.staged_fills()
+    False
+
     """
     # Check for invalid argument combinations.
     if normed is not None:
@@ -167,6 +197,10 @@ def histogramdd(
 
     # Finally create and fill the histogram object.
     hist = Histogram(*axes, storage=storage).fill(*a, weight=weights)
+
+    if histogram != Histogram:
+        hist, edges = hist.to_dask_array(flow=False, dd=True)
+        return hist, [da.asarray(entry) for entry in edges]
     return hist
 
 
@@ -237,17 +271,22 @@ def histogram2d(
     FIXME: Add docs.
 
     """
-    return histogramdd(
+    hist = histogramdd(
         (x, y),
         bins=bins,
         range=range,
         normed=normed,
         weights=weights,
         density=density,
-        histogram=histogram,
+        histogram=Histogram,
         storage=storage,
         threads=threads,
     )
+
+    if histogram != Histogram:
+        hist, edgex, edgey = hist.to_dask_array(flow=False, dd=False)
+        return hist, da.asarray(edgex), da.asarray(edgey)
+    return hist
 
 
 def histogram(
@@ -303,14 +342,19 @@ def histogram(
     FIXME: Add docs.
 
     """
-    return histogramdd(
+    hist = histogramdd(
         (x,),
         bins=bins,
         range=range,
         normed=normed,
         weights=weights,
         density=density,
-        histogram=histogram,
+        histogram=Histogram,
         storage=storage,
         threads=threads,
     )
+
+    if histogram != Histogram:
+        hist, edges = hist.to_dask_array(flow=False, dd=False)
+        return hist, da.asarray(edges)
+    return hist
