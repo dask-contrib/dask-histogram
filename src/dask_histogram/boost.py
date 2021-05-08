@@ -71,22 +71,37 @@ def _blocked_fill_multiarg(
 
 
 @delayed
-def _to_numpy_0_compute(hist: Any):
+def _to_dask_array_step1(hist: Any):
+    """Step 1 in the cascade of delayed calls for to_dask_array.
+
+    To delay the computation of histogram fills but still convert to a
+    dask.array.Array we need to wrap a few delayed calls; this is the
+    first step: calling compute on the Histogram object.
+
+    """
     return hist.compute()
 
 
 @delayed
-def _to_numpy_1_super_conversion(hist: Any, flow: bool = False, view: bool = False):
-    return hist._super_to_numpy(flow=flow, dd=True, view=view)
+def _to_dask_array_step2(hist: Any, flow: bool = False):
+    """Step 2 in the cascade of delayed calls for to_dask_array.
+
+    To delay the computation of histogram fills but still convert to a
+    dask.array.Array we need to wrap a few delayed calls; this is the
+    second step: converting the Histogram object to numpy style.
+
+    """
+    # return hist._super_to_numpy(flow=flow, dd=True)
+    return hist.to_numpy(flow=flow, dd=True)
 
 
 @delayed
-def _to_numpy_2_get_array(hist: Any):
+def _to_dask_array_step3_array(hist: Any):
     return hist[0]
 
 
 @delayed
-def _to_numpy_2_get_edges(hist: Any):
+def _to_dask_array_step3_edges(hist: Any):
     return hist[1]
 
 
@@ -95,13 +110,12 @@ def _to_numpy(
     dtype: Any,
     flow: bool = False,
     dd: bool = False,
-    view: bool = False,
 ):
     shape = hist.shape
-    s0 = _to_numpy_0_compute(hist)
-    s1 = _to_numpy_1_super_conversion(s0, flow=flow, view=view)
-    s2_p1 = _to_numpy_2_get_array(s1)
-    s2_p2 = _to_numpy_2_get_edges(s1).compute()
+    s0 = _to_dask_array_step1(hist)
+    s1 = _to_dask_array_step2(s0, flow=flow)
+    s2_p1 = _to_dask_array_step3_array(s1)
+    s2_p2 = _to_dask_array_step3_edges(s1).compute()
     s2_p1 = da.from_delayed(s2_p1, shape=shape, dtype=dtype)
     if dd:
         return (s2_p1, s2_p2)
@@ -514,15 +528,34 @@ class Histogram(bh.Histogram, family=dask_histogram):
         """
         return self.to_delayed().visualize(**kwargs)
 
-    def _super_to_numpy(self, flow: bool = False, dd: bool = True, view: bool = False):
-        return super().to_numpy(flow=flow, dd=dd, view=view)
+    def _super_to_numpy(self, flow: bool = False, dd: bool = True):
+        return super().to_numpy(flow=flow, dd=dd)
 
-    def to_dask_array(self, flow: bool = False, dd: bool = True, view: bool = False):
+    def to_dask_array(self, flow: bool = False, dd: bool = True):
+        """Convert to dask.array style of return arrays.
+
+        Edges are converted to match NumPy standards, with upper edge
+        inclusive, unlike boost-histogram, where upper edge is
+        exclusive.
+
+        Parameters
+        ----------
+        flow : bool
+            Include the flow bins.
+        dd : bool
+            Use the histogramdd return syntax, where the edges are in a tuple.
+            Otherwise, this is the histogram/histogram2d return style.
+
+        Return
+        ------
+        contents : dask.array.Array
+            The bin contents
+        *edges : dask.array.Array
+            The edges for each dimension
+
+        """
         dtype = float
-        return _to_numpy(self, dtype=dtype, flow=flow, dd=dd, view=view)
-
-    def to_numpy(self, **kwargs):
-        return self.to_dask_array(**kwargs)
+        return _to_numpy(self, dtype=dtype, flow=flow, dd=dd)
 
 
 # def _tree_reduce(hists: List[Delayed]) -> Delayed:
