@@ -112,6 +112,29 @@ def histogramdd(
     ...    [-3, -1, 1, 2, 3],
     ...    [-3, -2, 0, 2, 3],
     ... ]
+    >>> h, edges = dh.histogramdd((x, y, z), bins=bins)
+    >>> type(h)
+    <class 'dask.array.core.Array'>
+    >>> h.shape
+    (4, 4, 4)
+    >>> len(edges)
+    3
+
+    Now the same histogram but instead of a dask.array style return
+    (which mirrors the return style of NumPy), we use `histogram`
+    argument to have a :obj:`dask_histogram.Histogram` object
+    returned:
+
+    >>> import dask.array as da
+    >>> import dask_histogram as dh
+    >>> x = da.random.standard_normal(size=(10000,), chunks=(2000,))
+    >>> y = da.random.standard_normal(size=(10000,), chunks=(2000,))
+    >>> z = da.random.standard_normal(size=(10000,), chunks=(2000,))
+    >>> bins = [
+    ...    [-3, -2, 0, 1, 3],
+    ...    [-3, -1, 1, 2, 3],
+    ...    [-3, -2, 0, 2, 3],
+    ... ]
     >>> h = dh.histogramdd((x, y, z), bins=bins, histogram=dh.Histogram)
     >>> h
     Histogram(
