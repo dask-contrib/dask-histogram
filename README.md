@@ -12,4 +12,4 @@ library provides a performant object oriented API for histogramming in
 Python. This library adds support for lazy calculations on Dask
 collections, built on the foundation of boost-histogram.
 
-**The library is still in development but usable for testing.**
+**The library is still in development but welcomes testing.**
