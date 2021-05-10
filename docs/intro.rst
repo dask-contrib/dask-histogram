@@ -12,11 +12,7 @@ Install dask-histogram with pip:
 
    pip install dask-histogram
 
-Or with conda-forge_:
-
-.. code-block::
-
-   conda install dask-histogram -c conda-forge
+.. todo:: Add dask-histogram to conda-forge
 
 Overview
 ^^^^^^^^
@@ -30,6 +26,15 @@ The core component is the :class:`dask_histogram.Histogram` class,
 which inherits from :class:`boost_histogram.Histogram` and overrides
 the ``fill`` function such that it is aware of chunked/partitioned
 Dask collections.
+
+We say Dask collections instead of only Dask arrays because
+dask-histogram supports :py:obj:`dask.dataframe.DataFrame` as input
+data anywhere that columnar arrays are supported, and
+:py:obj:`dask.dataframe.Series` anywhere that 1D arrays are supported.
+When mixing collections care must be taken to ensure the partionining
+of :py:obj:`DataFrame <dask.dataframe.DataFrame>` and :py:obj:`Series
+<dask.dataframe.Series>` inputs are compatible with the chunking of
+:py:obj:`Array <dask.array.Array>` inputs.
 
 Additional components include the NumPy-like
 :func:`dask_histogram.histogram`, :func:`dask_histogram.histogram2d`,

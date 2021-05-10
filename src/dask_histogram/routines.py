@@ -292,7 +292,31 @@ def histogram2d(
 
     Examples
     --------
-    FIXME: Add docs.
+    Uniform distributions along each dimension with the array return style:
+
+    >>> import dask_histogram as dh
+    >>> import dask.array as da
+    >>> x = da.random.uniform(0.0, 1.0, size=(1000,), chunks=200)
+    >>> y = da.random.uniform(0.4, 0.6, size=(1000,), chunks=200)
+    >>> h, edgesx, edgesy = dh.histogram2d(x, y, bins=(12, 4), range=((0, 1), (0.4, 0.6)))
+
+    Now with the object return style:
+
+    >>> h = dh.histogram2d(
+    ...     x, y, bins=(12, 4), range=((0, 1), (0.4, 0.6)), histogram=dh.Histogram
+    ... )
+
+    With variable bins and sample weights from a
+    :py:obj:`dask.dataframe.Series` originating from a
+    :py:obj:`dask.dataframe.DataFrame` column:
+
+    >>> x = da.random.uniform(0.0, 1.0, size=(1000,), chunks=200)
+    >>> y = da.random.uniform(0.4, 0.6, size=(1000,), chunks=200)
+    >>> df = dask_dataframe_factory() # <-- npartitions equal to x and y chunks
+    >>> w = df["weights"]
+    >>> binsx = [0.0, 0.2, 0.6, 0.8, 1.0]
+    >>> binsy = [0.40, 0.45, 0.50, 0.55, 0.60]
+    >>> h, e1, e2 = dh.histogram2d(x, y, bins=[binsx, binsy], weights=w)
 
     """
     hist = histogramdd(
@@ -363,7 +387,26 @@ def histogram(
 
     Examples
     --------
-    FIXME: Add docs.
+    Gaussian distribution with object return style and ``Weight`` storage:
+
+    >>> import dask_histogram as dh
+    >>> import dask.array as da
+    >>> x = da.random.standard_normal(size=(1000,), chunks=(250,))
+    >>> h = dh.histogram(
+    ...     x, bins=10, range=(-3, 3), histogram=dh.Histogram, storage=dh.storage.Weight()
+    ... )
+
+    Now with variable width bins and the array return style:
+
+    >>> bins = [-3, -2.2, -1.0, -0.2, 0.2, 1.2, 2.2, 3.2]
+    >>> h, edges = dh.histogram(x, bins=bins)
+
+    Now with weights and the object return style:
+
+    >>> w = da.random.uniform(0.0, 1.0, size=x.shape[0], chunks=x.chunksize[0])
+    >>> h = dh.histogram(x, bins=bins, weights=w, histogram=dh.Histogram)
+    >>> h
+    Histogram(Variable([-3, -2.2, -1, -0.2, 0.2, 1.2, 2.2, 3.2]), storage=Double()) # (has staged fills)
 
     """
     hist = histogramdd(

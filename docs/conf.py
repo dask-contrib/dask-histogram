@@ -37,6 +37,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.mathjax",
     "sphinx.ext.viewcode",
+    "sphinx.ext.todo",
     "autodocsumm",
 ]
 
@@ -73,3 +74,5 @@ intersphinx_mapping = {
 }
 
 autodoc_typehints = "none"
+
+todo_include_todos = True

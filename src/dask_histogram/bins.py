@@ -61,6 +61,8 @@ def bins_style(ndim: int, bins: BinType) -> BinsStyle:
         return BinsStyle.SingleScalar
     elif isinstance(bins, (tuple, list)):
         # all integers in the tuple of list
+        if ndim == 1:
+            return BinsStyle.SingleSequence
         if all(isinstance(b, int) for b in bins):
             if len(bins) != ndim and ndim != 1:
                 raise ValueError(
