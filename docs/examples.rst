@@ -9,7 +9,9 @@ Object Example
 ^^^^^^^^^^^^^^
 
 In this example we will fill a 2D histogram with Gaussian data in both
-dimensions
+dimensions (notice that, for convenience, the ``boost_histogram.axis``
+and ``boost_histogram.storage`` namespaces are brought in as
+``dh.axis`` and ``dh.storage``):
 
 .. code-block:: python
 
