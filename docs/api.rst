@@ -3,14 +3,14 @@ dask_histogram
 
 .. currentmodule:: dask_histogram
 
-Object Summary
-^^^^^^^^^^^^^^
+Object API
+^^^^^^^^^^
 
 .. autosummary::
    Histogram
 
-NumPy-like Summary
-^^^^^^^^^^^^^^^^^^
+NumPy-like API
+^^^^^^^^^^^^^^
 
 .. autosummary::
    histogram

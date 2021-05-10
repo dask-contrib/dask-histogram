@@ -120,10 +120,11 @@ def histogramdd(
     >>> len(edges)
     3
 
-    Now the same histogram but instead of a dask.array style return
-    (which mirrors the return style of NumPy), we use `histogram`
-    argument to have a :obj:`dask_histogram.Histogram` object
-    returned:
+    Now the same histogram but instead of a
+    :py:func:`dask.array.histogramdd` style return (which mirrors the
+    return style of :py:func:`numpy.histogramdd`), we use the
+    `histogram` argument to trigger the return of a
+    :obj:`dask_histogram.Histogram` object:
 
     >>> import dask.array as da
     >>> import dask_histogram as dh
@@ -152,9 +153,9 @@ def histogramdd(
       Variable([-3, -2, 0, 2, 3]),
       storage=Double()) # Sum: 9919.0 (10000.0 with flow)
 
-    Another 3D histogram example but with a different dataset form (a
-    single array with three columns), fixed bin widths, sample
-    weights, and usage of the boost-histogram ``Weight()`` storage.:
+    Another 3D histogram example but with an alternative dataset form
+    (a single array with three columns), fixed bin widths, sample
+    weights, and usage of the boost-histogram ``Weight()`` storage:
 
     >>> import dask.array as da
     >>> import dask_histogram as dh
