@@ -70,28 +70,11 @@ def _blocked_fill_multiarg(
     return hfb
 
 
-@delayed
-def _to_dask_array_step1(hist: Any):
-    """Step 1 in the cascade of delayed calls for to_dask_array.
-
-    To delay the computation of histogram fills but still convert to a
-    dask.array.Array we need to wrap a few delayed calls; this is the
-    first step: calling compute on the Histogram object.
-
-    """
-    return hist.compute()
-
-
-@delayed
-def _to_dask_array_step2(hist: Any, flow: bool = False):
-    """Step 2 in the cascade of delayed calls for to_dask_array.
-
-    To delay the computation of histogram fills but still convert to a
-    dask.array.Array we need to wrap a few delayed calls; this is the
-    second step: converting the Histogram object to numpy style.
-
-    """
+def _outside_to_numpy(hist: Histogram, flow: bool = False):
     return hist.to_numpy(flow=flow, dd=True)[0:1]
+
+
+_delayed_to_numpy = delayed(_outside_to_numpy)
 
 
 def _to_dask_array(
@@ -101,8 +84,8 @@ def _to_dask_array(
     dd: bool = False,
 ):
     shape = hist.shape
-    s1 = _to_dask_array_step1(hist)
-    s2 = _to_dask_array_step2(s1, flow=flow)
+    s1 = hist.to_delayed()  # delayed sum of histogram
+    s2 = _delayed_to_numpy(s1, flow=flow)
     arr = da.from_delayed(s2, shape=shape, dtype=dtype)
     edges = (a.edges for a in hist.axes)
     if dd:
