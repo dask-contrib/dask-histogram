@@ -70,7 +70,7 @@ background; again, the computation is still lazy:
 
 .. code-block:: python
 
-   >>> h, edges = dh.Histogram(x, bins=(10, 10), range=((-3, 3), (-3, 3))
+   >>> h, edges = dh.histogramdd(x, bins=(10, 10), range=((-3, 3), (-3, 3))
    >>> type(h)
    <class 'dask.array.core.Array'>
    >>> len(edges)
