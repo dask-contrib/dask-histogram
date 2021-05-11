@@ -31,7 +31,7 @@ We say Dask collections instead of only Dask arrays because
 dask-histogram supports :py:obj:`dask.dataframe.DataFrame` as input
 data anywhere that columnar arrays are supported, and
 :py:obj:`dask.dataframe.Series` anywhere that 1D arrays are supported.
-When mixing collections care must be taken to ensure the partionining
+When mixing collections care must be taken to ensure the partitioning
 of :py:obj:`DataFrame <dask.dataframe.DataFrame>` and :py:obj:`Series
 <dask.dataframe.Series>` inputs are compatible with the chunking of
 :py:obj:`Array <dask.array.Array>` inputs.
