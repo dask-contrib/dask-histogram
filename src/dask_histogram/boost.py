@@ -254,7 +254,7 @@ class Histogram(bh.Histogram, family=dask_histogram):
     >>> h = dh.Histogram(
     ...     dh.axis.Regular(10, -3, 3),
     ...     dh.axis.Variable([-3, -2, -1, 0, 1.1, 2.2, 3.3]),
-    ...     storage=dh.storage.Weights()
+    ...     storage=dh.storage.Weight()
     ... ).fill(x, y, weight=w).compute()
 
     """

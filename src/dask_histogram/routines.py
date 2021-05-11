@@ -146,7 +146,7 @@ def histogramdd(
     >>> h.staged_fills()
     True
     >>> h = h.compute()
-    >>> h
+    >>> h  # doctest: +SKIP
     Histogram(
       Variable([-3, -2, 0, 1, 3]),
       Variable([-3, -1, 1, 2, 3]),
@@ -308,15 +308,18 @@ def histogram2d(
 
     With variable bins and sample weights from a
     :py:obj:`dask.dataframe.Series` originating from a
-    :py:obj:`dask.dataframe.DataFrame` column:
+    :py:obj:`dask.dataframe.DataFrame` column (`df` below must have
+    `npartitions` equal to the size of the chunks in `x` and `y`):
 
     >>> x = da.random.uniform(0.0, 1.0, size=(1000,), chunks=200)
     >>> y = da.random.uniform(0.4, 0.6, size=(1000,), chunks=200)
-    >>> df = dask_dataframe_factory() # <-- npartitions equal to x and y chunks
-    >>> w = df["weights"]
+    >>> df = dask_dataframe_factory()  # doctest: +SKIP
+    >>> w = df["weights"]              # doctest: +SKIP
     >>> binsx = [0.0, 0.2, 0.6, 0.8, 1.0]
     >>> binsy = [0.40, 0.45, 0.50, 0.55, 0.60]
-    >>> h, e1, e2 = dh.histogram2d(x, y, bins=[binsx, binsy], weights=w)
+    >>> h, e1, e2 = dh.histogram2d(
+    ...     x, y, bins=[binsx, binsy], weights=w
+    ... ) #  doctest: +SKIP
 
     """
     hist = histogramdd(
