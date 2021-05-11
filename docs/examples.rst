@@ -85,4 +85,66 @@ background; again, the computation is still lazy:
 .. _boost-histogram: https://boost-histogram.readthedocs.io/en/latest/
 .. _Dask: https://docs.dask.org/en/latest/
 
-.. note:: More examples are shown in the API Reference for each API entry point.
+Let's consider dataframe called ``df`` with four columns: `a`, `b`,
+`c`, and `w`:
+
+.. code-block:: python
+
+   >>> df
+   Dask DataFrame Structure:
+                        a        b        c        w
+   npartitions=5
+   0              float64  float64  float64  float64
+   200                ...      ...      ...      ...
+   ...                ...      ...      ...      ...
+   800                ...      ...      ...      ...
+   999                ...      ...      ...      ...
+   Dask Name: from_pandas, 5 tasks
+
+First let's consider a one dimensional histogram of `a` with weights `w`:
+
+.. code-block:: python
+
+   >>> h, edges = dh.histogram(df["a"], bins=12, range=(-3, 3), weights=df["w"])
+   >>> h  # <-- the bin counts
+   dask.array<from-value, shape=(12,), dtype=float64, chunksize=(12,), chunktype=numpy.ndarray>
+   >>> edges
+   dask.array<array, shape=(13,), dtype=float64, chunksize=(13,), chunktype=numpy.ndarray>
+
+We can also grab multiple columns to histogram and return a
+:obj:`Histogram` object:
+
+.. code-block:: python
+
+   >>> h = dh.histogramdd(
+   ...     df[["a", "b", "c"]],
+   ...     bins=(6, 7, 8),
+   ...     range=((-3, 3),) * 3,
+   ...     histogram=dh.Histogram,
+   ... )
+   >>> h
+   Histogram(
+     Regular(10, -3, 3),
+     Regular(10, -3, 3),
+     Regular(10, -3, 3),
+     storage=Double()) # (has staged fills)
+
+With weights and variable width bins:
+
+   >>> h = dh.histogramdd(
+   ...     df[["a", "c"]],
+   ...     bins=[
+   ...         [-3, -2, 0, 1, 2, 3],
+   ...         [-2, -1, 1, 2],
+   ...     ],
+   ...     weights=df["w"],
+   ...     storage=dh.storage.Weight(),
+   ...     histogram=dh.Histogram,
+   ... )
+   >>> h
+   Histogram(
+     Variable([-3, -2, 0, 1, 2, 3]),
+     Variable([-2, -1, 1, 2]),
+     storage=Weight()) # Sum: WeightedSum(value=0, variance=0) (has staged fills)
+
+.. note:: More examples are shown in the API Reference.

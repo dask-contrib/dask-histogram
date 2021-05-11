@@ -193,4 +193,7 @@ def normalize_bins_range(
     if r_style is RangeStyle.IsNone:
         range = (None,) * ndim  # type: ignore
 
+    if len(bins) != len(range):
+        raise ValueError("bins and range arguments must be the same length")
+
     return bins, range

@@ -155,3 +155,12 @@ def test_normalize_bins_range():
     np.testing.assert_array_equal(bins[1], np.array([4, 5, 6]))
     np.testing.assert_array_equal(bins[2], np.array([1, 5, 6]))
     np.testing.assert_array_equal(bins, np.array([[1, 2, 3], [4, 5, 6], [1, 5, 6]]))
+
+    # bad number of bins/range
+    ndim = 2
+    bins = (2, 2)
+    range = ((0, 1),) * 3
+    with pytest.raises(
+        ValueError, match="bins and range arguments must be the same length"
+    ):
+        normalize_bins_range(ndim, bins, range)
