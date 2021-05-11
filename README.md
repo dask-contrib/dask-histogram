@@ -9,7 +9,7 @@
 
 The [boost-histogram](https://github.com/scikit-hep/boost-histogram)
 library provides a performant object oriented API for histogramming in
-Python. This library adds support for lazy calculations on Dask
-collections, built on the foundation of boost-histogram.
+Python. Building on foundation of boost-histogram, dask-histogram adds
+support for lazy calculations on Dask collections.
 
 **The library is still in development but welcomes testing.**
