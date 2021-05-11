@@ -16,18 +16,42 @@ jobs:
         python-version: [3.7, 3.8, 3.9]
     runs-on: ${{matrix.platform}}
     steps:
-    - uses: actions/checkout@v1
-      with:
-        submodules: true
-    - name: setup Python ${{matrix.python-version}}
+    - name: Checkout source
+      uses: actions/checkout@v2
+
+    - name: Setup Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
-        python-version: ${{matrix.python-version}}
-    - name: install
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install
       run: |
         python3 -m pip install pip setuptools wheel
         python3 -m pip install  --ignore-installed -U -q --no-cache-dir -e .[complete]
         python3 -m pip list
-    - name: test
+
+    - name: Test
       run: |
         python3 -m pytest
+
+  doctest:
+    runs-on: "ubuntu-latest"
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v2
+
+    - name: Setup Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: "3.9"
+
+    - name: Install
+      run: |
+        python3 -m pip install pip setuptools
+        python3 -m pip install --ignore-installed -U -q --no-cache-dir -e .[complete]
+        python3 -m pip list
+
+    - name: Run doctests
+      shell: bash -l {0}
+      run: |
+        pytest -v --doctest-modules --ignore-glob='tests/test_*.py' src
