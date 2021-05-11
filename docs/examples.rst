@@ -47,8 +47,8 @@ and ``boost_histogram.storage`` namespaces are brought in as
      Regular(50, -3, 3),
      storage=Double()) # Sum: 198918966.0 (200000000.0 with flow),)
 
-NumPy-like Examples
-^^^^^^^^^^^^^^^^^^^
+dask.array/NumPy-like Examples
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 We can create the same histogram we created above via the function API
 which mirrors the functions in the ``dask.array`` module. First, we

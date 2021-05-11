@@ -9,8 +9,8 @@ Object API
 .. autosummary::
    Histogram
 
-NumPy-like API
-^^^^^^^^^^^^^^
+dask.array/NumPy-like API
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autosummary::
    histogram
