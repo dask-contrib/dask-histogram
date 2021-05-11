@@ -112,7 +112,7 @@ First let's consider a one dimensional histogram of `a` with weights `w`:
    dask.array<array, shape=(13,), dtype=float64, chunksize=(13,), chunktype=numpy.ndarray>
 
 We can also grab multiple columns to histogram and return a
-:obj:`Histogram` object:
+:py:obj:`Histogram <dask_histogram.Histogram>` object:
 
 .. code-block:: python
 
