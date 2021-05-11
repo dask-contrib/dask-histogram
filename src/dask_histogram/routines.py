@@ -92,6 +92,15 @@ def histogramdd(
     threads : int, optional
         Enable threading on :py:func:`Histogram.fill` calls.
 
+    Returns
+    -------
+    tuple(dask.array.Array, tuple(dask.array.Array)) or Histogram
+        The default return is the style of
+        :func:`dask.array.histogramdd`: An array of bin contents and a
+        tuple of edges arrays (one for each dimension). If the
+        `histogram` argument is used then the return is a
+        :obj:`dask_histogram.Histogram` object.
+
     See Also
     --------
     histogram
@@ -285,6 +294,15 @@ def histogram2d(
     threads : int, optional
         Enable threading on :py:func:`Histogram.fill` calls.
 
+    Returns
+    -------
+    tuple(dask.array.Array, dask.array.Array, dask.array.Array) or Histogram
+        The default return is the style of
+        :func:`dask.array.histogram2d`: An array of bin contents, an
+        array of the x-edges, and an array of the y-edges. If the
+        `histogram` argument is used then the return is a
+        :obj:`dask_histogram.Histogram` object.
+
     See Also
     --------
     histogram
@@ -382,6 +400,14 @@ def histogram(
         Define the storage used by the :py:class:`Histogram` object.
     threads : int, optional
         Enable threading on :py:func:`Histogram.fill` calls.
+
+    Returns
+    -------
+    tuple(dask.array.Array, dask.array.Array) or Histogram
+        The default return is the style of
+        :func:`dask.array.histogram`: An array of bin contents and an
+        array of bin edges. If the `histogram` argument is used then
+        the return is a :obj:`dask_histogram.Histogram` object.
 
     See Also
     --------
