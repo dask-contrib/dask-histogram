@@ -77,17 +77,12 @@ def _outside_to_numpy(hist: Histogram, flow: bool = False):
 _delayed_to_numpy = delayed(_outside_to_numpy)
 
 
-def _to_dask_array(
-    hist: Histogram,
-    dtype: Any,
-    flow: bool = False,
-    dd: bool = False,
-):
+def _to_dask_array(hist: Histogram, dtype: Any, flow: bool = False, dd: bool = False):
     shape = hist.shape
     s1 = hist.to_delayed()  # delayed sum of histogram
     s2 = _delayed_to_numpy(s1, flow=flow)
     arr = da.from_delayed(s2, shape=shape, dtype=dtype)
-    edges = (a.edges for a in hist.axes)
+    edges = (da.asarray(a.edges) for a in hist.axes)
     if dd:
         return (arr, list(edges))
     else:

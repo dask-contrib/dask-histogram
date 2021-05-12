@@ -232,8 +232,7 @@ def histogramdd(
     hist = Histogram(*axes, storage=storage).fill(*a, weight=weights)
 
     if histogram != Histogram:
-        hist, edges = hist.to_dask_array(flow=False, dd=True)
-        return hist, [da.asarray(entry) for entry in edges]
+        return hist.to_dask_array(flow=False, dd=True)
     return hist
 
 
@@ -353,8 +352,7 @@ def histogram2d(
     )
 
     if histogram != Histogram:
-        hist, edgex, edgey = hist.to_dask_array(flow=False, dd=False)
-        return hist, da.asarray(edgex), da.asarray(edgey)
+        return hist.to_dask_array(flow=False, dd=False)
     return hist
 
 
@@ -451,6 +449,5 @@ def histogram(
     )
 
     if histogram != Histogram:
-        hist, edges = hist.to_dask_array(flow=False, dd=False)
-        return hist, da.asarray(edges)
+        return hist.to_dask_array(flow=False, dd=False)
     return hist
