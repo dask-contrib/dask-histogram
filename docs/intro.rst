@@ -6,13 +6,13 @@ Installation
 
 The only dependencies are Dask_ and boost-histogram_.
 
-Install dask-histogram with pip:
+Install dask-histogram with pip_:
 
 .. code-block::
 
    pip install dask-histogram
 
-Or with ``conda`` via the conda-forge_ channel:
+Or with conda_ via the conda-forge_ channel:
 
 .. code-block::
 
@@ -56,3 +56,5 @@ object in the internal implementation.
 .. _boost-histogram: https://boost-histogram.readthedocs.io/en/latest/
 .. _Dask: https://docs.dask.org/en/latest/
 .. _conda-forge: https://conda-forge.org/
+.. _pip: https://pip.pypa.io/en/stable/
+.. _conda: https://docs.conda.io/en/latest/
