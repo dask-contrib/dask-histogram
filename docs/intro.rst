@@ -12,7 +12,13 @@ Install dask-histogram with pip:
 
    pip install dask-histogram
 
-.. todo:: Add dask-histogram to conda-forge
+Or with ``conda`` via the conda-forge_ channel:
+
+.. code-block::
+
+   conda install dask-histogram -c conda-forge
+
+We test dask-histogram on GNU/Linux, macOS, and Windows.
 
 Overview
 ^^^^^^^^
