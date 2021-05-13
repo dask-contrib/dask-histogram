@@ -70,11 +70,9 @@ def _blocked_fill_multiarg(
     return hfb
 
 
-def _outside_to_numpy(hist: Histogram, flow: bool = False):
+@delayed
+def _delayed_to_numpy(hist: Histogram, flow: bool = False):
     return hist.to_numpy(flow=flow, dd=True)[0:1]
-
-
-_delayed_to_numpy = delayed(_outside_to_numpy)
 
 
 def _to_dask_array(hist: Histogram, dtype: Any, flow: bool = False, dd: bool = False):
@@ -484,13 +482,13 @@ class Histogram(bh.Histogram, family=dask_histogram):
             ret += " # (has staged fills)"
         return ret
 
-    def visualize(self, **kwargs) -> Any:
+    def visualize(self, *args, **kwargs) -> Any:
         """Render the task graph with graphviz.
 
         See :py:func:`dask.visualize` for supported keyword arguments.
 
         """
-        return self.to_delayed().visualize(**kwargs)
+        return self.to_delayed().visualize(*args, **kwargs)
 
     def to_dask_array(self, flow: bool = False, dd: bool = True):
         """Convert to dask.array style of return arrays.
