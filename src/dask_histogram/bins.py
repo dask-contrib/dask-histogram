@@ -186,14 +186,15 @@ def normalize_bins_range(
 
     if b_style is BinsStyle.SingleScalar:
         bins = (bins,) * ndim  # type: ignore
+    elif b_style is BinsStyle.SingleSequence:
+        bins = (bins,) * ndim  # type: ignore
+
     if r_style is RangeStyle.SinglePair:
         range = (range,) * ndim  # type: ignore
-    if b_style is BinsStyle.SingleSequence:
-        bins = (bins,) * ndim  # type: ignore
-    if r_style is RangeStyle.IsNone:
+    elif r_style is RangeStyle.IsNone:
         range = (None,) * ndim  # type: ignore
 
-    if len(bins) != len(range):
+    if len(bins) != len(range):  # type: ignore
         raise ValueError("bins and range arguments must be the same length")
 
     return bins, range
