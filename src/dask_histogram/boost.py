@@ -513,7 +513,13 @@ class Histogram(bh.Histogram, family=dask_histogram):
             The edges for each dimension
 
         """
-        dtype = float
+        if self._storage_type is bh.storage.Int64:
+            dtype = np.uint64
+        elif self._storage_type is bh.storage.AtomicInt64:
+            dtype = np.uint64
+        else:
+            dtype = float
+
         return _to_dask_array(self, dtype=dtype, flow=flow, dd=dd)
 
 
