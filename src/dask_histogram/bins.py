@@ -10,10 +10,11 @@ else:
 
 import numpy as np
 
-RangePair = Tuple[float, float]
+BinType = Union[int, ArrayLike]
+BinArg = Union[BinType, Sequence[BinType]]
 
-BinType = Union[int, Sequence[int], ArrayLike, Sequence[ArrayLike]]
-RangeType = Optional[Union[RangePair, Sequence[RangePair]]]
+RangeType = Optional[Tuple[float, float]]
+RangeArg = Optional[Union[RangeType, Sequence[RangeType]]]
 
 
 class BinsStyle(Enum):
@@ -35,7 +36,7 @@ class RangeStyle(Enum):
     MultiPair = 3
 
 
-def bins_style(ndim: int, bins: BinType) -> BinsStyle:
+def bins_style(ndim: int, bins: BinArg) -> BinsStyle:
     """Determine bin style from a bins argument and histogram dimensions.
 
     Parameters
@@ -95,7 +96,7 @@ def bins_style(ndim: int, bins: BinType) -> BinsStyle:
 
 
 def bins_range_styles(
-    ndim: int, bins: BinType, range: RangeType
+    ndim: int, bins: BinArg, range: RangeArg
 ) -> Tuple[BinsStyle, RangeStyle]:
     """Determine the style of the bins and range arguments.
 
@@ -163,8 +164,8 @@ def bins_range_styles(
 
 
 def normalize_bins_range(
-    ndim: int, bins: BinType, range: RangeType
-) -> Tuple[BinType, RangeType]:
+    ndim: int, bins: BinArg, range: RangeArg
+) -> Tuple[Sequence[BinType], Sequence[RangeType]]:
     """Normalize bins and range arguments to tuples.
 
     Parameters
@@ -197,4 +198,4 @@ def normalize_bins_range(
     if len(bins) != len(range):  # type: ignore
         raise ValueError("bins and range arguments must be the same length")
 
-    return bins, range
+    return bins, range  # type: ignore

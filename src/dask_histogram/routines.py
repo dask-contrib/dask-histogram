@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 else:
     DaskCollection = object
 
-from .bins import BinType, RangeType, normalize_bins_range
+from .bins import BinArg, BinType, RangeArg, RangeType, normalize_bins_range
 from .boost import Histogram
 
 __all__ = ("histogramdd", "histogram2d", "histogram")
@@ -25,8 +25,8 @@ __all__ = ("histogramdd", "histogram2d", "histogram")
 
 def histogramdd(
     a: Union[DaskCollection, Tuple[DaskCollection, ...]],
-    bins: BinType = 10,
-    range: RangeType = None,
+    bins: BinArg = 10,
+    range: RangeArg = None,
     normed: Optional[bool] = None,
     weights: Optional[DaskCollection] = None,
     density: bool = False,
@@ -239,8 +239,8 @@ def histogramdd(
 def histogram2d(
     x: DaskCollection,
     y: DaskCollection,
-    bins: BinType = 10,
-    range: RangeType = None,
+    bins: BinArg = 10,
+    range: RangeArg = None,
     normed: Optional[bool] = None,
     weights: Optional[DaskCollection] = None,
     density: bool = False,
