@@ -258,6 +258,7 @@ class Histogram(bh.Histogram, family=dask_histogram):
         storage: bh.storage.Storage = bh.storage.Double(),
         metadata: Any = None,
     ) -> None:
+        """Construct a Histogram object."""
         super().__init__(*axes, storage=storage, metadata=metadata)
         self._dq: Optional[Delayed] = None
 
@@ -438,6 +439,18 @@ class Histogram(bh.Histogram, family=dask_histogram):
         -------
         dask.delayed.Delayed
             Wrapping of the histogram as a delayed object.
+
+        Examples
+        --------
+        >>> import dask_histogram as dh
+        >>> import dask
+        >>> h = dh.Histogram(dh.axis.Regular(10, -3, 3))
+        >>> x = da.random.standard_normal(size=(100,), chunks=(20,))
+        >>> h.fill(x)
+        Histogram(Regular(10, -3, 3), storage=Double()) # (has staged fills)
+        >>> h, = dask.compute(h.to_delayed())
+        >>> h.staged_fills()
+        False
 
         """
         if self.staged_fills() and not self.empty():

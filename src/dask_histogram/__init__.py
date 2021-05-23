@@ -1,3 +1,5 @@
+"""Histogramming with Dask collection."""
+
 import boost_histogram.axis as _axis
 import boost_histogram.storage as _storage
 
