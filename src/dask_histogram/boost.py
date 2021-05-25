@@ -518,8 +518,8 @@ class Histogram(bh.Histogram, family=dask_histogram):
             Use the histogramdd return syntax, where the edges are in a tuple.
             Otherwise, this is the histogram/histogram2d return style.
 
-        Return
-        ------
+        Returns
+        -------
         contents : dask.array.Array
             The bin contents
         *edges : dask.array.Array
