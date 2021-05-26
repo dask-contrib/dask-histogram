@@ -2,7 +2,7 @@ from setuptools import setup
 
 
 extras_require = {
-    "test": ["pytest", "dask[dataframe]"],
+    "test": ["pytest", "dask[dataframe]", "hist"],
     "docs": ["sphinx>=4.0.0", "dask-sphinx-theme", "autodocsumm"],
 }
 

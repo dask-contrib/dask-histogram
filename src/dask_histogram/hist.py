@@ -71,7 +71,8 @@ class Hist(_hist.Hist, family=dask_histogram):
             **kwargs,
         )
 
-    def compute():
+    def compute(self) -> T:
         """Compute staged fills."""
         self._dhist.compute()
         self[...] = self._dhist.view()
+        return self
