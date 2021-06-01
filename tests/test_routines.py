@@ -209,7 +209,6 @@ def test_histogram2d_da_return():
 def test_histogram_da_return():
     x = da.random.standard_normal(size=(3_000,), chunks=500)
     bins = np.array([-3, -2.2, 0, 1.1, 2.2, 3.3])
-    range = ((-2.5, 2.5), (-3.5, 3.5))
     h1, edges1 = dh.histogram(x, bins=bins)
     h2, edges2 = bhnp.histogram(x.compute(), bins=bins)
     np.testing.assert_array_almost_equal(h1.compute(), h2)
