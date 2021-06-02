@@ -5,7 +5,7 @@ import boost_histogram.storage as _storage
 
 from .boost import Histogram
 from .routines import histogram, histogram2d, histogramdd
-from .version import version as __version__
+from ._version import version as __version__
 
 version_info = tuple(__version__.split("."))
 
