@@ -32,4 +32,4 @@ computing histograms with Dask_ collections. The project is hosted on
 
 .. _boost-histogram: https://boost-histogram.readthedocs.io/en/latest/
 .. _Dask: https://docs.dask.org/en/latest/
-.. _gh: https://github.com/douglasdavis/dask-histogram
+.. _gh: https://github.com/dask-contrib/dask-histogram
