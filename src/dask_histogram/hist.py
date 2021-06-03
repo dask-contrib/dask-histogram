@@ -4,18 +4,17 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
 
+from dask.base import is_dask_collection
 import hist as _hist
 import hist.storage as storage
 import hist.axis as axis
 import numpy as np
 
-from dask.delayed import delayed
 import dask_histogram
 
 from .boost import Histogram
 
 if TYPE_CHECKING:
-    from numpy.typing import ArrayLike
     from .boost import DaskCollection
 else:
     DaskCollection = object
@@ -32,7 +31,7 @@ __all__ = (
 
 
 class Hist(_hist.BaseHist, family=dask_histogram):
-    """Lazy fillable histogram."""
+    """Lazy fillable hist.Hist class."""
 
     def __init__(
         self,
@@ -43,7 +42,7 @@ class Hist(_hist.BaseHist, family=dask_histogram):
     ) -> None:
         """Initialize a lazy-fillable Hist object."""
         super().__init__(*args, storage=storage, metadata=metadata, data=data)
-        self._dhist = Histogram(*args, storage=storage)
+        self._dhist = Histogram(*args, storage=self._storage_type())
 
     def fill(
         self: T,
@@ -87,30 +86,20 @@ class Hist(_hist.BaseHist, family=dask_histogram):
         data = (data_dict[i] for i in range(len(args), self.ndim))
 
         total_data = (*args, *data)
-        self._dhist.fill(*total_data, weight=weight, sample=sample, threads=threads)
+        if all(is_dask_collection(a) for a in total_data):
+            self._dhist.fill(*total_data, weight=weight, sample=sample, threads=threads)
+        else:
+            self._dhist.concrete_fill(
+                *total_data, weight=weight, sample=sample, threads=threads
+            )
+            self[...] = self._dhist.view(flow=True)
+        return self
 
     def __repr__(self):
         """Text representation of Hist."""
         return self._dhist.__repr__()
 
-    def concrete_fill(
-        self: T,
-        *args: ArrayLike,
-        weight: Optional[ArrayLike] = None,
-        sample: Optional[ArrayLike] = None,
-        threads: Optional[int] = None,
-        **kwargs,
-    ) -> T:
-        """Insert concrete data (non Dask collections) into histogram."""
-        return super().fill(
-            *args,
-            weight=weight,
-            sample=sample,
-            threads=threads,
-            **kwargs,
-        )
-
-    def compute(self) -> T:
+    def compute(self: T) -> T:
         """Compute staged fills."""
         self[...] = self._dhist.compute().view(flow=True)
         return self
