@@ -19,6 +19,12 @@ computing histograms with Dask_ collections. The project is hosted on
 
 .. toctree::
    :maxdepth: 2
+   :caption: Development
+
+   contrib.rst
+
+.. toctree::
+   :maxdepth: 2
    :caption: API Reference
 
    api.rst
