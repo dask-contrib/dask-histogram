@@ -249,7 +249,7 @@ def histogram2d(
     storage: _storage.Storage = _storage.Double(),
     threads: Optional[int] = None,
 ):
-    """Histogram data in two dimensions.
+    """Histogram dask data in two dimensions.
 
     Parameters
     ----------
