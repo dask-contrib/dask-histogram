@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import operator
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Tuple, Union
 
 import boost_histogram as bh
 import dask.array as da
@@ -75,7 +75,9 @@ def _delayed_to_numpy(hist: Histogram, flow: bool = False):
     return hist.to_numpy(flow=flow, dd=True)[0:1]
 
 
-def _to_dask_array(hist: Histogram, dtype: Any, flow: bool = False, dd: bool = False):
+def _to_dask_array(
+    hist: Histogram, dtype: Any, flow: bool = False, dd: bool = False
+) -> Union[Tuple[da.Array, Tuple[da.Array, ...]], Tuple[da.Array, ...]]:
     shape = hist.shape
     s1 = hist.to_delayed()  # delayed sum of histogram
     s2 = _delayed_to_numpy(s1, flow=flow)
@@ -503,7 +505,9 @@ class Histogram(bh.Histogram, family=dask_histogram):
         """
         return self.to_delayed().visualize(*args, **kwargs)
 
-    def to_dask_array(self, flow: bool = False, dd: bool = True):
+    def to_dask_array(
+        self, flow: bool = False, dd: bool = True
+    ) -> Union[Tuple[da.Array, ...], Tuple[da.Array, Tuple[da.Array, ...]]]:
         """Convert to dask.array style of return arrays.
 
         Edges are converted to match NumPy standards, with upper edge

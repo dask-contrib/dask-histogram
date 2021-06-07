@@ -34,7 +34,9 @@ def histogramdd(
     histogram: Optional[Any] = None,
     storage: _storage.Storage = _storage.Double(),
     threads: Optional[int] = None,
-):
+) -> Union[
+    Histogram, Union[Tuple[da.Array, ...], Tuple[da.Array, Tuple[da.Array, ...]]]
+]:
     """Histogram dask data in multiple dimensions.
 
     Parameters
@@ -248,7 +250,7 @@ def histogram2d(
     histogram: Optional[Any] = None,
     storage: _storage.Storage = _storage.Double(),
     threads: Optional[int] = None,
-):
+) -> Union[Histogram, Tuple[da.Array, ...]]:
     """Histogram dask data in two dimensions.
 
     Parameters
@@ -352,7 +354,7 @@ def histogram2d(
     )
 
     if histogram != Histogram:
-        return hist.to_dask_array(flow=False, dd=False)
+        return hist.to_dask_array(flow=False, dd=False)  # type: ignore
     return hist
 
 
@@ -367,7 +369,7 @@ def histogram(
     histogram: Optional[Any] = None,
     storage: _storage.Storage = _storage.Double(),
     threads: Optional[int] = None,
-):
+) -> Union[Histogram, Tuple[da.Array, ...]]:
     """Histogram dask data in one dimension.
 
     Parameters
@@ -449,5 +451,5 @@ def histogram(
     )
 
     if histogram != Histogram:
-        return hist.to_dask_array(flow=False, dd=False)
+        return hist.to_dask_array(flow=False, dd=False)  # type: ignore
     return hist
