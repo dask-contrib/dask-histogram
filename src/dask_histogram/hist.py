@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
 
-from dask.base import is_dask_collection
 import hist as _hist
-import hist.storage as storage
 import hist.axis as axis
+import hist.storage as storage
 import numpy as np
+from dask.base import is_dask_collection
 
 import dask_histogram
 

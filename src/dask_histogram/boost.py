@@ -8,9 +8,9 @@ from typing import TYPE_CHECKING, Any, Optional, Tuple, Union
 import boost_histogram as bh
 import dask.array as da
 import numpy as np
+from dask.base import is_dask_collection
 from dask.delayed import Delayed, delayed
 from dask.utils import is_arraylike, is_dataframe_like
-from dask.base import is_dask_collection
 
 if TYPE_CHECKING:
     import dask.dataframe as dd
