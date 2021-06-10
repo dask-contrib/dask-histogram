@@ -13,3 +13,12 @@ write_to = "src/dask_histogram/_version.py"
 [tool.pytest.ini_options]
 addopts = "-v"
 testpaths = ["tests"]
+
+[tool.mypy]
+python_version = 3.7
+warn_unused_configs = true
+files = ["src", "tests"]
+
+[[tool.mypy.overrides]]
+module = ["dask.*"]
+ignore_missing_imports = true
