@@ -1,6 +1,6 @@
-import dask.array as da
-import boost_histogram.numpy as bhnp
 import boost_histogram as bh
+import boost_histogram.numpy as bhnp
+import dask.array as da
 import numpy as np
 
 import dask_histogram as dh

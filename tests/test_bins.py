@@ -1,8 +1,13 @@
 import numpy as np
 import pytest
 
-from dask_histogram.bins import bins_style, bins_range_styles, normalize_bins_range
-from dask_histogram.bins import BinsStyle, RangeStyle
+from dask_histogram.bins import (
+    BinsStyle,
+    RangeStyle,
+    bins_range_styles,
+    bins_style,
+    normalize_bins_range,
+)
 
 
 def test_bins_styles_scalar():
