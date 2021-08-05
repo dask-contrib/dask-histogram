@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, List, Tuple
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple
 
 import boost_histogram as bh
 import dask.array as da
@@ -15,40 +15,71 @@ from dask.multiprocessing import get as mpget
 from dask.utils import key_split
 
 if TYPE_CHECKING:
-    from .boost import DaskCollection
+    pass
 
 
-def _histogram_on_block1(data: DaskCollection, histref: bh.Histogram) -> bh.Histogram:
-    h = bh.Histogram(*histref.axes, storage=histref._storage_type())
-    h.fill(data)
-    return h
+def _clone_ref(partedhist: bh.Histogram) -> bh.Histogram:
+    return bh.Histogram(*partedhist.axes, storage=partedhist._storage_type())
 
 
-def _histogram_on_block2(x, y, histref: bh.Histogram) -> bh.Histogram:
-    h = bh.Histogram(*histref.axes, storage=histref._storage_type())
-    h.fill(x, y)
-    return h
+def _histogram_on_block1(data: Any, histref: bh.Histogram) -> bh.Histogram:
+    partedhist = _clone_ref(histref)
+    partedhist.fill(data)
+    return partedhist
 
 
-class Histo(db.Item):
+def _histogram_on_block2(x: Any, y: Any, histref: bh.Histogram) -> bh.Histogram:
+    partedhist = _clone_ref(histref)
+    partedhist.fill(x, y)
+    return partedhist
+
+
+def _blocked_sa(
+    sample: Any,
+    weight: Optional[Any] = None,
+    histref: bh.Histogram = None,
+) -> bh.Histogram:
+    partedhist = _clone_ref(histref)
+    partedhist.fill(sample, weight=weight)
+    return partedhist
+
+
+def _blocked_ma(
+    *sample: Any, histref: bh.Histogram, weight: Optional[Any] = None
+) -> bh.Histogram:
+    partedhist = _clone_ref(histref)
+    partedhist.fill(*sample, weight=weight)
+    return partedhist
+
+
+def _blocked_df(
+    sample: Any, histref: bh.Histogram, weight: Optional[Any] = None
+) -> bh.Histogram:
+    partedhist = _clone_ref(histref)
+    partedhist.fill(*(sample[c] for c in sample.columns), weight=weight)
+    return partedhist
+
+
+class Histogram(db.Item):
     def __init__(self, dsk: HighLevelGraph, key: str) -> None:
         self.dask = dsk
         self.key = key
         self.name: str = key
 
     def __str__(self) -> str:
-        return f"dask_histogram.Histo<{key_split(self.name)}>"
+        return f"dask_histogram.Histogram<{key_split(self.name)}>"
 
     __repr__ = __str__
 
 
 def finalize(results: Any) -> Any:
-    if not results:
-        return results
-    return sum(results)
+    # if not results:
+    #     return results
+    # return sum(results)
+    return results
 
 
-class ParitionedHisto(DaskMethodsMixin):
+class PartitionedHistogram(DaskMethodsMixin):
     def __init__(self, dsk: HighLevelGraph, name: str, npartitions: int) -> None:
         self.dask: HighLevelGraph = dsk
         self.name: str = name
@@ -60,7 +91,7 @@ class ParitionedHisto(DaskMethodsMixin):
     def __dask_keys__(self) -> List[Any]:
         return [(self.name, i) for i in range(self.npartitions)]
 
-    def __dask_layers__(self) -> Tuple[str, ...]:
+    def __dask_layers__(self) -> Tuple[str]:
         return (self.name,)
 
     def __dask_tokenize__(self) -> str:
@@ -85,17 +116,17 @@ class ParitionedHisto(DaskMethodsMixin):
     __dask_scheduler__ = staticmethod(mpget)
 
 
-def reduction(histo, split_every=None) -> Histo:
+def _reduction(partedhist: PartitionedHistogram, split_every=None) -> Histogram:
     if split_every is None:
         split_every = 4
     if split_every is False:
-        split_every = histo.npartitions
+        split_every = partedhist.npartitions
 
-    token = tokenize(histo, sum, split_every)
-    k = histo.npartitions
+    token = tokenize(partedhist, sum, split_every)
+    k = partedhist.npartitions
     dsk = {}
-    b = histo.name
-    fmt = "histo-aggregate-%s" % token
+    b = partedhist.name
+    fmt = "partedhist-aggregate-%s" % token
     d = 0
 
     while k > split_every:
@@ -120,12 +151,19 @@ def reduction(histo, split_every=None) -> Histo:
     from pprint import pprint
 
     pprint(dsk)
-    g = HighLevelGraph.from_collections(fmt, dsk, dependencies=[histo])
+    g = HighLevelGraph.from_collections(fmt, dsk, dependencies=[partedhist])
     dsk[fmt] = dsk.pop((fmt, 0))  # type: ignore
-    return Histo(g, fmt)
+    return Histogram(g, fmt)
 
 
-def histogram(*args, axes=None, storage=None, aggregate_split_every=10) -> Histo:
+def _indexify(name: str, *args: str) -> Tuple[str, ...]:
+    pairs = [(name, "i")] + [(a.name, "i") for a in args]
+    return sum(pairs, ())
+
+
+def histo(
+    *args, weights=None, axes=None, storage=None, aggregate_split_every=10
+) -> Histogram:
     if storage is None:
         storage = bh.storage.Weight()
 
@@ -136,40 +174,45 @@ def histogram(*args, axes=None, storage=None, aggregate_split_every=10) -> Histo
 
     if len(args) == 1:
         x = args[0]
-        name = "histogram-{}".format(tokenize(x, axes))
-        g = dask_blockwise(
-            _histogram_on_block1,
-            name,
-            "i",
-            x.name,
-            "i",
-            numblocks={x.name: x.numblocks},
-            histref=r,
-        )
-        hlg = HighLevelGraph.from_collections(name, g, dependencies=(x,))
-        return reduction(
-            ParitionedHisto(hlg, name, x.npartitions),
-            split_every=aggregate_split_every,
-        )
+        name = "histo-{}".format(tokenize(x, weights, axes))
+        if weights is None:
+            g = dask_blockwise(
+                _histogram_on_block1,
+                *_indexify(name, x),
+                numblocks={x.name: x.numblocks},
+                histref=r,
+            )
+            hlg = HighLevelGraph.from_collections(name, g, dependencies=(x,))
+            return _reduction(
+                PartitionedHistogram(hlg, name, x.npartitions),
+                split_every=aggregate_split_every,
+            )
+        else:
+            g = dask_blockwise(
+                _blocked_sa,
+                *_indexify(name, x, weights),
+                numblocks={x.name: x.numblocks, weights.name: weights.numblocks},
+                histref=r,
+            )
+            hlg = HighLevelGraph.from_collections(name, g, dependencies=(x, weights))
+            return _reduction(
+                PartitionedHistogram(hlg, name, x.npartitions),
+                split_every=aggregate_split_every,
+            )
 
     elif len(args) == 2:
         x = args[0]
         y = args[1]
-        name = "histogram-{}".format(tokenize(x, y, axes))
+        name = "histo-{}".format(tokenize(x, y, axes))
         g = dask_blockwise(
             _histogram_on_block2,
-            name,
-            "i",
-            x.name,
-            "i",
-            y.name,
-            "i",
+            *_indexify(name, x, y),
             numblocks={x.name: x.numblocks, y.name: y.numblocks},
             histref=r,
         )
         hlg = HighLevelGraph.from_collections(name, g, dependencies=(x, y))
-        return reduction(
-            ParitionedHisto(hlg, name, x.npartitions),
+        return _reduction(
+            PartitionedHistogram(hlg, name, x.npartitions),
             split_every=aggregate_split_every,
         )
 
@@ -177,10 +220,11 @@ def histogram(*args, axes=None, storage=None, aggregate_split_every=10) -> Histo
 if __name__ == "__main__":
     x = da.random.standard_normal(size=(5000,), chunks=(250,))
     y = da.random.standard_normal(size=(5000,), chunks=(250,))
-    h = histogram(
+    w = da.random.uniform(0, 1, size=(5000,), chunks=(250,))
+    histo = histo(
         x,
-        y,
-        axes=(bh.axis.Regular(10, -3, 3), bh.axis.Regular(10, -3, 3)),
+        axes=(bh.axis.Regular(10, -3, 3),),
         aggregate_split_every=4,
+        weights=w,
     )
-    h.visualize()
+    histo.visualize()
