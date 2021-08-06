@@ -23,15 +23,11 @@ def _clone_ref(partedhist: Any) -> bh.Histogram:
 
 
 def _histogram_on_block1(data: Any, *, histref: bh.Histogram) -> bh.Histogram:
-    partedhist = _clone_ref(histref)
-    partedhist.fill(data)
-    return partedhist
+    return _clone_ref(histref).fill(data)
 
 
 def _histogram_on_block2(x: Any, y: Any, *, histref: bh.Histogram) -> bh.Histogram:
-    partedhist = _clone_ref(histref)
-    partedhist.fill(x, y)
-    return partedhist
+    return _clone_ref(histref).fill(x, y)
 
 
 def _blocked_sa(
@@ -40,9 +36,7 @@ def _blocked_sa(
     *,
     histref: bh.Histogram = None,
 ) -> bh.Histogram:
-    partedhist = _clone_ref(histref)
-    partedhist.fill(sample, weight=weight)
-    return partedhist
+    return _clone_ref(histref).fill(sample, weight=weight)
 
 
 def _blocked_ma(
@@ -50,9 +44,7 @@ def _blocked_ma(
     weight: Any = None,
     histref: bh.Histogram = None,
 ) -> bh.Histogram:
-    partedhist = _clone_ref(histref)
-    partedhist.fill(*sample, weight=weight)
-    return partedhist
+    return _clone_ref(histref).fill(*sample, weight=weight)
 
 
 def _blocked_df(
@@ -61,9 +53,7 @@ def _blocked_df(
     *,
     histref: bh.Histogram = None,
 ) -> bh.Histogram:
-    partedhist = _clone_ref(histref)
-    partedhist.fill(*(sample[c] for c in sample.columns), weight=weight)
-    return partedhist
+    return _clone_ref(histref).fill(*(sample[c] for c in sample.columns), weight=weight)
 
 
 class Histogram(db.Item):
