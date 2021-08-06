@@ -15,20 +15,20 @@ from dask.multiprocessing import get as mpget
 from dask.utils import key_split
 
 if TYPE_CHECKING:
-    pass
+    from .boost import DaskCollection
 
 
-def _clone_ref(partedhist: bh.Histogram) -> bh.Histogram:
+def _clone_ref(partedhist: Any) -> bh.Histogram:
     return bh.Histogram(*partedhist.axes, storage=partedhist._storage_type())
 
 
-def _histogram_on_block1(data: Any, histref: bh.Histogram) -> bh.Histogram:
+def _histogram_on_block1(data: Any, *, histref: bh.Histogram) -> bh.Histogram:
     partedhist = _clone_ref(histref)
     partedhist.fill(data)
     return partedhist
 
 
-def _histogram_on_block2(x: Any, y: Any, histref: bh.Histogram) -> bh.Histogram:
+def _histogram_on_block2(x: Any, y: Any, *, histref: bh.Histogram) -> bh.Histogram:
     partedhist = _clone_ref(histref)
     partedhist.fill(x, y)
     return partedhist
@@ -36,7 +36,8 @@ def _histogram_on_block2(x: Any, y: Any, histref: bh.Histogram) -> bh.Histogram:
 
 def _blocked_sa(
     sample: Any,
-    weight: Optional[Any] = None,
+    weight: Any = None,
+    *,
     histref: bh.Histogram = None,
 ) -> bh.Histogram:
     partedhist = _clone_ref(histref)
@@ -45,7 +46,9 @@ def _blocked_sa(
 
 
 def _blocked_ma(
-    *sample: Any, histref: bh.Histogram, weight: Optional[Any] = None
+    *sample: Any,
+    weight: Any = None,
+    histref: bh.Histogram = None,
 ) -> bh.Histogram:
     partedhist = _clone_ref(histref)
     partedhist.fill(*sample, weight=weight)
@@ -53,7 +56,10 @@ def _blocked_ma(
 
 
 def _blocked_df(
-    sample: Any, histref: bh.Histogram, weight: Optional[Any] = None
+    sample: Any,
+    weight: Any = None,
+    *,
+    histref: bh.Histogram = None,
 ) -> bh.Histogram:
     partedhist = _clone_ref(histref)
     partedhist.fill(*(sample[c] for c in sample.columns), weight=weight)
@@ -88,7 +94,7 @@ class PartitionedHistogram(DaskMethodsMixin):
     def __dask_graph__(self) -> HighLevelGraph:
         return self.dask
 
-    def __dask_keys__(self) -> List[Any]:
+    def __dask_keys__(self) -> List[Tuple[str, int]]:
         return [(self.name, i) for i in range(self.npartitions)]
 
     def __dask_layers__(self) -> Tuple[str]:
@@ -100,14 +106,14 @@ class PartitionedHistogram(DaskMethodsMixin):
     def __dask_postcompute__(self) -> Any:
         return finalize, ()
 
-    def _rebuild(self, dsk, *, rename=None) -> Any:
+    def _rebuild(self, dsk: Any, *, rename: Any = None) -> Any:
         name = self.name
         if rename:
             name = rename.get(name, name)
         return type(self)(dsk, name, self.npartitions)
 
     def __str__(self) -> str:
-        return "dask_histogram.PartitionedHisto<%s, npartitions=%d>" % (
+        return "dask_histogram.PartitionedHistogram,<%s, npartitions=%d>" % (
             key_split(self.name),
             self.npartitions,
         )
@@ -116,7 +122,10 @@ class PartitionedHistogram(DaskMethodsMixin):
     __dask_scheduler__ = staticmethod(mpget)
 
 
-def _reduction(partedhist: PartitionedHistogram, split_every=None) -> Histogram:
+def _reduction(
+    partedhist: PartitionedHistogram,
+    split_every: Optional[int] = None,
+) -> Histogram:
     if split_every is None:
         split_every = 4
     if split_every is False:
@@ -126,7 +135,7 @@ def _reduction(partedhist: PartitionedHistogram, split_every=None) -> Histogram:
     k = partedhist.npartitions
     dsk = {}
     b = partedhist.name
-    fmt = "partedhist-aggregate-%s" % token
+    fmt = "hist-aggregate-%s" % token
     d = 0
 
     while k > split_every:
@@ -148,15 +157,13 @@ def _reduction(partedhist: PartitionedHistogram, split_every=None) -> Histogram:
         [(b, j) for j in range(k)],
         True,
     )
-    from pprint import pprint
 
-    pprint(dsk)
     g = HighLevelGraph.from_collections(fmt, dsk, dependencies=[partedhist])
     dsk[fmt] = dsk.pop((fmt, 0))  # type: ignore
     return Histogram(g, fmt)
 
 
-def _indexify(name: str, *args: str) -> Tuple[str, ...]:
+def _indexify(name: str, *args: DaskCollection) -> Tuple[str, ...]:
     pairs = [(name, "i")] + [(a.name, "i") for a in args]
     return sum(pairs, ())
 
@@ -177,7 +184,7 @@ def histo(
         name = "histo-{}".format(tokenize(x, weights, axes))
         if weights is None:
             g = dask_blockwise(
-                _histogram_on_block1,
+                _blocked_sa,
                 *_indexify(name, x),
                 numblocks={x.name: x.numblocks},
                 histref=r,
@@ -216,6 +223,9 @@ def histo(
             split_every=aggregate_split_every,
         )
 
+    else:
+        raise NotImplementedError("WIP")
+
 
 if __name__ == "__main__":
     x = da.random.standard_normal(size=(5000,), chunks=(250,))
@@ -225,6 +235,6 @@ if __name__ == "__main__":
         x,
         axes=(bh.axis.Regular(10, -3, 3),),
         aggregate_split_every=4,
-        weights=w,
+        weights=None,
     )
     histo.visualize()
