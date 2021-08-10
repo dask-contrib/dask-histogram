@@ -22,10 +22,6 @@ def _clone_ref(partedhist: Any) -> bh.Histogram:
     return bh.Histogram(*partedhist.axes, storage=partedhist._storage_type())
 
 
-def _histogram_on_block1(data: Any, *, histref: bh.Histogram) -> bh.Histogram:
-    return _clone_ref(histref).fill(data)
-
-
 def _histogram_on_block2(x: Any, y: Any, *, histref: bh.Histogram) -> bh.Histogram:
     return _clone_ref(histref).fill(x, y)
 
@@ -131,12 +127,11 @@ def _reduction(
         split_every = partedhist.npartitions
 
     token = tokenize(partedhist, sum, split_every)
+    fmt = f"hist-aggregate-{token}"
     k = partedhist.npartitions
-    dsk = {}
     b = partedhist.name
-    fmt = "hist-aggregate-%s" % token
     d = 0
-
+    dsk = {}
     while k > split_every:
         c = f"{fmt}{d}"
         for i, inds in enumerate(partition_all(split_every, range(k))):
@@ -149,7 +144,6 @@ def _reduction(
         k = i + 1
         b = c
         d += 1
-
     dsk[(fmt, 0)] = (
         empty_safe_aggregate,
         sum,
@@ -188,7 +182,7 @@ def single_argument_histogram(
     weights: Optional[DaskCollection] = None,
     agg_split_every: int = 10,
 ) -> Histogram:
-    name = "histo-{}".format(tokenize(x, histref, weights))
+    name = "histogram-{}".format(tokenize(x, histref, weights))
     if x.ndim == 1:
         bwg = dask_blockwise(
             _blocked_sa,
@@ -234,7 +228,7 @@ def histo(
     elif len(args) == 2:
         x = args[0]
         y = args[1]
-        name = "histo-{}".format(tokenize(x, y, axes))
+        name = "histogram-{}".format(tokenize(x, y, axes))
         g = dask_blockwise(
             _histogram_on_block2,
             *_indexify(name, x, y),
