@@ -39,6 +39,15 @@ def _blocked_sa(
     return _clone_ref(histref).fill(sample, weight=weight)
 
 
+def _blocked_ra(
+    sample: Any,
+    weight: Any = None,
+    *,
+    histref: bh.Histogram = None,
+) -> bh.Histogram:
+    return _clone_ref(histref).fill(*(sample[0].T), weight=weight)
+
+
 def _blocked_ma(
     *sample: Any,
     weight: Any = None,
@@ -153,9 +162,54 @@ def _reduction(
     return Histogram(g, fmt)
 
 
-def _indexify(name: str, *args: DaskCollection) -> Tuple[str, ...]:
-    pairs = [(name, "i")] + [(a.name, "i") for a in args]
+def _indexify(
+    name: str,
+    *args: DaskCollection,
+    idx: str = "i",
+    weights: Optional[DaskCollection] = None,
+) -> Tuple[str, ...]:
+    """Generate name and index pairs for blockwise use."""
+    pairs = [(name, "i")] + [(a.name, idx) for a in args]
+    if weights is not None:
+        pairs.append((weights.name, "i"))
     return sum(pairs, ())
+
+
+def _gen_numblocks(*args, weights=None):
+    result = {a.name: a.numblocks for a in args}
+    if weights is not None:
+        result[weights.name] = weights.numblocks
+    return result
+
+
+def single_argument_histogram(
+    x: DaskCollection,
+    histref: bh.Histogram,
+    weights: Optional[DaskCollection] = None,
+    agg_split_every: int = 10,
+) -> Histogram:
+    name = "histo-{}".format(tokenize(x, histref, weights))
+    if x.ndim == 1:
+        bwg = dask_blockwise(
+            _blocked_sa,
+            *_indexify(name, x, weights=weights),
+            numblocks=_gen_numblocks(x, weights=weights),
+            histref=histref,
+        )
+    elif x.ndim == 2:
+        bwg = dask_blockwise(
+            _blocked_ra,
+            *_indexify(name, x, idx="ij", weights=weights),
+            numblocks=_gen_numblocks(x, weights=weights),
+            histref=histref,
+        )
+    if weights is not None:
+        dependencies = (x, weights)
+    else:
+        dependencies = (x,)
+    hlg = HighLevelGraph.from_collections(name, bwg, dependencies=dependencies)
+    ph = PartitionedHistogram(hlg, name, x.npartitions)
+    return _reduction(ph, split_every=agg_split_every)
 
 
 def histo(
@@ -171,32 +225,12 @@ def histo(
 
     if len(args) == 1:
         x = args[0]
-        name = "histo-{}".format(tokenize(x, weights, axes))
-        if weights is None:
-            g = dask_blockwise(
-                _blocked_sa,
-                *_indexify(name, x),
-                numblocks={x.name: x.numblocks},
-                histref=r,
-            )
-            hlg = HighLevelGraph.from_collections(name, g, dependencies=(x,))
-            return _reduction(
-                PartitionedHistogram(hlg, name, x.npartitions),
-                split_every=aggregate_split_every,
-            )
-        else:
-            g = dask_blockwise(
-                _blocked_sa,
-                *_indexify(name, x, weights),
-                numblocks={x.name: x.numblocks, weights.name: weights.numblocks},
-                histref=r,
-            )
-            hlg = HighLevelGraph.from_collections(name, g, dependencies=(x, weights))
-            return _reduction(
-                PartitionedHistogram(hlg, name, x.npartitions),
-                split_every=aggregate_split_every,
-            )
-
+        return single_argument_histogram(
+            x,
+            histref=r,
+            weights=weights,
+            agg_split_every=aggregate_split_every,
+        )
     elif len(args) == 2:
         x = args[0]
         y = args[1]
@@ -220,11 +254,26 @@ def histo(
 if __name__ == "__main__":
     x = da.random.standard_normal(size=(5000,), chunks=(250,))
     y = da.random.standard_normal(size=(5000,), chunks=(250,))
+    z = da.random.standard_normal(size=(5000, 3), chunks=(250, 3))
     w = da.random.uniform(0, 1, size=(5000,), chunks=(250,))
-    histo = histo(
+
+    histo1 = histo(
         x,
         axes=(bh.axis.Regular(10, -3, 3),),
         aggregate_split_every=4,
         weights=None,
     )
-    histo.visualize()
+    histo1.visualize("h1.png")
+    h1 = histo1.compute()
+
+    histo2 = histo(
+        z,
+        axes=(
+            bh.axis.Regular(10, -3, 3),
+            bh.axis.Regular(10, -3, 3),
+            bh.axis.Regular(10, -3, 3),
+        ),
+        aggregate_split_every=20,
+    )
+    histo2.visualize("h2.png")
+    h2 = histo2.compute()
