@@ -7,23 +7,19 @@ from typing import TYPE_CHECKING, Any, List, Optional, Tuple
 import boost_histogram as bh
 import dask.array as da
 import dask.bag as db
+import numpy as np
 from dask.bag.core import empty_safe_aggregate, partition_all
 from dask.base import DaskMethodsMixin, tokenize
 from dask.blockwise import blockwise as dask_blockwise
+from dask.dataframe.core import partitionwise_graph
 from dask.highlevelgraph import HighLevelGraph
 from dask.multiprocessing import get as mpget
 from dask.utils import key_split
 
+from .boost import clone
+
 if TYPE_CHECKING:
     from .boost import DaskCollection
-
-
-def _clone_ref(partedhist: Any) -> bh.Histogram:
-    return bh.Histogram(*partedhist.axes, storage=partedhist._storage_type())
-
-
-def _histogram_on_block2(x: Any, y: Any, *, histref: bh.Histogram) -> bh.Histogram:
-    return _clone_ref(histref).fill(x, y)
 
 
 def _blocked_sa(
@@ -32,7 +28,13 @@ def _blocked_sa(
     *,
     histref: bh.Histogram = None,
 ) -> bh.Histogram:
-    return _clone_ref(histref).fill(sample, weight=weight)
+    print(type(sample))
+    print(sample.ndim)
+    print(sample.shape)
+    if np.ndim(sample) == 1:
+        return clone(histref).fill(sample, weight=weight)
+    else:
+        return clone(histref).fill(*(sample.T), weight=weight)
 
 
 def _blocked_ra(
@@ -41,7 +43,7 @@ def _blocked_ra(
     *,
     histref: bh.Histogram = None,
 ) -> bh.Histogram:
-    return _clone_ref(histref).fill(*(sample[0].T), weight=weight)
+    return clone(histref).fill(*(sample[0].T), weight=weight)
 
 
 def _blocked_ma(
@@ -49,7 +51,7 @@ def _blocked_ma(
     weight: Any = None,
     histref: bh.Histogram = None,
 ) -> bh.Histogram:
-    return _clone_ref(histref).fill(*sample, weight=weight)
+    return clone(histref).fill(*sample, weight=weight)
 
 
 def _blocked_df(
@@ -58,17 +60,17 @@ def _blocked_df(
     *,
     histref: bh.Histogram = None,
 ) -> bh.Histogram:
-    return _clone_ref(histref).fill(*(sample[c] for c in sample.columns), weight=weight)
+    return clone(histref).fill(*(sample[c] for c in sample.columns), weight=weight)
 
 
-class Histogram(db.Item):
+class AggHistogram(db.Item):
     def __init__(self, dsk: HighLevelGraph, key: str) -> None:
         self.dask = dsk
         self.key = key
         self.name: str = key
 
     def __str__(self) -> str:
-        return f"dask_histogram.Histogram<{key_split(self.name)}>"
+        return f"dask_histogram.AggHistogram<{key_split(self.name)}>"
 
     __repr__ = __str__
 
@@ -120,7 +122,7 @@ class PartitionedHistogram(DaskMethodsMixin):
 def _reduction(
     partedhist: PartitionedHistogram,
     split_every: Optional[int] = None,
-) -> Histogram:
+) -> AggHistogram:
     if split_every is None:
         split_every = 4
     if split_every is False:
@@ -153,7 +155,7 @@ def _reduction(
 
     g = HighLevelGraph.from_collections(fmt, dsk, dependencies=[partedhist])
     dsk[fmt] = dsk.pop((fmt, 0))  # type: ignore
-    return Histogram(g, fmt)
+    return AggHistogram(g, fmt)
 
 
 def _indexify(
@@ -169,11 +171,30 @@ def _indexify(
     return sum(pairs, ())
 
 
+def _numblocks_or_npartitions(coll: DaskCollection) -> int:
+    if hasattr(coll, "numblocks"):
+        return coll.numblocks
+    elif hasattr(coll, "npartitions"):
+        return (coll.npartitions,)
+    else:
+        raise AttributeError("numblocks or npartitions expected on collection.")
+
+
 def _gen_numblocks(*args, weights=None):
-    result = {a.name: a.numblocks for a in args}
+    result = {a.name: _numblocks_or_npartitions(a) for a in args}
     if weights is not None:
-        result[weights.name] = weights.numblocks
+        result[weights.name] = _numblocks_or_npartitions(weights)
+    print(result)
     return result
+
+
+def _dependencies(
+    *args: DaskCollection,
+    weights: Optional[DaskCollection] = None,
+) -> Tuple[DaskCollection, ...]:
+    if weights is not None:
+        return (*args, weights)
+    return args
 
 
 def single_argument_histogram(
@@ -181,34 +202,50 @@ def single_argument_histogram(
     histref: bh.Histogram,
     weights: Optional[DaskCollection] = None,
     agg_split_every: int = 10,
-) -> Histogram:
+) -> AggHistogram:
     name = "histogram-{}".format(tokenize(x, histref, weights))
-    if x.ndim == 1:
-        bwg = dask_blockwise(
-            _blocked_sa,
-            *_indexify(name, x, weights=weights),
-            numblocks=_gen_numblocks(x, weights=weights),
-            histref=histref,
-        )
-    elif x.ndim == 2:
-        bwg = dask_blockwise(
-            _blocked_ra,
-            *_indexify(name, x, idx="ij", weights=weights),
-            numblocks=_gen_numblocks(x, weights=weights),
-            histref=histref,
-        )
-    if weights is not None:
-        dependencies = (x, weights)
-    else:
-        dependencies = (x,)
+
+    bwg = partitionwise_graph(_blocked_sa, name, x, weight=weights, histref=histref)
+
+    # if x.ndim == 1:
+    #     bwg = dask_blockwise(
+    #         _blocked_sa,
+    #         *_indexify(name, x, weights=weights),
+    #         numblocks=_gen_numblocks(x, weights=weights),
+    #         histref=histref,
+    #     )
+    # elif x.ndim == 2:
+    #     bwg = dask_blockwise(
+    #         _blocked_ra,
+    #         *_indexify(name, x, idx="ij", weights=weights),
+    #         numblocks=_gen_numblocks(x, weights=weights),
+    #         histref=histref,
+    #     )
+    dependencies = _dependencies(x, weights=weights)
     hlg = HighLevelGraph.from_collections(name, bwg, dependencies=dependencies)
     ph = PartitionedHistogram(hlg, name, x.npartitions)
     return _reduction(ph, split_every=agg_split_every)
 
 
+# def multi_argument_histogram(
+#     *data: DaskCollection,
+#     histref: bh.Histogram,
+#     weights: Optional[DaskCollection] = None,
+#     agg_split_every: int = 10,
+# ) -> AggHistogram:
+#     name = "histogram-{}".format(tokenize(*data, histref, weights))
+#     bwg = dask_blockwise(
+#         _blocked_ma,
+#         *_indexify(name, *data, idx="i", weights=weights),
+#         numblocks=_gen_numblocks(*data, weights=weights),
+#         histref=histref,
+#     )
+#     dependencies = _dependencies(*data, weights=weights)
+
+
 def histo(
     *args, weights=None, axes=None, storage=None, aggregate_split_every=10
-) -> Histogram:
+) -> AggHistogram:
     if storage is None:
         storage = bh.storage.Weight()
 
@@ -230,7 +267,7 @@ def histo(
         y = args[1]
         name = "histogram-{}".format(tokenize(x, y, axes))
         g = dask_blockwise(
-            _histogram_on_block2,
+            _blocked_ma,
             *_indexify(name, x, y),
             numblocks={x.name: x.numblocks, y.name: y.numblocks},
             histref=r,
@@ -251,23 +288,29 @@ if __name__ == "__main__":
     z = da.random.standard_normal(size=(5000, 3), chunks=(250, 3))
     w = da.random.uniform(0, 1, size=(5000,), chunks=(250,))
 
+    import dask.dataframe as dd
+    import dask.datasets as dds
+
+    df = dds.timeseries()
+    x: dd.Series = df["x"]
+
+    print(type(x))
     histo1 = histo(
         x,
-        axes=(bh.axis.Regular(10, -3, 3),),
+        axes=(bh.axis.Regular(10, 0, 1),),
         aggregate_split_every=4,
         weights=None,
     )
-    histo1.visualize("h1.png")
     h1 = histo1.compute()
 
-    histo2 = histo(
-        z,
-        axes=(
-            bh.axis.Regular(10, -3, 3),
-            bh.axis.Regular(10, -3, 3),
-            bh.axis.Regular(10, -3, 3),
-        ),
-        aggregate_split_every=20,
-    )
-    histo2.visualize("h2.png")
-    h2 = histo2.compute()
+    # histo2 = histo(
+    #     z,
+    #     axes=(
+    #         bh.axis.Regular(10, -3, 3),
+    #         bh.axis.Regular(10, -3, 3),
+    #         bh.axis.Regular(10, -3, 3),
+    #     ),
+    #     aggregate_split_every=20,
+    #     weights=w,
+    # )
+    # h2 = histo2.compute()

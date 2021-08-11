@@ -17,6 +17,7 @@ testpaths = ["tests"]
 [tool.isort]
 profile = "black"
 line_length = 88
+src_paths = ["src", "tests"]
 
 [tool.mypy]
 python_version = 3.7
