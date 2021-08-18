@@ -64,13 +64,14 @@ def test_df_input(weights):
         bh.axis.Regular(12, 0, 1),
         storage=bh.storage.Weight(),
     )
-    df = dds.timeseries()
+    df = dds.timeseries(freq="600s", partition_freq="2d")
+    dfc = df.compute()
     if weights is not None:
         weights = da.fabs(df["y"].to_dask_array())
     df = df[["x", "y"]]
     dh = histogram(df, histref=h, weights=weights, split_every=100)
     h.fill(
-        *(df.compute().to_numpy().T),
+        *(dfc[["x", "y"]].to_numpy().T),
         weight=weights.compute() if weights is not None else None,
     )
     np.testing.assert_allclose(h.counts(flow=True), dh.compute().counts(flow=True))
