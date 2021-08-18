@@ -195,6 +195,7 @@ def histogramdd(
     False
 
     """
+
     # Check for invalid argument combinations.
     if normed is not None:
         raise KeyError(

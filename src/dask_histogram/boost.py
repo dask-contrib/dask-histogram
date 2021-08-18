@@ -24,7 +24,7 @@ import dask_histogram
 __all__ = ("Histogram",)
 
 
-def clone(histref: bh.Histogram) -> bh.Histogram:
+def clone(histref: bh.Histogram = None) -> bh.Histogram:
     """Create a Histogram object based on another.
 
     The axes and storage of the `histref` will be used to create a new
@@ -41,6 +41,8 @@ def clone(histref: bh.Histogram) -> bh.Histogram:
         New Histogram with identical axes and storage.
 
     """
+    if histref is None:
+        return bh.Histogram()
     return bh.Histogram(*histref.axes, storage=histref._storage_type())
 
 
