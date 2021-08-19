@@ -470,7 +470,7 @@ class Histogram(bh.Histogram, family=dask_histogram):
 
         Examples
         --------
-        >>> import dask_histogram as dhb
+        >>> import dask_histogram.boost as dhb
         >>> import dask
         >>> h = dhb.Histogram(dhb.axis.Regular(10, -3, 3))
         >>> x = da.random.standard_normal(size=(100,), chunks=(20,))
@@ -657,7 +657,7 @@ def histogramdd(
     each dimension. First, using three 1D arrays for each coordinate:
 
     >>> import dask.array as da
-    >>> import dask_histogram as dhb
+    >>> import dask_histogram.boost as dhb
     >>> x = da.random.standard_normal(size=(10000,), chunks=(2000,))
     >>> y = da.random.standard_normal(size=(10000,), chunks=(2000,))
     >>> z = da.random.standard_normal(size=(10000,), chunks=(2000,))
@@ -681,7 +681,7 @@ def histogramdd(
     :obj:`dask_histogram.Histogram` object:
 
     >>> import dask.array as da
-    >>> import dask_histogram as dhb
+    >>> import dask_histogram.boost as dhb
     >>> x = da.random.standard_normal(size=(10000,), chunks=(2000,))
     >>> y = da.random.standard_normal(size=(10000,), chunks=(2000,))
     >>> z = da.random.standard_normal(size=(10000,), chunks=(2000,))
@@ -712,7 +712,7 @@ def histogramdd(
     weights, and usage of the boost-histogram ``Weight()`` storage:
 
     >>> import dask.array as da
-    >>> import dask_histogram as dhb
+    >>> import dask_histogram.boost as dhb
     >>> a = da.random.standard_normal(size=(10000, 3), chunks=(2000, 3))
     >>> w = da.random.uniform(0.5, 0.7, size=(10000,), chunks=2000)
     >>> bins = (7, 5, 6)
@@ -857,7 +857,7 @@ def histogram2d(
     --------
     Uniform distributions along each dimension with the array return style:
 
-    >>> import dask_histogram as dhb
+    >>> import dask_histogram.boost as dhb
     >>> import dask.array as da
     >>> x = da.random.uniform(0.0, 1.0, size=(1000,), chunks=200)
     >>> y = da.random.uniform(0.4, 0.6, size=(1000,), chunks=200)
@@ -962,7 +962,7 @@ def histogram(
     --------
     Gaussian distribution with object return style and ``Weight`` storage:
 
-    >>> import dask_histogram as dhb
+    >>> import dask_histogram.boost as dhb
     >>> import dask.array as da
     >>> x = da.random.standard_normal(size=(1000,), chunks=(250,))
     >>> h = dhb.histogram(
