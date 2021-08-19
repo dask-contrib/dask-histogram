@@ -8,8 +8,8 @@ import boost_histogram as bh
 import dask.bag as db
 from dask.bag.core import empty_safe_aggregate, partition_all
 from dask.base import DaskMethodsMixin, tokenize
-from dask.blockwise import blockwise as core_blockwise
-from dask.dataframe.core import partitionwise_graph as pwg
+from dask.blockwise import blockwise
+from dask.dataframe.core import partitionwise_graph as partitionwise
 from dask.highlevelgraph import HighLevelGraph
 from dask.threaded import get as tget
 from dask.utils import is_dataframe_like, key_split
@@ -235,23 +235,7 @@ def single_argument_histogram(
     agg_split_every: int = 10,
 ) -> AggHistogram:
     name = "histogram-{}".format(tokenize(x, histref, weights))
-
-    bwg = pwg(_blocked_sa, name, x, weight=weights, histref=histref)
-
-    # if x.ndim == 1:
-    #     bwg = core_blockwise(
-    #         _blocked_sa,
-    #         *_indexify(name, x, weights=weights),
-    #         numblocks=_gen_numblocks(x, weights=weights),
-    #         histref=histref,
-    #     )
-    # elif x.ndim == 2:
-    #     bwg = core_blockwise(
-    #         _blocked_ra,
-    #         *_indexify(name, x, idx="ij", weights=weights),
-    #         numblocks=_gen_numblocks(x, weights=weights),
-    #         histref=histref,
-    #     )
+    bwg = partitionwise(_blocked_sa, name, x, weight=weights, histref=histref)
     dependencies = _dependencies(x, weights=weights)
     hlg = HighLevelGraph.from_collections(name, bwg, dependencies=dependencies)
     ph = PartitionedHistogram(hlg, name, x.npartitions, histref=histref)
@@ -265,7 +249,7 @@ def single_argument_histogram(
 #     agg_split_every: int = 10,
 # ) -> AggHistogram:
 #     name = "histogram-{}".format(tokenize(*data, histref, weights))
-#     bwg = core_blockwise(
+#     bwg = blockwise(
 #         _blocked_ma,
 #         *_indexify(name, *data, idx="i", weights=weights),
 #         numblocks=_gen_numblocks(*data, weights=weights),
@@ -297,7 +281,7 @@ def histo_manual_blockwise(
         x = args[0]
         y = args[1]
         name = "histogram-{}".format(tokenize(x, y, axes))
-        g = core_blockwise(
+        g = blockwise(
             _blocked_ma,
             *_indexify(name, x, y),
             numblocks={x.name: x.numblocks, y.name: y.numblocks},
@@ -323,20 +307,20 @@ def histogram(
     if len(data) == 1 and not is_dataframe_like(data[0]):
         x = data[0]
         if weights is not None:
-            g = pwg(_blocked_sa_w, name, x, weights, histref=histref)
+            g = partitionwise(_blocked_sa_w, name, x, weights, histref=histref)
         else:
-            g = pwg(_blocked_sa, name, x, histref=histref)
+            g = partitionwise(_blocked_sa, name, x, histref=histref)
     elif len(data) == 1 and is_dataframe_like(data[0]):
         x = data[0]
         if weights is not None:
-            g = pwg(_blocked_df_w, name, x, weights, histref=histref)
+            g = partitionwise(_blocked_df_w, name, x, weights, histref=histref)
         else:
-            g = pwg(_blocked_df, name, x, histref=histref)
+            g = partitionwise(_blocked_df, name, x, histref=histref)
     else:
         if weights is not None:
-            g = pwg(_blocked_ma_w, name, *data, weights, histref=histref)
+            g = partitionwise(_blocked_ma_w, name, *data, weights, histref=histref)
         else:
-            g = pwg(_blocked_ma, name, *data, histref=histref)
+            g = partitionwise(_blocked_ma, name, *data, histref=histref)
 
     dependencies = _dependencies(*data, weights=weights)
     hlg = HighLevelGraph.from_collections(name, g, dependencies=dependencies)
