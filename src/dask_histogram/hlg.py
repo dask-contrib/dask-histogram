@@ -202,7 +202,7 @@ def _indexify(
     return sum(pairs, ())
 
 
-def _numblocks_or_npartitions(coll: DaskCollection) -> int:
+def _numblocks_or_npartitions(coll: DaskCollection) -> Tuple[int, ...]:
     if hasattr(coll, "numblocks"):
         return coll.numblocks
     elif hasattr(coll, "npartitions"):
@@ -254,7 +254,7 @@ def single_argument_histogram(
     #     )
     dependencies = _dependencies(x, weights=weights)
     hlg = HighLevelGraph.from_collections(name, bwg, dependencies=dependencies)
-    ph = PartitionedHistogram(hlg, name, x.npartitions)
+    ph = PartitionedHistogram(hlg, name, x.npartitions, histref=histref)
     return _reduction(ph, split_every=agg_split_every)
 
 
@@ -305,7 +305,7 @@ def histo_manual_blockwise(
         )
         hlg = HighLevelGraph.from_collections(name, g, dependencies=(x, y))
         return _reduction(
-            PartitionedHistogram(hlg, name, x.npartitions),
+            PartitionedHistogram(hlg, name, x.npartitions, histref=r),
             split_every=aggregate_split_every,
         )
 
