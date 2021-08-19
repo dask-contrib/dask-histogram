@@ -268,14 +268,14 @@ class Histogram(bh.Histogram, family=dask_histogram):
     ``dask_histogram.storage``.
 
     >>> import dask.array as da
-    >>> import dask_histogram as dh
+    >>> import dask_histogram.boost as dhb
     >>> x = da.random.standard_normal(size=(1000,), chunks=200)
     >>> y = da.random.standard_normal(size=(1000,), chunks=200)
     >>> w = da.random.uniform(0.2, 0.8, size=(1000,), chunks=200)
-    >>> h = dh.Histogram(
-    ...     dh.axis.Regular(10, -3, 3),
-    ...     dh.axis.Variable([-3, -2, -1, 0, 1.1, 2.2, 3.3]),
-    ...     storage=dh.storage.Weight()
+    >>> h = dhb.Histogram(
+    ...     dhb.axis.Regular(10, -3, 3),
+    ...     dhb.axis.Variable([-3, -2, -1, 0, 1.1, 2.2, 3.3]),
+    ...     storage=dhb.storage.Weight()
     ... ).fill(x, y, weight=w).compute()
 
     """
@@ -470,9 +470,9 @@ class Histogram(bh.Histogram, family=dask_histogram):
 
         Examples
         --------
-        >>> import dask_histogram as dh
+        >>> import dask_histogram as dhb
         >>> import dask
-        >>> h = dh.Histogram(dh.axis.Regular(10, -3, 3))
+        >>> h = dhb.Histogram(dhb.axis.Regular(10, -3, 3))
         >>> x = da.random.standard_normal(size=(100,), chunks=(20,))
         >>> h.fill(x)
         Histogram(Regular(10, -3, 3), storage=Double()) # (has staged fills)
@@ -657,7 +657,7 @@ def histogramdd(
     each dimension. First, using three 1D arrays for each coordinate:
 
     >>> import dask.array as da
-    >>> import dask_histogram as dh
+    >>> import dask_histogram as dhb
     >>> x = da.random.standard_normal(size=(10000,), chunks=(2000,))
     >>> y = da.random.standard_normal(size=(10000,), chunks=(2000,))
     >>> z = da.random.standard_normal(size=(10000,), chunks=(2000,))
@@ -666,7 +666,7 @@ def histogramdd(
     ...    [-3, -1, 1, 2, 3],
     ...    [-3, -2, 0, 2, 3],
     ... ]
-    >>> h, edges = dh.histogramdd((x, y, z), bins=bins)
+    >>> h, edges = dhb.histogramdd((x, y, z), bins=bins)
     >>> type(h)
     <class 'dask.array.core.Array'>
     >>> h.shape
@@ -681,7 +681,7 @@ def histogramdd(
     :obj:`dask_histogram.Histogram` object:
 
     >>> import dask.array as da
-    >>> import dask_histogram as dh
+    >>> import dask_histogram as dhb
     >>> x = da.random.standard_normal(size=(10000,), chunks=(2000,))
     >>> y = da.random.standard_normal(size=(10000,), chunks=(2000,))
     >>> z = da.random.standard_normal(size=(10000,), chunks=(2000,))
@@ -690,7 +690,7 @@ def histogramdd(
     ...    [-3, -1, 1, 2, 3],
     ...    [-3, -2, 0, 2, 3],
     ... ]
-    >>> h = dh.histogramdd((x, y, z), bins=bins, histogram=dh.Histogram)
+    >>> h = dhb.histogramdd((x, y, z), bins=bins, histogram=dhb.Histogram)
     >>> h
     Histogram(
       Variable([-3, -2, 0, 1, 3]),
@@ -712,18 +712,18 @@ def histogramdd(
     weights, and usage of the boost-histogram ``Weight()`` storage:
 
     >>> import dask.array as da
-    >>> import dask_histogram as dh
+    >>> import dask_histogram as dhb
     >>> a = da.random.standard_normal(size=(10000, 3), chunks=(2000, 3))
     >>> w = da.random.uniform(0.5, 0.7, size=(10000,), chunks=2000)
     >>> bins = (7, 5, 6)
     >>> range = ((-3, 3), (-2.9, 2.9), (-3.1, 3.1))
-    >>> h = dh.histogramdd(
+    >>> h = dhb.histogramdd(
     ...     a,
     ...     bins=bins,
     ...     range=range,
     ...     weights=w,
-    ...     histogram=dh.Histogram,
-    ...     storage=dh.storage.Weight()
+    ...     histogram=dhb.Histogram,
+    ...     storage=dhb.storage.Weight()
     ... )
     >>> h
     Histogram(
@@ -857,16 +857,16 @@ def histogram2d(
     --------
     Uniform distributions along each dimension with the array return style:
 
-    >>> import dask_histogram as dh
+    >>> import dask_histogram as dhb
     >>> import dask.array as da
     >>> x = da.random.uniform(0.0, 1.0, size=(1000,), chunks=200)
     >>> y = da.random.uniform(0.4, 0.6, size=(1000,), chunks=200)
-    >>> h, edgesx, edgesy = dh.histogram2d(x, y, bins=(12, 4), range=((0, 1), (0.4, 0.6)))
+    >>> h, edgesx, edgesy = dhb.histogram2d(x, y, bins=(12, 4), range=((0, 1), (0.4, 0.6)))
 
     Now with the object return style:
 
-    >>> h = dh.histogram2d(
-    ...     x, y, bins=(12, 4), range=((0, 1), (0.4, 0.6)), histogram=dh.Histogram
+    >>> h = dhb.histogram2d(
+    ...     x, y, bins=(12, 4), range=((0, 1), (0.4, 0.6)), histogram=dhb.Histogram
     ... )
 
     With variable bins and sample weights from a
@@ -880,7 +880,7 @@ def histogram2d(
     >>> w = df["weights"]              # doctest: +SKIP
     >>> binsx = [0.0, 0.2, 0.6, 0.8, 1.0]
     >>> binsy = [0.40, 0.45, 0.50, 0.55, 0.60]
-    >>> h, e1, e2 = dh.histogram2d(
+    >>> h, e1, e2 = dhb.histogram2d(
     ...     x, y, bins=[binsx, binsy], weights=w
     ... ) #  doctest: +SKIP
 
@@ -962,22 +962,22 @@ def histogram(
     --------
     Gaussian distribution with object return style and ``Weight`` storage:
 
-    >>> import dask_histogram as dh
+    >>> import dask_histogram as dhb
     >>> import dask.array as da
     >>> x = da.random.standard_normal(size=(1000,), chunks=(250,))
-    >>> h = dh.histogram(
-    ...     x, bins=10, range=(-3, 3), histogram=dh.Histogram, storage=dh.storage.Weight()
+    >>> h = dhb.histogram(
+    ...     x, bins=10, range=(-3, 3), histogram=dhb.Histogram, storage=dhb.storage.Weight()
     ... )
 
     Now with variable width bins and the array return style:
 
     >>> bins = [-3, -2.2, -1.0, -0.2, 0.2, 1.2, 2.2, 3.2]
-    >>> h, edges = dh.histogram(x, bins=bins)
+    >>> h, edges = dhb.histogram(x, bins=bins)
 
     Now with weights and the object return style:
 
     >>> w = da.random.uniform(0.0, 1.0, size=x.shape[0], chunks=x.chunksize[0])
-    >>> h = dh.histogram(x, bins=bins, weights=w, histogram=dh.Histogram)
+    >>> h = dhb.histogram(x, bins=bins, weights=w, histogram=dhb.Histogram)
     >>> h
     Histogram(Variable([-3, -2.2, -1, -0.2, 0.2, 1.2, 2.2, 3.2]), storage=Double()) # (has staged fills)
 
