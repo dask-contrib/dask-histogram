@@ -189,6 +189,21 @@ def _reduction(
     return AggHistogram(g, fmt, histref=partedhist.histref)
 
 
+class Histogram:
+
+    _histref: bh.Histogram
+    _staged: bool
+
+    def __init__(
+        self,
+        *axes: bh.axis.Axis,
+        storage: bh.storage.Storage = bh.storage.Double(),
+        metadata=None,
+    ) -> None:
+        self._histref = bh.Histogram(*axes, storage=storage, metadata=metadata)
+        self._staged: bool = False
+
+
 def _indexify(
     name: str,
     *args: DaskCollection,
