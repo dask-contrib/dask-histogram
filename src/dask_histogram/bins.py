@@ -1,20 +1,16 @@
 """Help determining bin definitions."""
 
-from enum import Enum
-from typing import TYPE_CHECKING, Optional, Sequence, Tuple, Union
+from __future__ import annotations
 
-if TYPE_CHECKING:
-    from numpy.typing import ArrayLike
-else:
-    ArrayLike = object
+from enum import Enum
+from typing import TYPE_CHECKING
 
 import numpy as np
 
-BinType = Union[int, ArrayLike]
-BinArg = Union[BinType, Sequence[BinType]]
+if TYPE_CHECKING:
+    from typing import Sequence, Tuple
 
-RangeType = Optional[Tuple[float, float]]
-RangeArg = Optional[Union[RangeType, Sequence[RangeType]]]
+    from .typing import BinArg, BinType, RangeArg, RangeType
 
 
 class BinsStyle(Enum):

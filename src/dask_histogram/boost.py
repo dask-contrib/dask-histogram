@@ -14,12 +14,10 @@ from dask.base import is_dask_collection
 from dask.delayed import Delayed, delayed
 from dask.utils import is_arraylike, is_dataframe_like
 
-from .bins import BinArg, BinType, RangeArg, RangeType, normalize_bins_range
+from .bins import normalize_bins_range
 
 if TYPE_CHECKING:
-    import dask.dataframe as dd
-
-    DaskCollection = Union[da.Array, dd.Series, dd.DataFrame]
+    from .typing import BinArg, BinType, DaskCollection, RangeArg, RangeType
 else:
     DaskCollection = object
 

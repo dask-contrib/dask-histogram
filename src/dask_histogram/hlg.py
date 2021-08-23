@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Union
 
 import boost_histogram as bh
 import dask.array as da
 import dask.bag as db
 from dask.bag.core import empty_safe_aggregate, partition_all
 from dask.base import DaskMethodsMixin, tokenize
-from dask.blockwise import blockwise
 from dask.dataframe.core import partitionwise_graph as partitionwise
 from dask.highlevelgraph import HighLevelGraph
 from dask.threaded import get as tget
@@ -18,11 +17,10 @@ from dask.utils import is_dataframe_like, key_split
 from .boost import clone
 
 if TYPE_CHECKING:
-    from numpy.typing import ArrayLike
+    import numpy as np
 
-    from .boost import DaskCollection
+    from .typing import DaskCollection
 else:
-    ArrayLike = object
     DaskCollection = object
 
 
@@ -213,34 +211,34 @@ class Histogram:
         self._staged: bool = False
 
 
-def _indexify(
-    name: str,
-    *args: DaskCollection,
-    idx: str = "i",
-    weights: Optional[DaskCollection] = None,
-) -> Tuple[str, ...]:
-    """Generate name and index pairs for blockwise use."""
-    pairs = [(name, "i")] + [(a.name, idx) for a in args]
-    if weights is not None:
-        pairs.append((weights.name, "i"))
-    return sum(pairs, ())
+# def _indexify(
+#     name: str,
+#     *args: DaskCollection,
+#     idx: str = "i",
+#     weights: Optional[DaskCollection] = None,
+# ) -> Tuple[str, ...]:
+#     """Generate name and index pairs for blockwise use."""
+#     pairs = [(name, "i")] + [(a.name, idx) for a in args]
+#     if weights is not None:
+#         pairs.append((weights.name, "i"))
+#     return sum(pairs, ())
 
 
-def _numblocks_or_npartitions(coll: DaskCollection) -> Tuple[int, ...]:
-    if hasattr(coll, "numblocks"):
-        return coll.numblocks
-    elif hasattr(coll, "npartitions"):
-        return (coll.npartitions,)
-    else:
-        raise AttributeError("numblocks or npartitions expected on collection.")
+# def _numblocks_or_npartitions(coll: DaskCollection) -> Tuple[int, ...]:
+#     if hasattr(coll, "numblocks"):
+#         return coll.numblocks
+#     elif hasattr(coll, "npartitions"):
+#         return (coll.npartitions,)
+#     else:
+#         raise AttributeError("numblocks or npartitions expected on collection.")
 
 
-def _gen_numblocks(*args, weights=None):
-    result = {a.name: _numblocks_or_npartitions(a) for a in args}
-    if weights is not None:
-        result[weights.name] = _numblocks_or_npartitions(weights)
-    print(result)
-    return result
+# def _gen_numblocks(*args, weights=None):
+#     result = {a.name: _numblocks_or_npartitions(a) for a in args}
+#     if weights is not None:
+#         result[weights.name] = _numblocks_or_npartitions(weights)
+#     print(result)
+#     return result
 
 
 def _dependencies(
@@ -252,18 +250,18 @@ def _dependencies(
     return args
 
 
-def single_argument_histogram(
-    x: DaskCollection,
-    histref: bh.Histogram,
-    weights: Optional[DaskCollection] = None,
-    agg_split_every: int = 10,
-) -> AggHistogram:
-    name = "histogram-{}".format(tokenize(x, histref, weights))
-    bwg = partitionwise(_blocked_sa, name, x, weight=weights, histref=histref)
-    dependencies = _dependencies(x, weights=weights)
-    hlg = HighLevelGraph.from_collections(name, bwg, dependencies=dependencies)
-    ph = PartitionedHistogram(hlg, name, x.npartitions, histref=histref)
-    return _reduction(ph, split_every=agg_split_every)
+# def single_argument_histogram(
+#     x: DaskCollection,
+#     histref: bh.Histogram,
+#     weights: Optional[DaskCollection] = None,
+#     agg_split_every: int = 10,
+# ) -> AggHistogram:
+#     name = "histogram-{}".format(tokenize(x, histref, weights))
+#     bwg = partitionwise(_blocked_sa, name, x, weight=weights, histref=histref)
+#     dependencies = _dependencies(x, weights=weights)
+#     hlg = HighLevelGraph.from_collections(name, bwg, dependencies=dependencies)
+#     ph = PartitionedHistogram(hlg, name, x.npartitions, histref=histref)
+#     return _reduction(ph, split_every=agg_split_every)
 
 
 # def multi_argument_histogram(
@@ -282,43 +280,43 @@ def single_argument_histogram(
 #     dependencies = _dependencies(*data, weights=weights)
 
 
-def histo_manual_blockwise(
-    *args, weights=None, axes=None, storage=None, aggregate_split_every=10
-) -> AggHistogram:
-    if storage is None:
-        storage = bh.storage.Weight()
+# def histo_manual_blockwise(
+#     *args, weights=None, axes=None, storage=None, aggregate_split_every=10
+# ) -> AggHistogram:
+#     if storage is None:
+#         storage = bh.storage.Weight()
 
-    r = bh.Histogram(
-        *axes,
-        storage=storage,
-    )
+#     r = bh.Histogram(
+#         *axes,
+#         storage=storage,
+#     )
 
-    if len(args) == 1:
-        x = args[0]
-        return single_argument_histogram(
-            x,
-            histref=r,
-            weights=weights,
-            agg_split_every=aggregate_split_every,
-        )
-    elif len(args) == 2:
-        x = args[0]
-        y = args[1]
-        name = "histogram-{}".format(tokenize(x, y, axes))
-        g = blockwise(
-            _blocked_ma,
-            *_indexify(name, x, y),
-            numblocks={x.name: x.numblocks, y.name: y.numblocks},
-            histref=r,
-        )
-        hlg = HighLevelGraph.from_collections(name, g, dependencies=(x, y))
-        return _reduction(
-            PartitionedHistogram(hlg, name, x.npartitions, histref=r),
-            split_every=aggregate_split_every,
-        )
+#     if len(args) == 1:
+#         x = args[0]
+#         return single_argument_histogram(
+#             x,
+#             histref=r,
+#             weights=weights,
+#             agg_split_every=aggregate_split_every,
+#         )
+#     elif len(args) == 2:
+#         x = args[0]
+#         y = args[1]
+#         name = "histogram-{}".format(tokenize(x, y, axes))
+#         g = blockwise(
+#             _blocked_ma,
+#             *_indexify(name, x, y),
+#             numblocks={x.name: x.numblocks, y.name: y.numblocks},
+#             histref=r,
+#         )
+#         hlg = HighLevelGraph.from_collections(name, g, dependencies=(x, y))
+#         return _reduction(
+#             PartitionedHistogram(hlg, name, x.npartitions, histref=r),
+#             split_every=aggregate_split_every,
+#         )
 
-    else:
-        raise NotImplementedError("WIP")
+#     else:
+#         raise NotImplementedError("WIP")
 
 
 def histogram(
@@ -327,6 +325,31 @@ def histogram(
     weights: Optional[DaskCollection] = None,
     split_every: int = 10,
 ) -> AggHistogram:
+    """FIXME: Short description.
+
+    FIXME: Long description.
+
+    Parameters
+    ----------
+    *data : DaskCollection
+        FIXME: Add docs.
+    histref : bh.Histogram
+        FIXME: Add docs.
+    weights : Optional[DaskCollection]
+        FIXME: Add docs.
+    split_every : int
+        FIXME: Add docs.
+
+    Returns
+    -------
+    AggHistogram
+        FIXME: Add docs.
+
+    Examples
+    --------
+    FIXME: Add docs.
+
+    """
     name = "histogram-{}".format(tokenize(data, histref, weights))
     if len(data) == 1 and not is_dataframe_like(data[0]):
         x = data[0]
@@ -352,7 +375,30 @@ def histogram(
     return _reduction(ph, split_every=split_every)
 
 
-def to_numpy(h: bh.Histogram, flow: bool = False, dd: bool = False) -> ArrayLike:
+def to_numpy(h: bh.Histogram, flow: bool = False, dd: bool = False) -> np.ndarray:
+    """FIXME: Short description.
+
+    FIXME: Long description.
+
+    Parameters
+    ----------
+    h : bh.Histogram
+        FIXME: Add docs.
+    flow : bool
+        FIXME: Add docs.
+    dd : bool
+        FIXME: Add docs.
+
+    Returns
+    -------
+    np.ndarray
+        FIXME: Add docs.
+
+    Examples
+    --------
+    FIXME: Add docs.
+
+    """
     return h.to_numpy(flow=flow)[0]
 
 
@@ -360,9 +406,32 @@ def to_dask_array(
     agghist: AggHistogram,
     flow: bool = False,
     dd: bool = False,
-) -> Tuple[DaskCollection, DaskCollection]:
-    zeros = (0,) * agghist.histref.ndim
+) -> Union[Tuple[DaskCollection, List[DaskCollection]], Tuple[DaskCollection, ...]]:
+    """FIXME: Short description.
+
+    FIXME: Long description.
+
+    Parameters
+    ----------
+    agghist : AggHistogram
+        FIXME: Add docs.
+    flow : bool
+        FIXME: Add docs.
+    dd : bool
+        FIXME: Add docs.
+
+    Returns
+    -------
+    Union[Tuple[DaskCollection, List[DaskCollection]], Tuple[DaskCollection, ...]]
+        FIXME: Add docs.
+
+    Examples
+    --------
+    FIXME: Add docs.
+
+    """
     name = "to-dask-array-{}".format(tokenize(agghist))
+    zeros = (0,) * agghist.histref.ndim
     dsk = {(name, *zeros): (to_numpy, agghist.key, flow, dd)}
     graph = HighLevelGraph.from_collections(name, dsk, dependencies=(agghist,))
     shape = agghist.histref.shape

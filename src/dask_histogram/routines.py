@@ -2,14 +2,10 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Union
-
-import dask.array as da
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    import dask.dataframe as dd
-
-    DaskCollection = Union[da.Array, dd.Series, dd.DataFrame]
+    from .typing import DaskCollection
 else:
     DaskCollection = object
 
