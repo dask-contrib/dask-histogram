@@ -16,6 +16,10 @@ else:
 __all__ = ("histogramdd", "histogram2d", "histogram")
 
 
+def hist(*args, **kwargs):
+    pass
+
+
 def histogram(*args, **kwargs):
     pass
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, List, Optional, Tuple
 
 import boost_histogram as bh
+import dask.array as da
 import dask.bag as db
 from dask.bag.core import empty_safe_aggregate, partition_all
 from dask.base import DaskMethodsMixin, tokenize
@@ -17,7 +18,12 @@ from dask.utils import is_dataframe_like, key_split
 from .boost import clone
 
 if TYPE_CHECKING:
+    from numpy.typing import ArrayLike
+
     from .boost import DaskCollection
+else:
+    ArrayLike = object
+    DaskCollection = object
 
 
 def _blocked_sa_w(
@@ -101,8 +107,11 @@ class AggHistogram(db.Item):
     __repr__ = __str__
     __dask_scheduler__ = staticmethod(tget)
 
+    def to_dask_array(self, flow: bool = False, dd: bool = False):
+        return to_dask_array(self, flow=flow, dd=dd)
 
-def finalize(results: Any) -> Any:
+
+def _finalize_partitioned_histogram(results: Any) -> Any:
     return results
 
 
@@ -128,7 +137,7 @@ class PartitionedHistogram(DaskMethodsMixin):
         return self.name
 
     def __dask_postcompute__(self) -> Any:
-        return finalize, ()
+        return _finalize_partitioned_histogram, ()
 
     def _rebuild(self, dsk: Any, *, rename: Any = None) -> Any:
         name = self.name
@@ -341,3 +350,32 @@ def histogram(
     hlg = HighLevelGraph.from_collections(name, g, dependencies=dependencies)
     ph = PartitionedHistogram(hlg, name, data[0].npartitions, histref=histref)
     return _reduction(ph, split_every=split_every)
+
+
+def to_numpy(h: bh.Histogram, flow: bool = False, dd: bool = False) -> ArrayLike:
+    return h.to_numpy(flow=flow)[0]
+
+
+def to_dask_array(
+    agghist: AggHistogram,
+    flow: bool = False,
+    dd: bool = False,
+) -> Tuple[DaskCollection, DaskCollection]:
+    zeros = (0,) * agghist.histref.ndim
+    name = "to-dask-array-{}".format(tokenize(agghist))
+    dsk = {(name, *zeros): (to_numpy, agghist.key, flow, dd)}
+    graph = HighLevelGraph.from_collections(name, dsk, dependencies=(agghist,))
+    shape = agghist.histref.shape
+    if flow:
+        shape = tuple(i + 2 for i in shape)
+    int_storage = agghist.histref._storage_type in (
+        bh.storage.Int64,
+        bh.storage.AtomicInt64,
+    )
+    dt = int if int_storage else float
+    c = da.Array(graph, name=name, shape=shape, chunks=shape, dtype=dt)
+    axes = agghist.histref.axes
+    edges = [da.asarray(ax.edges) for ax in axes]
+    if dd:
+        return c, edges
+    return c, *edges
