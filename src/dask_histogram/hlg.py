@@ -444,7 +444,7 @@ def to_dask_array(
     dt = int if int_storage else float
     c = da.Array(graph, name=name, shape=shape, chunks=shape, dtype=dt)
     axes = agghist.histref.axes
-    edges = [da.asarray(ax.edges) for ax in axes]
+    edges = (da.asarray(ax.edges) for ax in axes)
     if dd:
-        return c, edges
-    return c, *edges
+        return (c, list(edges))
+    return (c, *(tuple(edges)))
