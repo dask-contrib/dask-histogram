@@ -115,3 +115,35 @@ def test_to_dask_array(weights, shape):
     h.fill(*xc, weight=weights.compute() if weights is not None else None)
     c, edges = dh.to_dask_array(flow=False, dd=True)
     dau.assert_eq(c, h.to_numpy()[0])
+
+
+def test_bop_add():
+    ax = bh.axis.Regular(10, -3, 3)
+    x = da.random.standard_normal(size=(1000,), chunks=(250,))
+    y = da.random.standard_normal(size=(1000,), chunks=(250,))
+    h = bh.Histogram(ax)
+    dhx = histogram(x, histref=h)
+    dhy = histogram(y, histref=h)
+    chx = bh.Histogram(ax).fill(x.compute())
+    chy = bh.Histogram(ax).fill(y.compute())
+    chz = chx + chy
+    dhz = dhx + dhy
+    dau.assert_eq(chz.to_numpy()[0], dhz.to_dask_array()[0])
+
+
+def test_bop_div():
+    ax = bh.axis.Regular(10, -3, 3)
+    x = da.random.standard_normal(size=(1000,), chunks=(250,))
+    y = da.random.standard_normal(size=(1000,), chunks=(250,))
+    h = bh.Histogram(ax)
+    dhx = histogram(x, histref=h)
+    dhy = histogram(y, histref=h)
+    chx = bh.Histogram(ax).fill(x.compute())
+    chy = bh.Histogram(ax).fill(y.compute())
+    dhz = dhx / dhy
+    chz = chx / chy
+    dau.assert_eq(chz.to_numpy()[0], dhz.to_dask_array()[0])
+    chx /= chy
+    dhx /= dhy
+    dau.assert_eq(dhx.to_dask_array()[0], dhz.to_dask_array()[0])
+    dau.assert_eq(chx.to_numpy()[0], dhx.to_dask_array()[0])

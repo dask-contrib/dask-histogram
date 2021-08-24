@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import operator
 from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Union
 
 import boost_histogram as bh
@@ -105,8 +106,23 @@ class AggHistogram(db.Item):
     __repr__ = __str__
     __dask_scheduler__ = staticmethod(tget)
 
+    # def copy(self) -> AggHistogram:
+    #     return AggHistogram(self.dask, self.key, self.histref)
+
     def to_dask_array(self, flow: bool = False, dd: bool = False):
         return to_dask_array(self, flow=flow, dd=dd)
+
+    def __add__(self, other: Any) -> AggHistogram:
+        return add(self, other)
+
+    def __radd__(self, other: Any) -> AggHistogram:
+        return add(other, self)
+
+    def __itruediv__(self, other: Any) -> AggHistogram:
+        return itruediv(self, other)
+
+    def __truediv__(self, other: Any) -> AggHistogram:
+        return self.__itruediv__(other)
 
 
 def _finalize_partitioned_histogram(results: Any) -> Any:
@@ -191,8 +207,8 @@ def _reduction(
         True,
     )
 
-    g = HighLevelGraph.from_collections(fmt, dsk, dependencies=[partedhist])
     dsk[fmt] = dsk.pop((fmt, 0))  # type: ignore
+    g = HighLevelGraph.from_collections(fmt, dsk, dependencies=[partedhist])
     return AggHistogram(g, fmt, histref=partedhist.histref)
 
 
@@ -256,7 +272,7 @@ def _dependencies(
 #     weights: Optional[DaskCollection] = None,
 #     agg_split_every: int = 10,
 # ) -> AggHistogram:
-#     name = "histogram-{}".format(tokenize(x, histref, weights))
+#     name = "hist-{}".format(tokenize(x, histref, weights))
 #     bwg = partitionwise(_blocked_sa, name, x, weight=weights, histref=histref)
 #     dependencies = _dependencies(x, weights=weights)
 #     hlg = HighLevelGraph.from_collections(name, bwg, dependencies=dependencies)
@@ -270,7 +286,7 @@ def _dependencies(
 #     weights: Optional[DaskCollection] = None,
 #     agg_split_every: int = 10,
 # ) -> AggHistogram:
-#     name = "histogram-{}".format(tokenize(*data, histref, weights))
+#     name = "hist-{}".format(tokenize(*data, histref, weights))
 #     bwg = blockwise(
 #         _blocked_ma,
 #         *_indexify(name, *data, idx="i", weights=weights),
@@ -302,7 +318,7 @@ def _dependencies(
 #     elif len(args) == 2:
 #         x = args[0]
 #         y = args[1]
-#         name = "histogram-{}".format(tokenize(x, y, axes))
+#         name = "hist-{}".format(tokenize(x, y, axes))
 #         g = blockwise(
 #             _blocked_ma,
 #             *_indexify(name, x, y),
@@ -350,7 +366,7 @@ def histogram(
     FIXME: Add docs.
 
     """
-    name = "histogram-{}".format(tokenize(data, histref, weights))
+    name = "hist-on-block-{}".format(tokenize(data, histref, weights))
     if len(data) == 1 and not is_dataframe_like(data[0]):
         x = data[0]
         if weights is not None:
@@ -448,3 +464,19 @@ def to_dask_array(
     if dd:
         return (c, list(edges))
     return (c, *(tuple(edges)))
+
+
+class _bop:
+    def __init__(self, func):
+        self.func = func
+        self.__name__ = func.__name__
+
+    def __call__(self, a, b):
+        name = "{}-hist-{}".format(self.__name__, tokenize(a, b))
+        llg = {name: (self.func, a.name, b.name)}
+        g = HighLevelGraph.from_collections(name, llg, dependencies=(a, b))
+        return AggHistogram(g, name, histref=a.histref)
+
+
+add = _bop(operator.add)
+itruediv = _bop(operator.itruediv)

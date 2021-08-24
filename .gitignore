@@ -7,6 +7,7 @@ sandbox.html
 
 # dask
 mydask.png
+dask-hlg.svg
 
 # setuptools_scm generated
 src/dask_histogram/_version.py
