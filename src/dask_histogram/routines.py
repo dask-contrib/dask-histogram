@@ -1,4 +1,4 @@
-"""Routines for staging histogram computations."""
+"""Routines for staging histogram computations with a dask.array like API."""
 
 from __future__ import annotations
 
@@ -10,10 +10,6 @@ else:
     DaskCollection = object
 
 __all__ = ("histogramdd", "histogram2d", "histogram")
-
-
-def hist(*args, **kwargs):
-    pass
 
 
 def histogram(*args, **kwargs):

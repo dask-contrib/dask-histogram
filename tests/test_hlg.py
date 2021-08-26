@@ -5,7 +5,7 @@ import dask.datasets as dds
 import numpy as np
 import pytest
 
-from dask_histogram.hlg import histogram
+from dask_histogram.core import histogram
 
 
 @pytest.mark.parametrize("weights", [True, None])

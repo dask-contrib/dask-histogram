@@ -1,4 +1,4 @@
-"""Dask Histogram High Level Graph API."""
+"""Dask Histogram core High Level Graph API."""
 
 from __future__ import annotations
 
@@ -15,14 +15,32 @@ from dask.highlevelgraph import HighLevelGraph
 from dask.threaded import get as tget
 from dask.utils import is_dataframe_like, key_split
 
-from .boost import clone
-
 if TYPE_CHECKING:
-    import numpy as np
-
     from .typing import DaskCollection
 else:
     DaskCollection = object
+
+
+def clone(histref: bh.Histogram = None) -> bh.Histogram:
+    """Create a Histogram object based on another.
+
+    The axes and storage of the `histref` will be used to create a new
+    Histogram object.
+
+    Parameters
+    ----------
+    histref : bh.Histogram
+        The reference Histogram.
+
+    Returns
+    -------
+    bh.Histogram
+        New Histogram with identical axes and storage.
+
+    """
+    if histref is None:
+        return bh.Histogram()
+    return bh.Histogram(*histref.axes, storage=histref._storage_type())
 
 
 def _blocked_sa_w(
@@ -106,9 +124,6 @@ class AggHistogram(db.Item):
     __repr__ = __str__
     __dask_scheduler__ = staticmethod(tget)
 
-    # def copy(self) -> AggHistogram:
-    #     return AggHistogram(self.dask, self.key, self.histref)
-
     def to_dask_array(self, flow: bool = False, dd: bool = False):
         return to_dask_array(self, flow=flow, dd=dd)
 
@@ -175,7 +190,7 @@ class PartitionedHistogram(DaskMethodsMixin):
 
 def _reduction(
     partedhist: PartitionedHistogram,
-    split_every: Optional[int] = None,
+    split_every: int = None,
 ) -> AggHistogram:
     if split_every is None:
         split_every = 4
@@ -212,51 +227,6 @@ def _reduction(
     return AggHistogram(g, fmt, histref=partedhist.histref)
 
 
-class Histogram:
-
-    _histref: bh.Histogram
-    _staged: bool
-
-    def __init__(
-        self,
-        *axes: bh.axis.Axis,
-        storage: bh.storage.Storage = bh.storage.Double(),
-        metadata=None,
-    ) -> None:
-        self._histref = bh.Histogram(*axes, storage=storage, metadata=metadata)
-        self._staged: bool = False
-
-
-# def _indexify(
-#     name: str,
-#     *args: DaskCollection,
-#     idx: str = "i",
-#     weights: Optional[DaskCollection] = None,
-# ) -> Tuple[str, ...]:
-#     """Generate name and index pairs for blockwise use."""
-#     pairs = [(name, "i")] + [(a.name, idx) for a in args]
-#     if weights is not None:
-#         pairs.append((weights.name, "i"))
-#     return sum(pairs, ())
-
-
-# def _numblocks_or_npartitions(coll: DaskCollection) -> Tuple[int, ...]:
-#     if hasattr(coll, "numblocks"):
-#         return coll.numblocks
-#     elif hasattr(coll, "npartitions"):
-#         return (coll.npartitions,)
-#     else:
-#         raise AttributeError("numblocks or npartitions expected on collection.")
-
-
-# def _gen_numblocks(*args, weights=None):
-#     result = {a.name: _numblocks_or_npartitions(a) for a in args}
-#     if weights is not None:
-#         result[weights.name] = _numblocks_or_npartitions(weights)
-#     print(result)
-#     return result
-
-
 def _dependencies(
     *args: DaskCollection,
     weights: Optional[DaskCollection] = None,
@@ -266,106 +236,12 @@ def _dependencies(
     return args
 
 
-# def single_argument_histogram(
-#     x: DaskCollection,
-#     histref: bh.Histogram,
-#     weights: Optional[DaskCollection] = None,
-#     agg_split_every: int = 10,
-# ) -> AggHistogram:
-#     name = "hist-{}".format(tokenize(x, histref, weights))
-#     bwg = partitionwise(_blocked_sa, name, x, weight=weights, histref=histref)
-#     dependencies = _dependencies(x, weights=weights)
-#     hlg = HighLevelGraph.from_collections(name, bwg, dependencies=dependencies)
-#     ph = PartitionedHistogram(hlg, name, x.npartitions, histref=histref)
-#     return _reduction(ph, split_every=agg_split_every)
-
-
-# def multi_argument_histogram(
-#     *data: DaskCollection,
-#     histref: bh.Histogram,
-#     weights: Optional[DaskCollection] = None,
-#     agg_split_every: int = 10,
-# ) -> AggHistogram:
-#     name = "hist-{}".format(tokenize(*data, histref, weights))
-#     bwg = blockwise(
-#         _blocked_ma,
-#         *_indexify(name, *data, idx="i", weights=weights),
-#         numblocks=_gen_numblocks(*data, weights=weights),
-#         histref=histref,
-#     )
-#     dependencies = _dependencies(*data, weights=weights)
-
-
-# def histo_manual_blockwise(
-#     *args, weights=None, axes=None, storage=None, aggregate_split_every=10
-# ) -> AggHistogram:
-#     if storage is None:
-#         storage = bh.storage.Weight()
-
-#     r = bh.Histogram(
-#         *axes,
-#         storage=storage,
-#     )
-
-#     if len(args) == 1:
-#         x = args[0]
-#         return single_argument_histogram(
-#             x,
-#             histref=r,
-#             weights=weights,
-#             agg_split_every=aggregate_split_every,
-#         )
-#     elif len(args) == 2:
-#         x = args[0]
-#         y = args[1]
-#         name = "hist-{}".format(tokenize(x, y, axes))
-#         g = blockwise(
-#             _blocked_ma,
-#             *_indexify(name, x, y),
-#             numblocks={x.name: x.numblocks, y.name: y.numblocks},
-#             histref=r,
-#         )
-#         hlg = HighLevelGraph.from_collections(name, g, dependencies=(x, y))
-#         return _reduction(
-#             PartitionedHistogram(hlg, name, x.npartitions, histref=r),
-#             split_every=aggregate_split_every,
-#         )
-
-#     else:
-#         raise NotImplementedError("WIP")
-
-
-def histogram(
+def _reduced_histogram(
     *data: DaskCollection,
     histref: bh.Histogram,
     weights: Optional[DaskCollection] = None,
-    split_every: int = 10,
+    split_every: int = None,
 ) -> AggHistogram:
-    """FIXME: Short description.
-
-    FIXME: Long description.
-
-    Parameters
-    ----------
-    *data : DaskCollection
-        FIXME: Add docs.
-    histref : bh.Histogram
-        FIXME: Add docs.
-    weights : Optional[DaskCollection]
-        FIXME: Add docs.
-    split_every : int
-        FIXME: Add docs.
-
-    Returns
-    -------
-    AggHistogram
-        FIXME: Add docs.
-
-    Examples
-    --------
-    FIXME: Add docs.
-
-    """
     name = "hist-on-block-{}".format(tokenize(data, histref, weights))
     if len(data) == 1 and not is_dataframe_like(data[0]):
         x = data[0]
@@ -389,33 +265,6 @@ def histogram(
     hlg = HighLevelGraph.from_collections(name, g, dependencies=dependencies)
     ph = PartitionedHistogram(hlg, name, data[0].npartitions, histref=histref)
     return _reduction(ph, split_every=split_every)
-
-
-def to_numpy(h: bh.Histogram, flow: bool = False, dd: bool = False) -> np.ndarray:
-    """FIXME: Short description.
-
-    FIXME: Long description.
-
-    Parameters
-    ----------
-    h : bh.Histogram
-        FIXME: Add docs.
-    flow : bool
-        FIXME: Add docs.
-    dd : bool
-        FIXME: Add docs.
-
-    Returns
-    -------
-    np.ndarray
-        FIXME: Add docs.
-
-    Examples
-    --------
-    FIXME: Add docs.
-
-    """
-    return h.to_numpy(flow=flow)[0]
 
 
 def to_dask_array(
@@ -448,7 +297,7 @@ def to_dask_array(
     """
     name = "to-dask-array-{}".format(tokenize(agghist))
     zeros = (0,) * agghist.histref.ndim
-    dsk = {(name, *zeros): (to_numpy, agghist.key, flow, dd)}
+    dsk = {(name, *zeros): (lambda x, f: x.to_numpy(flow=f)[0], agghist.key, flow)}
     graph = HighLevelGraph.from_collections(name, dsk, dependencies=(agghist,))
     shape = agghist.histref.shape
     if flow:
@@ -480,3 +329,54 @@ class _bop:
 
 add = _bop(operator.add)
 itruediv = _bop(operator.itruediv)
+
+
+def histogram(
+    *data: DaskCollection,
+    histref: bh.Histogram = None,
+    axes: Tuple[bh.axis.Axis, ...] = None,
+    storage: bh.storage.Storage = bh.storage.Double(),
+    weights: DaskCollection = None,
+    split_every: int = None,
+) -> AggHistogram:
+    """FIXME: Short description.
+
+    FIXME: Long description.
+
+    Parameters
+    ----------
+    *data : DaskCollection
+        FIXME: Add docs.
+    histref : bh.Histogram
+        FIXME: Add docs.
+    axes : Tuple[bh.axis.Axis, ...]
+        FIXME: Add docs.
+    storage : bh.storage.Storage
+        FIXME: Add docs.
+    weights : DaskCollection
+        FIXME: Add docs.
+    split_every : int
+        FIXME: Add docs.
+
+    Returns
+    -------
+    AggHistogram
+        FIXME: Add docs.
+
+    Raises
+    ------
+    ValueError
+        FIXME: Add docs.
+
+    Examples
+    --------
+    FIXME: Add docs.
+
+    """
+    if histref is None and axes is None:
+        raise ValueError("Either histref or axes must be defined.")
+    elif histref is None:
+        histref = bh.Histogram(*axes, storage=storage)  # type: ignore
+    return _reduced_histogram(
+        *data, histref=histref, weights=weights, split_every=split_every
+    )
