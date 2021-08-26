@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Optional, Sequence, Tuple, Union
 
 if TYPE_CHECKING:
@@ -15,3 +17,5 @@ if TYPE_CHECKING:
 else:
     DaskCollection = object
     ArrayLike = object
+    BinType, BinArg = object, object
+    RangeType, RangeArg = object, object
