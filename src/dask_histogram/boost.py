@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import operator
+import warnings
 from typing import TYPE_CHECKING, Any, Optional, Tuple, Union
 
 import boost_histogram as bh
@@ -15,6 +16,8 @@ from dask.delayed import Delayed, delayed
 from dask.utils import is_arraylike, is_dataframe_like
 
 from .bins import normalize_bins_range
+from .core import AggHistogram
+from .core import histogram as core_histogram
 
 if TYPE_CHECKING:
     from .typing import BinArg, BinType, DaskCollection, RangeArg, RangeType
@@ -264,7 +267,7 @@ class Histogram(bh.Histogram, family=dask_histogram):
     ) -> None:
         """Construct a Histogram object."""
         super().__init__(*axes, storage=storage, metadata=metadata)
-        self._dq: Optional[Delayed] = None
+        self._staged: Optional[AggHistogram] = None
 
     def concrete_fill(
         self, *args: Any, weight: Optional[Any] = None, sample=None, threads=None
@@ -367,20 +370,20 @@ class Histogram(bh.Histogram, family=dask_histogram):
             )
 
         if len(args) == 1 and args[0].ndim == 1:
-            func = _fill_1d
+            pass
         elif len(args) == 1 and args[0].ndim == 2:
-            func = _fill_rectangular  # type: ignore
+            pass
         elif len(args) > 1:
-            func = _fill_multiarg  # type: ignore
+            pass
         else:
             raise ValueError(f"Cannot interpret input data: {args}")
 
-        new_fill = func(*args, meta_hist=self, weight=weight)
-
-        if self._dq is None:
-            self._dq = new_fill
+        new_fill = core_histogram(*args, histref=self, weights=weight)
+        if self._staged is not None:
+            self._staged += new_fill
         else:
-            self._dq = delayed(sum)([self._dq, new_fill])
+            self._staged = new_fill
+
         return self
 
     def compute(self) -> Histogram:
@@ -392,19 +395,19 @@ class Histogram(bh.Histogram, family=dask_histogram):
             Concrete histogram with all staged (delayed) fills executed.
 
         """
-        if self._dq is None:
+        if self._staged is None:
             return self
         if not self.empty():
-            result_view = self.view(flow=True) + self._dq.compute().view(flow=True)
+            result_view = self.view(flow=True) + self._staged.compute().view(flow=True)
         else:
-            result_view = self._dq.compute().view(flow=True)
+            result_view = self._staged.compute().view(flow=True)
         self[...] = result_view
-        self._dq = None
+        self._staged = None
         return self
 
     def clear_fills(self) -> None:
         """Drop any uncomputed fills."""
-        self._dq = None
+        self._staged = None
 
     def staged_fills(self) -> bool:
         """Check if histogram has staged fills.
@@ -415,7 +418,7 @@ class Histogram(bh.Histogram, family=dask_histogram):
             True if the object contains staged delayed fills.
 
         """
-        return self._dq is not None
+        return self._staged is not None
 
     def to_delayed(self) -> Delayed:
         """Histogram as a delayed object.
@@ -458,9 +461,9 @@ class Histogram(bh.Histogram, family=dask_histogram):
 
         """
         if self.staged_fills() and not self.empty():
-            return delayed(operator.add)(delayed(self), self._dq)
+            return delayed(operator.add)(self._staged, delayed(self))
         elif self.staged_fills():
-            return self._dq
+            return self._staged.to_delayed()
         return delayed(self)
 
     def __repr__(self) -> str:
@@ -506,6 +509,11 @@ class Histogram(bh.Histogram, family=dask_histogram):
 
         """
         return self.to_delayed().visualize(*args, **kwargs)
+
+    def agg_histogram(self) -> AggHistogram:
+        if self._staged is None:
+            warnings.warn("No staged AggHistogram; returning None")
+        return self._staged
 
     def to_dask_array(
         self, flow: bool = False, dd: bool = True

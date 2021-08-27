@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 
 import dask_histogram.boost as dhb
+import dask_histogram.core as dhc
 
 
 @pytest.mark.parametrize("use_weights", [True, False])
@@ -337,3 +338,26 @@ def test_histogram_da_return():
     h2, edges2 = bhnp.histogram(x.compute(), bins=bins)
     np.testing.assert_array_almost_equal(h1.compute(), h2)
     np.testing.assert_array_almost_equal(edges1.compute(), edges2)
+
+
+def test_to_delayed():
+    x = da.random.standard_normal(size=(2_000, 3), chunks=(500, 3))
+    bins = [
+        [-3, -2.2, 0, 1.1, 2.2, 3.3],
+        [-4, -1.1, 0, 2.2, 3.3, 4.4],
+        [-2, -0.9, 0, 0.3, 2.2],
+    ]
+    dh = dhb.Histogram(
+        dhb.axis.Variable(bins[0]),
+        dhb.axis.Variable(bins[1]),
+        dhb.axis.Variable(bins[2]),
+    )
+    dh.fill(x)
+    dh.compute()
+    dh.fill(x)
+    ch = dhc.clone(dh)
+    ch.fill(*(x.compute().T))
+    ch.fill(*(x.compute().T))
+    np.testing.assert_array_almost_equal(
+        dh.to_delayed().compute().to_numpy()[0], ch.to_numpy()[0]
+    )
