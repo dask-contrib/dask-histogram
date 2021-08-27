@@ -440,7 +440,11 @@ class Histogram(bh.Histogram, family=dask_histogram):
             h.compute()
 
         In both cases if ``h`` doesn't have any delayed fill calls
-        staged, then no concrete fill computations will be triggered.
+        staged, then no concrete fill computations will be triggered
+        and the eventual computed object from the Delayed object will
+        be a ``dask_histogram.boost.Histogram`` object. If staged
+        fills exist the computed object from the Delayed object will
+        be a ``boost_histogram.Histogram``.
 
         Returns
         -------
@@ -456,8 +460,6 @@ class Histogram(bh.Histogram, family=dask_histogram):
         >>> h.fill(x)
         Histogram(Regular(10, -3, 3), storage=Double()) # (has staged fills)
         >>> h, = dask.compute(h.to_delayed())
-        >>> h.staged_fills()
-        False
 
         """
         if self.staged_fills() and not self.empty():
