@@ -1,11 +1,16 @@
+from __future__ import annotations
+
+from typing import Tuple
+
 import boost_histogram as bh
 import dask.array as da
 import dask.array.utils as dau
 import dask.datasets as dds
+import dask.delayed as delayed
 import numpy as np
 import pytest
 
-from dask_histogram.core import histogram
+import dask_histogram.core as dhc
 
 
 @pytest.mark.parametrize("weights", [True, None])
@@ -14,7 +19,7 @@ def test_1d_array(weights):
     if weights is not None:
         weights = da.random.uniform(size=(2000,), chunks=(250,))
     x = da.random.standard_normal(size=(2000,), chunks=(250,))
-    dh = histogram(x, histref=h, weights=weights, split_every=4)
+    dh = dhc.histogram(x, histref=h, weights=weights, split_every=4)
     h.fill(x.compute(), weight=weights.compute() if weights is not None else None)
     np.testing.assert_allclose(h.counts(flow=True), dh.compute().counts(flow=True))
 
@@ -33,7 +38,7 @@ def test_array_input(weights, shape):
         da.random.uniform(size=(2000,), chunks=(200,)) if weights is not None else None
     )
     h = bh.Histogram(*axes, storage=bh.storage.Weight())
-    dh = histogram(x, histref=h, weights=weights, split_every=4)
+    dh = dhc.histogram(x, histref=h, weights=weights, split_every=4)
     h.fill(*xc, weight=weights.compute() if weights is not None else None)
     np.testing.assert_allclose(h.counts(flow=True), dh.compute().counts(flow=True))
 
@@ -49,7 +54,7 @@ def test_multi_array(weights):
         weights = da.random.uniform(size=(2000,), chunks=(250,))
     x = da.random.standard_normal(size=(2000,), chunks=(250,))
     y = da.random.standard_normal(size=(2000,), chunks=(250,))
-    dh = histogram(x, y, histref=h, weights=weights, split_every=4)
+    dh = dhc.histogram(x, y, histref=h, weights=weights, split_every=4)
     h.fill(
         x.compute(),
         y.compute(),
@@ -69,7 +74,7 @@ def test_nd_array(weights):
     if weights is not None:
         weights = da.random.uniform(0, 1, size=(2000,), chunks=(250,))
     x = da.random.uniform(0, 1, size=(2000, 3), chunks=(250, 3))
-    dh = histogram(x, histref=h, weights=weights, split_every=4)
+    dh = dhc.histogram(x, histref=h, weights=weights, split_every=4)
     h.fill(
         *(x.compute().T),
         weight=weights.compute() if weights is not None else None,
@@ -89,7 +94,7 @@ def test_df_input(weights):
     if weights is not None:
         weights = da.fabs(df["y"].to_dask_array())
     df = df[["x", "y"]]
-    dh = histogram(df, histref=h, weights=weights, split_every=200)
+    dh = dhc.histogram(df, histref=h, weights=weights, split_every=200)
     h.fill(
         *(dfc[["x", "y"]].to_numpy().T),
         weight=weights.compute() if weights is not None else None,
@@ -111,39 +116,103 @@ def test_to_dask_array(weights, shape):
         da.random.uniform(size=(2000,), chunks=(200,)) if weights is not None else None
     )
     h = bh.Histogram(*axes, storage=bh.storage.Weight())
-    dh = histogram(x, histref=h, weights=weights, split_every=4)
+    dh = dhc.histogram(x, histref=h, weights=weights, split_every=4)
     h.fill(*xc, weight=weights.compute() if weights is not None else None)
     c, edges = dh.to_dask_array(flow=False, dd=True)
     dau.assert_eq(c, h.to_numpy()[0])
 
 
-def test_bop_add():
-    ax = bh.axis.Regular(10, -3, 3)
+def gen_hist_1D(
+    bins: int = 10,
+    range: Tuple[float, float] = (-3, 3),
+    size: Tuple[int, ...] = (1000,),
+) -> dhc.AggHistogram:
+    hr = bh.Histogram(bh.axis.Regular(10, -3, 3), storage=bh.storage.Weight())
     x = da.random.standard_normal(size=(1000,), chunks=(250,))
-    y = da.random.standard_normal(size=(1000,), chunks=(250,))
-    h = bh.Histogram(ax)
-    dhx = histogram(x, histref=h)
-    dhy = histogram(y, histref=h)
-    chx = bh.Histogram(ax).fill(x.compute())
-    chy = bh.Histogram(ax).fill(y.compute())
-    chz = chx + chy
-    dhz = dhx + dhy
-    dau.assert_eq(chz.to_numpy()[0], dhz.to_dask_array()[0])
+    return dhc.histogram(x, histref=hr)
 
 
-def test_bop_div():
-    ax = bh.axis.Regular(10, -3, 3)
-    x = da.random.standard_normal(size=(1000,), chunks=(250,))
-    y = da.random.standard_normal(size=(1000,), chunks=(250,))
-    h = bh.Histogram(ax)
-    dhx = histogram(x, histref=h)
-    dhy = histogram(y, histref=h)
-    chx = bh.Histogram(ax).fill(x.compute())
-    chy = bh.Histogram(ax).fill(y.compute())
-    dhz = dhx / dhy
-    chz = chx / chy
-    dau.assert_eq(chz.to_numpy()[0], dhz.to_dask_array()[0])
-    chx /= chy
-    dhx /= dhy
-    dau.assert_eq(dhx.to_dask_array()[0], dhz.to_dask_array()[0])
-    dau.assert_eq(chx.to_numpy()[0], dhx.to_dask_array()[0])
+@delayed
+def get_number(n):
+    return n
+
+
+@delayed
+def get_array(size):
+    return np.arange(size)
+
+
+@pytest.mark.parametrize("other", [get_number(5), get_array(10)])
+def test_add(other):
+    h = gen_hist_1D()
+    concrete = other.compute()
+    computed_array = (h.compute() + concrete).to_numpy()[0]
+
+    ht = (h + other).to_dask_array()[0]
+    dau.assert_eq(ht, computed_array)
+
+    ht = (h + concrete).to_dask_array()[0]
+    dau.assert_eq(ht, computed_array)
+
+    h = gen_hist_1D()
+    computed_array = (h.compute() + concrete).to_numpy()[0]
+    h += concrete
+    ht = h.to_dask_array()[0]
+    dau.assert_eq(ht, computed_array)
+
+    h = gen_hist_1D()
+    computed_array = (h.compute() + concrete).to_numpy()[0]
+    h += other
+    ht = h.to_dask_array()[0]
+    dau.assert_eq(ht, computed_array)
+
+
+@pytest.mark.parametrize("other", [get_number(5), get_array(10)])
+def test_mul(other):
+    h = gen_hist_1D()
+    concrete = other.compute()
+    computed_array = (h.compute() * concrete).to_numpy()[0]
+
+    ht = (h * other).to_dask_array()[0]
+    dau.assert_eq(ht, computed_array)
+
+    ht = (h * concrete).to_dask_array()[0]
+    dau.assert_eq(ht, computed_array)
+
+    h = gen_hist_1D()
+    computed_array = (h.compute() * concrete).to_numpy()[0]
+    h *= concrete
+    ht = h.to_dask_array()[0]
+    dau.assert_eq(ht, computed_array)
+
+    h = gen_hist_1D()
+    computed_array = (h.compute() * concrete).to_numpy()[0]
+    h *= other
+    ht = h.to_dask_array()[0]
+    dau.assert_eq(ht, computed_array)
+
+
+@pytest.mark.parametrize("other", [get_number(5), get_array(10)])
+def test_div(other):
+    other += 1
+    h = gen_hist_1D()
+    concrete = other.compute()
+    computed_array = (h.compute() / concrete).to_numpy()[0]
+
+    ht = (h / other).to_dask_array()[0]
+    dau.assert_eq(ht, computed_array)
+
+    ht = (h / concrete).to_dask_array()[0]
+    dau.assert_eq(ht, computed_array)
+
+    h = gen_hist_1D()
+    computed_array = (h.compute() / concrete).to_numpy()[0]
+    h /= concrete
+    ht = h.to_dask_array()[0]
+    dau.assert_eq(ht, computed_array)
+
+    h = gen_hist_1D()
+    computed_array = (h.compute() / concrete).to_numpy()[0]
+    h /= other
+    ht = h.to_dask_array()[0]
+    dau.assert_eq(ht, computed_array)

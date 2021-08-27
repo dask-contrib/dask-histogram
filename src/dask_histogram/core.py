@@ -9,13 +9,15 @@ import boost_histogram as bh
 import dask.array as da
 import dask.bag as db
 from dask.bag.core import empty_safe_aggregate, partition_all
-from dask.base import DaskMethodsMixin, tokenize
+from dask.base import DaskMethodsMixin, is_dask_collection, tokenize
 from dask.dataframe.core import partitionwise_graph as partitionwise
 from dask.highlevelgraph import HighLevelGraph
 from dask.threaded import get as tget
 from dask.utils import is_dataframe_like, key_split
 
 if TYPE_CHECKING:
+    import numpy as np
+
     from .typing import DaskCollection
 else:
     DaskCollection = object
@@ -118,6 +120,18 @@ class AggHistogram(db.Item):
     def histref(self) -> bh.Histogram:
         return self._histref
 
+    @property
+    def ndim(self) -> int:
+        return self.histref.ndim
+
+    @property
+    def shape(self) -> Tuple[int, ...]:
+        return self.histref.shape
+
+    @property
+    def size(self) -> int:
+        return self.histref.size
+
     def __str__(self) -> str:
         return f"dask_histogram.AggHistogram<{key_split(self.name)}>"
 
@@ -127,17 +141,38 @@ class AggHistogram(db.Item):
     def to_dask_array(self, flow: bool = False, dd: bool = False):
         return to_dask_array(self, flow=flow, dd=dd)
 
+    def __array__(self) -> np.ndarray:
+        return self.compute().__array__()
+
+    def __iadd__(self, other) -> AggHistogram:
+        return iadd(self, other)
+
     def __add__(self, other: Any) -> AggHistogram:
-        return add(self, other)
+        return self.__iadd__(other)
 
     def __radd__(self, other: Any) -> AggHistogram:
-        return add(other, self)
+        return self.__iadd__(other)
 
     def __itruediv__(self, other: Any) -> AggHistogram:
         return itruediv(self, other)
 
     def __truediv__(self, other: Any) -> AggHistogram:
         return self.__itruediv__(other)
+
+    def __idiv__(self, other: Any) -> AggHistogram:
+        return self.__itruediv__(other)
+
+    def __div__(self, other: Any) -> AggHistogram:
+        return self.__idiv__(other)
+
+    def __imul__(self, other: Any) -> AggHistogram:
+        return imul(self, other)
+
+    def __mul__(self, other: Any) -> AggHistogram:
+        return self.__imul__(other)
+
+    def __rmul__(self, other: Any) -> AggHistogram:
+        return self.__mul__(other)
 
 
 def _finalize_partitioned_histogram(results: Any) -> Any:
@@ -315,20 +350,38 @@ def to_dask_array(
     return (c, *(tuple(edges)))
 
 
-class _bop:
+class _BinaryOp:
     def __init__(self, func):
         self.func = func
         self.__name__ = func.__name__
 
     def __call__(self, a, b):
         name = "{}-hist-{}".format(self.__name__, tokenize(a, b))
-        llg = {name: (self.func, a.name, b.name)}
-        g = HighLevelGraph.from_collections(name, llg, dependencies=(a, b))
-        return AggHistogram(g, name, histref=a.histref)
+        deps = []
+        if is_dask_collection(a):
+            deps.append(a)
+            k1 = a.name
+        else:
+            k1 = a
+        if is_dask_collection(b):
+            deps.append(b)
+            k2 = b.name
+        else:
+            k2 = b
+        k1 = a.__dask_tokenize__() if is_dask_collection(a) else a
+        k2 = b.__dask_tokenize__() if is_dask_collection(b) else b
+        llg = {name: (self.func, k1, k2)}
+        g = HighLevelGraph.from_collections(name, llg, dependencies=deps)
+        try:
+            ref = a.histref
+        except AttributeError:
+            ref = b.histref
+        return AggHistogram(g, name, histref=ref)
 
 
-add = _bop(operator.add)
-itruediv = _bop(operator.itruediv)
+iadd = _BinaryOp(operator.iadd)
+imul = _BinaryOp(operator.imul)
+itruediv = _BinaryOp(operator.itruediv)
 
 
 def histogram(
