@@ -464,9 +464,9 @@ class Histogram(bh.Histogram, family=dask_histogram):
         """
         if self.staged_fills() and not self.empty():
             return delayed(operator.add)(self._staged, delayed(self))
-        elif self.staged_fills():
+        elif self._staged is not None:
             return self._staged.to_delayed()
-        return delayed(self)
+        return delayed(bh.Histogram(self))
 
     def __repr__(self) -> str:
         """Text representation of the histogram.
@@ -512,7 +512,7 @@ class Histogram(bh.Histogram, family=dask_histogram):
         """
         return self.to_delayed().visualize(*args, **kwargs)
 
-    def agg_histogram(self) -> AggHistogram:
+    def agg_histogram(self) -> Optional[AggHistogram]:
         if self._staged is None:
             warnings.warn("No staged AggHistogram; returning None")
         return self._staged

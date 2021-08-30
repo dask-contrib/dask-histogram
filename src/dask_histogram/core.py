@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import operator
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Iterable, List, Optional, Tuple, Union
 
 import boost_histogram as bh
 import dask.array as da
@@ -387,7 +387,7 @@ itruediv = _BinaryOp(operator.itruediv)
 def histogram(
     *data: DaskCollection,
     histref: bh.Histogram = None,
-    axes: Tuple[bh.axis.Axis, ...] = None,
+    axes: Iterable[bh.axis.Axis] = None,
     storage: bh.storage.Storage = bh.storage.Double(),
     weights: DaskCollection = None,
     split_every: int = None,
