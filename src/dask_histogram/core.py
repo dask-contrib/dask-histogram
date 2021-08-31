@@ -222,20 +222,20 @@ class PartitionedHistogram(DaskMethodsMixin):
     def histref(self) -> bh.Histogram:
         return self._histref
 
+    def reduced(self, split_every: int = None) -> AggHistogram:
+        return _reduction(self, split_every=split_every)
 
-def _reduction(
-    partedhist: PartitionedHistogram,
-    split_every: int = None,
-) -> AggHistogram:
+
+def _reduction(ph: PartitionedHistogram, split_every: int = None) -> AggHistogram:
     if split_every is None:
         split_every = 4
     if split_every is False:
-        split_every = partedhist.npartitions
+        split_every = ph.npartitions
 
-    token = tokenize(partedhist, sum, split_every)
+    token = tokenize(ph, sum, split_every)
     fmt = f"hist-aggregate-{token}"
-    k = partedhist.npartitions
-    b = partedhist.name
+    k = ph.npartitions
+    b = ph.name
     d = 0
     dsk = {}
     while k > split_every:
@@ -258,8 +258,8 @@ def _reduction(
     )
 
     dsk[fmt] = dsk.pop((fmt, 0))  # type: ignore
-    g = HighLevelGraph.from_collections(fmt, dsk, dependencies=[partedhist])
-    return AggHistogram(g, fmt, histref=partedhist.histref)
+    g = HighLevelGraph.from_collections(fmt, dsk, dependencies=[ph])
+    return AggHistogram(g, fmt, histref=ph.histref)
 
 
 def _dependencies(
@@ -299,7 +299,7 @@ def _reduced_histogram(
     dependencies = _dependencies(*data, weights=weights)
     hlg = HighLevelGraph.from_collections(name, g, dependencies=dependencies)
     ph = PartitionedHistogram(hlg, name, data[0].npartitions, histref=histref)
-    return _reduction(ph, split_every=split_every)
+    return ph.reduced(split_every=split_every)
 
 
 def to_dask_array(

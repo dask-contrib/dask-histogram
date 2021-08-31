@@ -46,7 +46,7 @@ def histogram(
         threads=threads,
     )
     if histogram is None:
-        return h.to_dask_array(flow=False, dd=False)
+        return h.to_dask_array(flow=False, dd=False)  # type: ignore
     return h
 
 
