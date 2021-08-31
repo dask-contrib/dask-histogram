@@ -14,8 +14,3 @@ if TYPE_CHECKING:
     RangeArg = Optional[Union[RangeType, Sequence[RangeType]]]
 
     DaskCollection = Union[da.Array, dd.Series, dd.DataFrame]
-else:
-    DaskCollection = object
-    ArrayLike = object
-    BinType, BinArg = object, object
-    RangeType, RangeArg = object, object
