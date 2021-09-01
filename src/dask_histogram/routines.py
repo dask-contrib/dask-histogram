@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import warnings
 from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Union
 
 import boost_histogram as bh
@@ -50,8 +51,33 @@ def histogram(
     return h
 
 
-def histogram2d(*args, **kwargs):
-    pass
+def histogram2d(
+    x: DaskCollection,
+    y: DaskCollection,
+    bins: BinArg = 10,
+    range: RangeArg = None,
+    normed: Optional[bool] = None,
+    weights: Optional[DaskCollection] = None,
+    density: bool = False,
+    *,
+    histogram: Optional[Any] = None,
+    storage: bh.storage.Storage = bh.storage.Double(),
+    threads: Optional[int] = None,
+) -> Union[AggHistogram, Tuple[da.Array, ...]]:
+    h = histogramdd(
+        (x, y),
+        bins=bins,
+        range=range,
+        normed=normed,
+        weights=weights,
+        density=density,
+        histogram=True,
+        storage=storage,
+        threads=threads,
+    )
+    if histogram is None:
+        return h.to_dask_array(flow=False, dd=False)  # type: ignore
+    return h
 
 
 def histogramdd(
@@ -77,6 +103,11 @@ def histogramdd(
         raise KeyError(
             "dask-histogram does not support the density keyword when returning a "
             "dask-histogram object."
+        )
+    if threads is not None:
+        warnings.warn(
+            "threads argument is not None; Dask may compete with boost-histogram "
+            "for thread usage."
         )
 
     # If input is a multidimensional array or dataframe, we wrap it in

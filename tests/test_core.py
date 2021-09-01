@@ -118,7 +118,7 @@ def test_to_dask_array(weights, shape):
     h = bh.Histogram(*axes, storage=bh.storage.Weight())
     dh = dhc.histogram(x, histref=h, weights=weights, split_every=4)
     h.fill(*xc, weight=weights.compute() if weights is not None else None)
-    c, edges = dh.to_dask_array(flow=False, dd=True)
+    c, _ = dh.to_dask_array(flow=False, dd=True)
     dau.assert_eq(c, h.to_numpy()[0])
 
 
@@ -126,9 +126,13 @@ def gen_hist_1D(
     bins: int = 10,
     range: Tuple[float, float] = (-3, 3),
     size: Tuple[int, ...] = (1000,),
+    chunks: Tuple[int, ...] = (250,),
 ) -> dhc.AggHistogram:
-    hr = bh.Histogram(bh.axis.Regular(10, -3, 3), storage=bh.storage.Weight())
-    x = da.random.standard_normal(size=(1000,), chunks=(250,))
+    hr = bh.Histogram(
+        bh.axis.Regular(bins, range[0], range[1]),
+        storage=bh.storage.Weight(),
+    )
+    x = da.random.standard_normal(size=size, chunks=chunks)
     return dhc.histogram(x, histref=hr)
 
 
