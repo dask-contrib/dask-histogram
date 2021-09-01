@@ -110,26 +110,65 @@ def _blocked_df(
 
 
 class AggHistogram(db.Item):
+    """Aggregated Histogram collection.
+
+    The class constructor is typically used internally; for users
+    :py:func:`dask_histogram.core.histogram` is recommended (along
+    with the `dask_histogram.routines` module).
+
+    See Also
+    --------
+    dask_histogram.core.histogram
+
+    Parameters
+    ----------
+    dsk : dask.highlevelgraph.HighLevelGraph
+        High level graph providing the computation.
+    key : str
+        Unique identifier for the Dask graph.
+    histref : boost_histogram.Histogram
+        Reference histogram providing axes, storage, and metadata.
+
+    """
+
     def __init__(self, dsk: HighLevelGraph, key: str, histref: bh.Histogram) -> None:
-        self.dask: HighLevelGraph = dsk
-        self.key: str = key
-        self.name: str = key
+        self._dsk = dsk
+        self._key = key
         self._histref: bh.Histogram = histref
 
     @property
+    def dask(self) -> HighLevelGraph:
+        """High level graph object."""
+        return self._dsk
+
+    @property
+    def key(self) -> str:
+        """Unique key in a Dask graph."""
+        return self._key
+
+    @property
+    def name(self) -> str:
+        """Same as `key`."""
+        return self._key
+
+    @property
     def histref(self) -> bh.Histogram:
+        """Reference boost-histogram object."""
         return self._histref
 
     @property
     def ndim(self) -> int:
+        """Total number of dimensions."""
         return self.histref.ndim
 
     @property
     def shape(self) -> Tuple[int, ...]:
+        """Shape of the histogram as an array."""
         return self.histref.shape
 
     @property
     def size(self) -> int:
+        """Size of the histogram."""
         return self.histref.size
 
     def __str__(self) -> str:
@@ -138,7 +177,27 @@ class AggHistogram(db.Item):
     __repr__ = __str__
     __dask_scheduler__ = staticmethod(tget)
 
-    def to_dask_array(self, flow: bool = False, dd: bool = False):
+    def to_dask_array(
+        self, flow: bool = False, dd: bool = False
+    ) -> Union[Tuple[da.Array, ...], Tuple[da.Array, Tuple[da.Array, ...]]]:
+        """Convert histogram object to dask.array form.
+
+        Parameters
+        ----------
+        flow : bool
+            Include the flow bins.
+        dd : bool
+            Use the histogramdd return syntax, where the edges are in a tuple.
+            Otherwise, this is the histogram/histogram2d return style.
+
+        Returns
+        -------
+        contents : dask.array.Array
+            The bin contents
+        *edges : dask.array.Array
+            The edges for each dimension
+
+        """
         return to_dask_array(self, flow=flow, dd=dd)
 
     def __array__(self) -> np.ndarray:
