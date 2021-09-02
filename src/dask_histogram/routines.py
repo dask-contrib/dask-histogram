@@ -35,6 +35,41 @@ def histogram(
     storage: bh.storage.Storage = bh.storage.Double(),
     threads: Optional[int] = None,
 ) -> Union[AggHistogram, Tuple[da.Array, ...]]:
+    """FIXME: Short description.
+
+    FIXME: Long description.
+
+    Parameters
+    ----------
+    x : DaskCollection
+        FIXME: Add docs.
+    bins : BinType
+        FIXME: Add docs.
+    range : RangeType
+        FIXME: Add docs.
+    normed : Optional[bool]
+        FIXME: Add docs.
+    weights : Optional[DaskCollection]
+        FIXME: Add docs.
+    density : bool
+        FIXME: Add docs.
+    histogram : Optional[Any]
+        FIXME: Add docs.
+    storage : bh.storage.Storage
+        FIXME: Add docs.
+    threads : Optional[int]
+        FIXME: Add docs.
+
+    Returns
+    -------
+    Union[AggHistogram, Tuple[da.Array, ...]]
+        FIXME: Add docs.
+
+    Examples
+    --------
+    FIXME: Add docs.
+
+    """
     h = histogramdd(
         (x,),
         bins=bins,
@@ -64,6 +99,43 @@ def histogram2d(
     storage: bh.storage.Storage = bh.storage.Double(),
     threads: Optional[int] = None,
 ) -> Union[AggHistogram, Tuple[da.Array, ...]]:
+    """FIXME: Short description.
+
+    FIXME: Long description.
+
+    Parameters
+    ----------
+    x : DaskCollection
+        FIXME: Add docs.
+    y : DaskCollection
+        FIXME: Add docs.
+    bins : BinArg
+        FIXME: Add docs.
+    range : RangeArg
+        FIXME: Add docs.
+    normed : Optional[bool]
+        FIXME: Add docs.
+    weights : Optional[DaskCollection]
+        FIXME: Add docs.
+    density : bool
+        FIXME: Add docs.
+    histogram : Optional[Any]
+        FIXME: Add docs.
+    storage : bh.storage.Storage
+        FIXME: Add docs.
+    threads : Optional[int]
+        FIXME: Add docs.
+
+    Returns
+    -------
+    Union[AggHistogram, Tuple[da.Array, ...]]
+        FIXME: Add docs.
+
+    Examples
+    --------
+    FIXME: Add docs.
+
+    """
     h = histogramdd(
         (x, y),
         bins=bins,
@@ -94,6 +166,48 @@ def histogramdd(
 ) -> Union[
     AggHistogram, Union[Tuple[da.Array, ...], Tuple[da.Array, Tuple[da.Array, ...]]]
 ]:
+    """FIXME: Short description.
+
+    FIXME: Long description.
+
+    Parameters
+    ----------
+    a : Union[DaskCollection, Tuple[DaskCollection, ...]]
+        FIXME: Add docs.
+    bins : BinArg
+        FIXME: Add docs.
+    range : RangeArg
+        FIXME: Add docs.
+    normed : Optional[bool]
+        FIXME: Add docs.
+    weights : Optional[DaskCollection]
+        FIXME: Add docs.
+    density : bool
+        FIXME: Add docs.
+    histogram : Optional[Any]
+        FIXME: Add docs.
+    storage : bh.storage.Storage
+        FIXME: Add docs.
+    threads : Optional[int]
+        FIXME: Add docs.
+
+    Returns
+    -------
+    Union[ AggHistogram, Union[Tuple[da.Array, ...], Tuple[da.Array, Tuple[da.Array, ...]]] ]
+        FIXME: Add docs.
+
+    Raises
+    ------
+    ValueError
+        FIXME: Add docs.
+    KeyError
+        FIXME: Add docs.
+
+    Examples
+    --------
+    FIXME: Add docs.
+
+    """
     # Check for invalid argument combinations.
     if normed is not None:
         raise KeyError(

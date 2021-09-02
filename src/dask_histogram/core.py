@@ -143,17 +143,17 @@ class AggHistogram(db.Item):
 
     @property
     def key(self) -> str:
-        """Unique key in a Dask graph."""
+        """Key in a Dask graph."""
         return self._key
 
     @property
     def name(self) -> str:
-        """Same as `key`."""
+        """Duplicate of `key`."""
         return self._key
 
     @property
     def histref(self) -> bh.Histogram:
-        """Reference boost-histogram object."""
+        """Empty reference boost-histogram object."""
         return self._histref
 
     @property
@@ -279,9 +279,29 @@ class PartitionedHistogram(DaskMethodsMixin):
 
     @property
     def histref(self) -> bh.Histogram:
+        """boost_histogram.Histogram: reference histogram."""
         return self._histref
 
     def reduced(self, split_every: int = None) -> AggHistogram:
+        """FIXME: Short description.
+
+        FIXME: Long description.
+
+        Parameters
+        ----------
+        split_every : int
+            FIXME: Add docs.
+
+        Returns
+        -------
+        AggHistogram
+            FIXME: Add docs.
+
+        Examples
+        --------
+        FIXME: Add docs.
+
+        """
         return _reduction(self, split_every=split_every)
 
 

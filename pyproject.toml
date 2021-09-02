@@ -27,3 +27,6 @@ files = ["src", "tests"]
 [[tool.mypy.overrides]]
 module = ["dask.*"]
 ignore_missing_imports = true
+
+[tool.pydocstyle]
+ignore = "D105"
