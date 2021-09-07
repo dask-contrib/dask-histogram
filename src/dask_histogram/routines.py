@@ -10,8 +10,7 @@ import dask.array as da
 from dask.base import is_dask_collection
 from dask.utils import is_arraylike, is_dataframe_like
 
-from dask_histogram.core import AggHistogram
-from dask_histogram.core import histogram as core_histogram
+from dask_histogram.core import AggHistogram, factory
 
 from .bins import normalize_bins_range
 
@@ -249,7 +248,7 @@ def histogramdd(
             axes.append(bh.axis.Regular(bins=b, start=r[0], stop=r[1]))  # type: ignore
 
     # Finally create the histogram object.
-    ah = core_histogram(*a, axes=axes, storage=storage, weights=weights)
+    ah = factory(*a, axes=axes, storage=storage, weights=weights)
 
     if histogram is not None:
         return ah

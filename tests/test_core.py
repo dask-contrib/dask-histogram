@@ -19,7 +19,7 @@ def test_1d_array(weights):
     if weights is not None:
         weights = da.random.uniform(size=(2000,), chunks=(250,))
     x = da.random.standard_normal(size=(2000,), chunks=(250,))
-    dh = dhc.histogram(x, histref=h, weights=weights, split_every=4)
+    dh = dhc.factory(x, histref=h, weights=weights, split_every=4)
     h.fill(x.compute(), weight=weights.compute() if weights is not None else None)
     np.testing.assert_allclose(h.counts(flow=True), dh.compute().counts(flow=True))
 
@@ -38,7 +38,7 @@ def test_array_input(weights, shape):
         da.random.uniform(size=(2000,), chunks=(200,)) if weights is not None else None
     )
     h = bh.Histogram(*axes, storage=bh.storage.Weight())
-    dh = dhc.histogram(x, histref=h, weights=weights, split_every=4)
+    dh = dhc.factory(x, histref=h, weights=weights, split_every=4)
     h.fill(*xc, weight=weights.compute() if weights is not None else None)
     np.testing.assert_allclose(h.counts(flow=True), dh.compute().counts(flow=True))
 
@@ -54,7 +54,7 @@ def test_multi_array(weights):
         weights = da.random.uniform(size=(2000,), chunks=(250,))
     x = da.random.standard_normal(size=(2000,), chunks=(250,))
     y = da.random.standard_normal(size=(2000,), chunks=(250,))
-    dh = dhc.histogram(x, y, histref=h, weights=weights, split_every=4)
+    dh = dhc.factory(x, y, histref=h, weights=weights, split_every=4)
     h.fill(
         x.compute(),
         y.compute(),
@@ -74,7 +74,7 @@ def test_nd_array(weights):
     if weights is not None:
         weights = da.random.uniform(0, 1, size=(2000,), chunks=(250,))
     x = da.random.uniform(0, 1, size=(2000, 3), chunks=(250, 3))
-    dh = dhc.histogram(x, histref=h, weights=weights, split_every=4)
+    dh = dhc.factory(x, histref=h, weights=weights, split_every=4)
     h.fill(
         *(x.compute().T),
         weight=weights.compute() if weights is not None else None,
@@ -94,7 +94,7 @@ def test_df_input(weights):
     if weights is not None:
         weights = da.fabs(df["y"].to_dask_array())
     df = df[["x", "y"]]
-    dh = dhc.histogram(df, histref=h, weights=weights, split_every=200)
+    dh = dhc.factory(df, histref=h, weights=weights, split_every=200)
     h.fill(
         *(dfc[["x", "y"]].to_numpy().T),
         weight=weights.compute() if weights is not None else None,
@@ -116,7 +116,7 @@ def test_to_dask_array(weights, shape):
         da.random.uniform(size=(2000,), chunks=(200,)) if weights is not None else None
     )
     h = bh.Histogram(*axes, storage=bh.storage.Weight())
-    dh = dhc.histogram(x, histref=h, weights=weights, split_every=4)
+    dh = dhc.factory(x, histref=h, weights=weights, split_every=4)
     h.fill(*xc, weight=weights.compute() if weights is not None else None)
     c, _ = dh.to_dask_array(flow=False, dd=True)
     dau.assert_eq(c, h.to_numpy()[0])
@@ -133,7 +133,7 @@ def gen_hist_1D(
         storage=bh.storage.Weight(),
     )
     x = da.random.standard_normal(size=size, chunks=chunks)
-    return dhc.histogram(x, histref=hr)
+    return dhc.factory(x, histref=hr)
 
 
 @delayed

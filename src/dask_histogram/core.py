@@ -463,7 +463,7 @@ imul = _BinaryOp(operator.imul)
 itruediv = _BinaryOp(operator.itruediv)
 
 
-def histogram(
+def factory(
     *data: DaskCollection,
     histref: bh.Histogram = None,
     axes: Iterable[bh.axis.Axis] = None,

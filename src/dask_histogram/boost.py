@@ -16,8 +16,7 @@ from dask.delayed import Delayed, delayed
 from dask.utils import is_arraylike, is_dataframe_like
 
 from .bins import normalize_bins_range
-from .core import AggHistogram
-from .core import histogram as core_histogram
+from .core import AggHistogram, factory
 
 if TYPE_CHECKING:
     from .typing import BinArg, BinType, DaskCollection, RangeArg, RangeType
@@ -378,7 +377,7 @@ class Histogram(bh.Histogram, family=dask_histogram):
         else:
             raise ValueError(f"Cannot interpret input data: {args}")
 
-        new_fill = core_histogram(*args, histref=self, weights=weight)
+        new_fill = factory(*args, histref=self, weights=weight)
         if self._staged is not None:
             self._staged += new_fill
         else:
