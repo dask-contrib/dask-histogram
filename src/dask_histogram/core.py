@@ -467,7 +467,7 @@ def histogram(
     *data: DaskCollection,
     histref: bh.Histogram = None,
     axes: Iterable[bh.axis.Axis] = None,
-    storage: bh.storage.Storage = bh.storage.Double(),
+    storage: bh.storage.Storage = None,
     weights: DaskCollection = None,
     split_every: int = None,
 ) -> AggHistogram:
@@ -508,6 +508,8 @@ def histogram(
     if histref is None and axes is None:
         raise ValueError("Either histref or axes must be defined.")
     elif histref is None:
+        if storage is None:
+            storage = bh.storage.Double()
         histref = bh.Histogram(*axes, storage=storage)  # type: ignore
     return _reduced_histogram(
         *data, histref=histref, weights=weights, split_every=split_every
