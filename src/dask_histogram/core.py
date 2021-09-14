@@ -200,6 +200,9 @@ class AggHistogram(db.Item):
         """
         return to_dask_array(self, flow=flow, dd=dd)
 
+    def to_boost(self) -> bh.Histogram:
+        return self.compute()
+
     def __array__(self) -> np.ndarray:
         return self.compute().__array__()
 
