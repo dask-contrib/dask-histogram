@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import operator
-from typing import TYPE_CHECKING, Any, Iterable, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Iterable, List, Tuple, Union
 
 import boost_histogram as bh
 import dask.array as da
@@ -21,6 +21,14 @@ if TYPE_CHECKING:
     from .typing import DaskCollection
 else:
     DaskCollection = object
+
+__all__ = (
+    "AggHistogram",
+    "PartitionedHistogram",
+    "clone",
+    "factory",
+    "to_dask_array",
+)
 
 
 def clone(histref: bh.Histogram = None) -> bh.Histogram:
@@ -207,7 +215,7 @@ class AggHistogram(db.Item):
         return self.compute().__array__()
 
     def __iadd__(self, other) -> AggHistogram:
-        return iadd(self, other)
+        return _iadd(self, other)
 
     def __add__(self, other: Any) -> AggHistogram:
         return self.__iadd__(other)
@@ -216,7 +224,7 @@ class AggHistogram(db.Item):
         return self.__iadd__(other)
 
     def __itruediv__(self, other: Any) -> AggHistogram:
-        return itruediv(self, other)
+        return _itruediv(self, other)
 
     def __truediv__(self, other: Any) -> AggHistogram:
         return self.__itruediv__(other)
@@ -228,7 +236,7 @@ class AggHistogram(db.Item):
         return self.__idiv__(other)
 
     def __imul__(self, other: Any) -> AggHistogram:
-        return imul(self, other)
+        return _imul(self, other)
 
     def __mul__(self, other: Any) -> AggHistogram:
         return self.__imul__(other)
@@ -346,7 +354,7 @@ def _reduction(ph: PartitionedHistogram, split_every: int = None) -> AggHistogra
 
 def _dependencies(
     *args: DaskCollection,
-    weights: Optional[DaskCollection] = None,
+    weights: DaskCollection = None,
 ) -> Tuple[DaskCollection, ...]:
     if weights is not None:
         return (*args, weights)
@@ -356,7 +364,7 @@ def _dependencies(
 def _reduced_histogram(
     *data: DaskCollection,
     histref: bh.Histogram,
-    weights: Optional[DaskCollection] = None,
+    weights: DaskCollection = None,
     split_every: int = None,
 ) -> AggHistogram:
     name = "hist-on-block-{}".format(tokenize(data, histref, weights))
@@ -432,10 +440,13 @@ def to_dask_array(
     return (c, *(tuple(edges)))
 
 
-class _BinaryOp:
-    def __init__(self, func):
+class BinaryOp:
+    def __init__(self, func, name=None):
         self.func = func
-        self.__name__ = func.__name__
+        if name is None:
+            self.__name__ = func.__name__
+        else:
+            self.__name__ = name
 
     def __call__(self, a, b):
         name = "{}-hist-{}".format(self.__name__, tokenize(a, b))
@@ -461,9 +472,9 @@ class _BinaryOp:
         return AggHistogram(g, name, histref=ref)
 
 
-iadd = _BinaryOp(operator.iadd)
-imul = _BinaryOp(operator.imul)
-itruediv = _BinaryOp(operator.itruediv)
+_iadd = BinaryOp(operator.iadd, name="add")
+_imul = BinaryOp(operator.imul, name="mul")
+_itruediv = BinaryOp(operator.itruediv, name="div")
 
 
 def factory(
