@@ -361,6 +361,16 @@ def _dependencies(
     return args
 
 
+def _weight_check(*data: DaskCollection, weights: DaskCollection = None) -> int:
+    if weights is None:
+        return 0
+    if weights.ndim != 1:
+        raise ValueError("weights must be one dimensional.")
+    if data[0].npartitions != weights.npartitions:
+        raise ValueError("weights must have as many partitions as the data.")
+    return 0
+
+
 def _reduced_histogram(
     *data: DaskCollection,
     histref: bh.Histogram,
@@ -368,13 +378,15 @@ def _reduced_histogram(
     split_every: int = None,
 ) -> AggHistogram:
     name = "hist-on-block-{}".format(tokenize(data, histref, weights))
-    if len(data) == 1 and not is_dataframe_like(data[0]):
+    data_is_df = is_dataframe_like(data[0])
+    _weight_check(*data, weights=weights)
+    if len(data) == 1 and not data_is_df:
         x = data[0]
         if weights is not None:
             g = partitionwise(_blocked_sa_w, name, x, weights, histref=histref)
         else:
             g = partitionwise(_blocked_sa, name, x, histref=histref)
-    elif len(data) == 1 and is_dataframe_like(data[0]):
+    elif len(data) == 1 and data_is_df:
         x = data[0]
         if weights is not None:
             g = partitionwise(_blocked_df_w, name, x, weights, histref=histref)

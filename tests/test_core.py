@@ -220,3 +220,15 @@ def test_div(other):
     h /= other
     ht = h.to_dask_array()[0]
     dau.assert_eq(ht, computed_array)
+
+
+def test_bad_weight_structure():
+    x = da.random.standard_normal(size=(100,), chunks=(20,))
+    w = da.random.standard_normal(size=(80,), chunks=(20,))
+    with pytest.raises(
+        ValueError, match="weights must have as many partitions as the data."
+    ):
+        dhc.factory(x, axes=(bh.axis.Regular(10, -3, 3),), weights=w)
+    w = da.random.standard_normal(size=(80, 3), chunks=(20, 3))
+    with pytest.raises(ValueError, match="weights must be one dimensional."):
+        dhc.factory(x, axes=(bh.axis.Regular(10, -3, 3),), weights=w)
