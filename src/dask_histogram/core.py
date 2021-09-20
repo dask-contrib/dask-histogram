@@ -223,6 +223,12 @@ class AggHistogram(db.Item):
     def __radd__(self, other: Any) -> AggHistogram:
         return self.__iadd__(other)
 
+    def __isub__(self, other: Any) -> AggHistogram:
+        return _isub(self, other)
+
+    def __sub__(self, other: Any) -> AggHistogram:
+        return self.__isub__(other)
+
     def __itruediv__(self, other: Any) -> AggHistogram:
         return _itruediv(self, other)
 
@@ -485,6 +491,7 @@ class BinaryOp:
 
 
 _iadd = BinaryOp(operator.iadd, name="add")
+_isub = BinaryOp(operator.isub, name="sub")
 _imul = BinaryOp(operator.imul, name="mul")
 _itruediv = BinaryOp(operator.itruediv, name="div")
 

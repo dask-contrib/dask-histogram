@@ -172,6 +172,31 @@ def test_add(other):
 
 
 @pytest.mark.parametrize("other", [get_number(5), get_array(10)])
+def test_sub(other):
+    h = gen_hist_1D()
+    concrete = other.compute()
+    computed_array = (h.compute() - concrete).to_numpy()[0]
+
+    ht = (h - other).to_dask_array()[0]
+    dau.assert_eq(ht, computed_array)
+
+    ht = (h - concrete).to_dask_array()[0]
+    dau.assert_eq(ht, computed_array)
+
+    h = gen_hist_1D()
+    computed_array = (h.compute() - concrete).to_numpy()[0]
+    h -= concrete
+    ht = h.to_dask_array()[0]
+    dau.assert_eq(ht, computed_array)
+
+    h = gen_hist_1D()
+    computed_array = (h.compute() - concrete).to_numpy()[0]
+    h -= other
+    ht = h.to_dask_array()[0]
+    dau.assert_eq(ht, computed_array)
+
+
+@pytest.mark.parametrize("other", [get_number(5), get_array(10)])
 def test_mul(other):
     h = gen_hist_1D()
     concrete = other.compute()
