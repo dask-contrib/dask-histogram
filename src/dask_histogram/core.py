@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import operator
-from typing import TYPE_CHECKING, Any, Iterable, List, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Iterable, List, Tuple, Union
 
 import boost_histogram as bh
 import dask.array as da
@@ -377,7 +377,7 @@ def _weight_check(*data: DaskCollection, weights: DaskCollection = None) -> int:
     return 0
 
 
-def _reduced_histogram(
+def _partitioned_histogram(
     *data: DaskCollection,
     histref: bh.Histogram,
     weights: DaskCollection = None,
@@ -406,7 +406,18 @@ def _reduced_histogram(
 
     dependencies = _dependencies(*data, weights=weights)
     hlg = HighLevelGraph.from_collections(name, g, dependencies=dependencies)
-    ph = PartitionedHistogram(hlg, name, data[0].npartitions, histref=histref)
+    return PartitionedHistogram(hlg, name, data[0].npartitions, histref=histref)
+
+
+def _reduced_histogram(
+    *data: DaskCollection,
+    histref: bh.Histogram,
+    weights: DaskCollection = None,
+    split_every: int = None,
+) -> AggHistogram:
+    ph = _partitioned_histogram(
+        *data, histref=histref, weights=weights, split_every=split_every
+    )
     return ph.reduced(split_every=split_every)
 
 
@@ -458,15 +469,12 @@ def to_dask_array(
     return (c, *(tuple(edges)))
 
 
-class BinaryOp:
-    def __init__(self, func, name=None):
+class BinaryOpAgg:
+    def __init__(self, func: Callable[[Any, Any], Any], name: str = None) -> None:
         self.func = func
-        if name is None:
-            self.__name__ = func.__name__
-        else:
-            self.__name__ = name
+        self.__name__ = func.__name__ if name is None else name
 
-    def __call__(self, a, b):
+    def __call__(self, a: AggHistogram, b: AggHistogram) -> AggHistogram:
         name = "{}-hist-{}".format(self.__name__, tokenize(a, b))
         deps = []
         if is_dask_collection(a):
@@ -490,10 +498,10 @@ class BinaryOp:
         return AggHistogram(g, name, histref=ref)
 
 
-_iadd = BinaryOp(operator.iadd, name="add")
-_isub = BinaryOp(operator.isub, name="sub")
-_imul = BinaryOp(operator.imul, name="mul")
-_itruediv = BinaryOp(operator.itruediv, name="div")
+_iadd = BinaryOpAgg(operator.iadd, name="add")
+_isub = BinaryOpAgg(operator.isub, name="sub")
+_imul = BinaryOpAgg(operator.imul, name="mul")
+_itruediv = BinaryOpAgg(operator.itruediv, name="div")
 
 
 def factory(
@@ -503,6 +511,7 @@ def factory(
     storage: bh.storage.Storage = None,
     weights: DaskCollection = None,
     split_every: int = None,
+    keep_partitioned: bool = False,
 ) -> AggHistogram:
     """FIXME: Short description.
 
@@ -514,13 +523,15 @@ def factory(
         FIXME: Add docs.
     histref : bh.Histogram
         FIXME: Add docs.
-    axes : Tuple[bh.axis.Axis, ...]
+    axes : Iterable[bh.axis.Axis]
         FIXME: Add docs.
     storage : bh.storage.Storage
         FIXME: Add docs.
     weights : DaskCollection
         FIXME: Add docs.
     split_every : int
+        FIXME: Add docs.
+    keep_partitioned : bool
         FIXME: Add docs.
 
     Returns
@@ -544,6 +555,5 @@ def factory(
         if storage is None:
             storage = bh.storage.Double()
         histref = bh.Histogram(*axes, storage=storage)  # type: ignore
-    return _reduced_histogram(
-        *data, histref=histref, weights=weights, split_every=split_every
-    )
+    f = _partitioned_histogram if keep_partitioned else _reduced_histogram
+    return f(*data, histref=histref, weights=weights, split_every=split_every)
