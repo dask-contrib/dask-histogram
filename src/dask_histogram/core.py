@@ -120,22 +120,13 @@ def _blocked_df(
 class AggHistogram(db.Item):
     """Aggregated Histogram collection.
 
-    The class constructor is typically used internally; for users
-    :py:func:`dask_histogram.factory` is recommended (along
+    The class constructor is typically used internally;
+    :py:func:`dask_histogram.factory` is recommended for users (along
     with the `dask_histogram.routines` module).
 
     See Also
     --------
     dask_histogram.factory
-
-    Parameters
-    ----------
-    dsk : dask.highlevelgraph.HighLevelGraph
-        High level graph providing the computation.
-    key : str
-        Unique identifier for the Dask graph.
-    histref : boost_histogram.Histogram
-        Reference histogram providing axes, storage, and metadata.
 
     """
 
@@ -261,6 +252,19 @@ def _finalize_partitioned_histogram(results: Any) -> Any:
 
 
 class PartitionedHistogram(DaskMethodsMixin):
+    """Partitioned Histogram collection.
+
+    The class constructor is typically used internally;
+    :py:func:`dask_histogram.factory` is recommended for users (along
+    with the `dask_histogram.routines` module).
+
+    See Also
+    --------
+    dask_histogram.factory
+    dask_histogram.AggHistogram
+
+    """
+
     def __init__(
         self, dsk: HighLevelGraph, name: str, npartitions: int, histref: bh.Histogram
     ) -> None:
@@ -304,7 +308,7 @@ class PartitionedHistogram(DaskMethodsMixin):
         """boost_histogram.Histogram: reference histogram."""
         return self._histref
 
-    def reduced(self, split_every: int = None) -> AggHistogram:
+    def to_agg(self, split_every: int = None) -> AggHistogram:
         """Translate into a reduced aggregated histogram."""
         return _reduction(self, split_every=split_every)
 
@@ -405,7 +409,7 @@ def _reduced_histogram(
     ph = _partitioned_histogram(
         *data, histref=histref, weights=weights, split_every=split_every
     )
-    return ph.reduced(split_every=split_every)
+    return ph.to_agg(split_every=split_every)
 
 
 def to_dask_array(

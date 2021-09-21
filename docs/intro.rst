@@ -23,35 +23,22 @@ We test dask-histogram on GNU/Linux, macOS, and Windows.
 Overview
 ^^^^^^^^
 
-Dask-histogram aims to reproduce the API provided by boost-histogram_,
-but with support for :doc:`dask collections <dask:user-interfaces>` as
-input data. The documentation assumes that you have some familiarity
-with both Dask and boost-histogram.
+Dask-histogram provides a new `collection type
+<https://docs.dask.org/en/latest/custom-collections.html>`_ for lazily
+constructing histogram objects. The API provided by boost-histogram_
+is leveraged to calculate histograms on chunked/partitioned data from
+the core Dask Array and DataFrame collections.
 
-The core component is the :class:`dask_histogram.Histogram` class,
-which inherits from :class:`boost_histogram.Histogram` and overrides
-the ``fill`` function such that it is aware of chunked/partitioned
-Dask collections.
-
-We say Dask collections instead of only Dask arrays because
-dask-histogram supports :py:obj:`dask.dataframe.DataFrame` as input
-data anywhere that columnar arrays are supported, and
-:py:obj:`dask.dataframe.Series` anywhere that 1D arrays are supported.
-When mixing collections care must be taken to ensure the partitioning
-of :py:obj:`DataFrame <dask.dataframe.DataFrame>` and :py:obj:`Series
-<dask.dataframe.Series>` inputs are compatible with the chunking of
-:py:obj:`Array <dask.array.Array>` inputs.
-
-Additional components include the NumPy-like
-:func:`dask_histogram.histogram`, :func:`dask_histogram.histogram2d`,
-and :func:`dask_histogram.histogramdd` functions. These functions
-exist to mirror what is provided by the
-:py:mod:`boost_histogram.numpy` module. The behavior of these routines
-(by default) mirrors the :py:func:`dask.array.histogram`,
-:py:func:`dask.array.histogram2d`, and
-:py:func:`dask.array.histogramdd` functions, respectively, while
-taking advantage of the :class:`Histogram <dask_histogram.Histogram>`
-object in the internal implementation.
+The main component is the :class:`dask_histogram.AggHistogram` class.
+Users will typically create ``AggHistogram`` objects via the
+:py:func:`dask_histogram.factory` function, or the
+NumPy/dask.array-like functions in the
+:py:mod:`dask_histogram.routines` module. Another histogram class
+exists in the :py:mod:`dask_histogram.boost` module
+(:py:obj:`dask_histogram.boost.Histogram`) which inherits from
+:class:`boost_histogram.Histogram` and overrides the ``fill`` function
+such that it is aware of chunked/partitioned Dask collections. This
+class is backed by :py:obj:`dask_histogram.AggHistogram.`
 
 .. _boost-histogram: https://boost-histogram.readthedocs.io/en/latest/
 .. _Dask: https://docs.dask.org/en/latest/
