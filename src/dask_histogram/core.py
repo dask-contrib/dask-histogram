@@ -121,12 +121,12 @@ class AggHistogram(db.Item):
     """Aggregated Histogram collection.
 
     The class constructor is typically used internally; for users
-    :py:func:`dask_histogram.core.histogram` is recommended (along
+    :py:func:`dask_histogram.factory` is recommended (along
     with the `dask_histogram.routines` module).
 
     See Also
     --------
-    dask_histogram.core.histogram
+    dask_histogram.factory
 
     Parameters
     ----------
@@ -209,6 +209,11 @@ class AggHistogram(db.Item):
         return to_dask_array(self, flow=flow, dd=dd)
 
     def to_boost(self) -> bh.Histogram:
+        """Convert to a boost_histogram.Histogram via computation.
+
+        This is an alias of `.compute()`.
+
+        """
         return self.compute()
 
     def __array__(self) -> np.ndarray:
@@ -300,25 +305,7 @@ class PartitionedHistogram(DaskMethodsMixin):
         return self._histref
 
     def reduced(self, split_every: int = None) -> AggHistogram:
-        """FIXME: Short description.
-
-        FIXME: Long description.
-
-        Parameters
-        ----------
-        split_every : int
-            FIXME: Add docs.
-
-        Returns
-        -------
-        AggHistogram
-            FIXME: Add docs.
-
-        Examples
-        --------
-        FIXME: Add docs.
-
-        """
+        """Translate into a reduced aggregated histogram."""
         return _reduction(self, split_every=split_every)
 
 
@@ -426,27 +413,29 @@ def to_dask_array(
     flow: bool = False,
     dd: bool = False,
 ) -> Union[Tuple[DaskCollection, List[DaskCollection]], Tuple[DaskCollection, ...]]:
-    """FIXME: Short description.
-
-    FIXME: Long description.
+    """Convert `agghist` to a `dask.array` return style.
 
     Parameters
     ----------
     agghist : AggHistogram
-        FIXME: Add docs.
+        The aggregated histogram collection to convert.
     flow : bool
-        FIXME: Add docs.
+        If ``True``, include under- and over-flow bins
     dd : bool
-        FIXME: Add docs.
+        If True, use ``histogramdd`` style return.
+
+    See Also
+    --------
+    dask_histogram.AggHistogram.to_dask_array
 
     Returns
     -------
     Union[Tuple[DaskCollection, List[DaskCollection]], Tuple[DaskCollection, ...]]
-        FIXME: Add docs.
-
-    Examples
-    --------
-    FIXME: Add docs.
+        The first return is always the bin counts. If `dd` is ``True``
+        the second return is a list where each element is an array of
+        bin edges for each axis. If `dd` is ``False``, the bin edge
+        arrays will not be stored in a list (`histogram2d` style
+        return).
 
     """
     name = "to-dask-array-{}".format(tokenize(agghist))
@@ -512,45 +501,49 @@ def factory(
     weights: DaskCollection = None,
     split_every: int = None,
     keep_partitioned: bool = False,
-) -> AggHistogram:
-    """FIXME: Short description.
+) -> Union[AggHistogram, PartitionedHistogram]:
+    """Daskified Histogram collection factory function.
 
-    FIXME: Long description.
+    Given data and the characteristics of a histogram (either a
+    reference :py:obj:`boost_histogram.Histogram` object or a set of
+    axes), create an :py:obj:`AggHistogram` or
+    :py:obj:`PartitionedHistogram` collection.
 
     Parameters
     ----------
     *data : DaskCollection
-        FIXME: Add docs.
-    histref : bh.Histogram
-        FIXME: Add docs.
-    axes : Iterable[bh.axis.Axis]
-        FIXME: Add docs.
-    storage : bh.storage.Storage
-        FIXME: Add docs.
-    weights : DaskCollection
-        FIXME: Add docs.
-    split_every : int
-        FIXME: Add docs.
-    keep_partitioned : bool
-        FIXME: Add docs.
+        The data to histogram.
+    histref : bh.Histogram, optional
+        A reference histogram object, required if `axes` is not used.
+    axes : Iterable[bh.axis.Axis], optional
+        The axes of the histogram, required if `histref` is not used.
+    storage : bh.storage.Storage, optional
+        Storage type of the histogram, only compatible with use of the
+        `axes` argument.
+    weights : DaskCollection, optional
+        Weights associated with the `data`.
+    split_every : int, optional
+        How many blocks to use in each split during aggregation.
+    keep_partitioned : bool, optional
+        If ``True``, return the partitioned histogram collection
+        instead of an aggregated histogram.
 
     Returns
     -------
-    AggHistogram
-        FIXME: Add docs.
+    AggHistogram or PartitionedHistogram
+        The resulting histogram collection.
 
     Raises
     ------
     ValueError
-        FIXME: Add docs.
-
-    Examples
-    --------
-    FIXME: Add docs.
+        If `histref` and `axes` are both not ``None``, or if `storage`
+        is used with `histref`.
 
     """
     if histref is None and axes is None:
         raise ValueError("Either histref or axes must be defined.")
+    if histref is not None and storage is not None:
+        raise ValueError("Storage cannot be defined along with histref.")
     elif histref is None:
         if storage is None:
             storage = bh.storage.Double()
