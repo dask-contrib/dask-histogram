@@ -320,13 +320,13 @@ def _reduction(ph: PartitionedHistogram, split_every: int = None) -> AggHistogra
         split_every = ph.npartitions
 
     token = tokenize(ph, sum, split_every)
-    fmt = f"hist-aggregate-{token}"
+    name = f"hist-aggregate-{token}"
     k = ph.npartitions
     b = ph.name
     d = 0
     dsk = {}
     while k > split_every:
-        c = f"{fmt}{d}"
+        c = f"{name}{d}"
         for i, inds in enumerate(partition_all(split_every, range(k))):
             dsk[(c, i)] = (
                 empty_safe_aggregate,
@@ -337,16 +337,16 @@ def _reduction(ph: PartitionedHistogram, split_every: int = None) -> AggHistogra
         k = i + 1
         b = c
         d += 1
-    dsk[(fmt, 0)] = (
+    dsk[(name, 0)] = (
         empty_safe_aggregate,
         sum,
         [(b, j) for j in range(k)],
         True,
     )
 
-    dsk[fmt] = dsk.pop((fmt, 0))  # type: ignore
-    g = HighLevelGraph.from_collections(fmt, dsk, dependencies=[ph])
-    return AggHistogram(g, fmt, histref=ph.histref)
+    dsk[name] = dsk.pop((name, 0))  # type: ignore
+    g = HighLevelGraph.from_collections(name, dsk, dependencies=[ph])
+    return AggHistogram(g, name, histref=ph.histref)
 
 
 def _dependencies(
