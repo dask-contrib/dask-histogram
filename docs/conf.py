@@ -56,10 +56,10 @@ exclude_patterns = []
 #
 html_theme = "dask_sphinx_theme"
 
-html_theme_options = {
-    "display_version": True,
-    "sticky_navigation": True,
-}
+# html_theme_options = {
+#     "display_version": True,
+#     "sticky_navigation": True,
+# }
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

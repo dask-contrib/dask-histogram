@@ -2,7 +2,7 @@ from setuptools import setup
 
 extras_require = {
     "test": ["pytest", "dask[dataframe]", "hist"],
-    "docs": ["sphinx>=4.0.0", "dask-sphinx-theme", "autodocsumm"],
+    "docs": ["sphinx>=4.0.0", "dask-sphinx-theme>=2.0.0", "autodocsumm"],
 }
 
 extras_require["complete"] = sorted(set(sum(extras_require.values(), [])))
