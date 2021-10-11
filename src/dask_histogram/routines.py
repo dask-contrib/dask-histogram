@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any
 
 import boost_histogram as bh
 import dask.array as da
@@ -26,14 +26,14 @@ def histogram(
     x: DaskCollection,
     bins: BinType = 10,
     range: RangeType = None,
-    normed: Optional[bool] = None,
-    weights: Optional[DaskCollection] = None,
+    normed: bool | None = None,
+    weights: DaskCollection | None = None,
     density: bool = False,
     *,
-    histogram: Optional[Any] = None,
+    histogram: Any | None = None,
     storage: bh.storage.Storage = bh.storage.Double(),
-    threads: Optional[int] = None,
-) -> Union[AggHistogram, Tuple[da.Array, ...]]:
+    threads: int | None = None,
+) -> AggHistogram | tuple[da.Array, ...]:
     """FIXME: Short description.
 
     FIXME: Long description.
@@ -90,14 +90,14 @@ def histogram2d(
     y: DaskCollection,
     bins: BinArg = 10,
     range: RangeArg = None,
-    normed: Optional[bool] = None,
-    weights: Optional[DaskCollection] = None,
+    normed: bool | None = None,
+    weights: DaskCollection | None = None,
     density: bool = False,
     *,
-    histogram: Optional[Any] = None,
+    histogram: Any | None = None,
     storage: bh.storage.Storage = bh.storage.Double(),
-    threads: Optional[int] = None,
-) -> Union[AggHistogram, Tuple[da.Array, ...]]:
+    threads: int | None = None,
+) -> AggHistogram | tuple[da.Array, ...]:
     """FIXME: Short description.
 
     FIXME: Long description.
@@ -152,19 +152,17 @@ def histogram2d(
 
 
 def histogramdd(
-    a: Union[DaskCollection, Tuple[DaskCollection, ...]],
+    a: DaskCollection | tuple[DaskCollection, ...],
     bins: BinArg = 10,
     range: RangeArg = None,
-    normed: Optional[bool] = None,
-    weights: Optional[DaskCollection] = None,
+    normed: bool | None = None,
+    weights: DaskCollection | None = None,
     density: bool = False,
     *,
-    histogram: Optional[Any] = None,
+    histogram: Any | None = None,
     storage: bh.storage.Storage = bh.storage.Double(),
-    threads: Optional[int] = None,
-) -> Union[
-    AggHistogram, Union[Tuple[da.Array, ...], Tuple[da.Array, Tuple[da.Array, ...]]]
-]:
+    threads: int | None = None,
+) -> (AggHistogram | tuple[da.Array, ...] | tuple[da.Array, tuple[da.Array, ...]]):
     """FIXME: Short description.
 
     FIXME: Long description.
@@ -240,7 +238,7 @@ def histogramdd(
     bins, range = normalize_bins_range(ndim, bins, range)
 
     # Create the axes based on the bins and range values.
-    axes: List[Any] = []
+    axes: list[Any] = []
     for _, (b, r) in enumerate(zip(bins, range)):  # type: ignore
         if r is None:
             axes.append(bh.axis.Variable(b))  # type: ignore

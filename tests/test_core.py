@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Tuple
-
 import boost_histogram as bh
 import dask.array as da
 import dask.array.utils as dau
@@ -124,9 +122,9 @@ def test_to_dask_array(weights, shape):
 
 def gen_hist_1D(
     bins: int = 10,
-    range: Tuple[float, float] = (-3, 3),
-    size: Tuple[int, ...] = (1000,),
-    chunks: Tuple[int, ...] = (250,),
+    range: tuple[float, float] = (-3, 3),
+    size: tuple[int, ...] = (1000,),
+    chunks: tuple[int, ...] = (250,),
 ) -> dhc.AggHistogram:
     hr = bh.Histogram(
         bh.axis.Regular(bins, range[0], range[1]),

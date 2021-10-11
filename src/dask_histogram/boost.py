@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import operator
 import warnings
-from typing import TYPE_CHECKING, Any, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any
 
 import boost_histogram as bh
 import boost_histogram.axis as axis
@@ -32,7 +32,7 @@ __all__ = ("Histogram", "histogram", "histogram2d", "histogramdd")
 def _blocked_fill_1d(
     data: Any,
     meta_hist: Histogram,
-    weight: Optional[Any] = None,
+    weight: Any | None = None,
 ):
     """Single delayed (1D) histogram concrete fill."""
     hfb = Histogram(*meta_hist.axes, storage=meta_hist._storage_type())
@@ -44,7 +44,7 @@ def _blocked_fill_1d(
 def _blocked_fill_rectangular(
     sample: Any,
     meta_hist: Histogram,
-    weight: Optional[Any] = None,
+    weight: Any | None = None,
 ):
     hfb = Histogram(*meta_hist.axes, storage=meta_hist._storage_type())
     hfb.concrete_fill(*(sample.T), weight=weight)
@@ -55,7 +55,7 @@ def _blocked_fill_rectangular(
 def _blocked_fill_dataframe(
     sample: Any,
     meta_hist: Histogram,
-    weight: Optional[Any] = None,
+    weight: Any | None = None,
 ):
     hfb = Histogram(*meta_hist.axes, storage=meta_hist._storage_type())
     hfb.concrete_fill(*(sample[c] for c in sample.columns), weight=weight)
@@ -66,7 +66,7 @@ def _blocked_fill_dataframe(
 def _blocked_fill_multiarg(
     *args: np.ndarray,
     meta_hist: Histogram,
-    weight: Optional[Any] = None,
+    weight: Any | None = None,
 ):
     """Single delayed (nD) histogram concrete fill."""
     hfb = Histogram(*meta_hist.axes, storage=meta_hist._storage_type())
@@ -81,7 +81,7 @@ def _delayed_to_numpy(hist: Histogram, flow: bool = False):
 
 def _to_dask_array(
     hist: Histogram, dtype: Any, flow: bool = False, dd: bool = False
-) -> Union[Tuple[da.Array, Tuple[da.Array, ...]], Tuple[da.Array, ...]]:
+) -> tuple[da.Array, tuple[da.Array, ...]] | tuple[da.Array, ...]:
     shape = hist.shape
     s1 = hist.to_delayed()  # delayed sum of histogram
     s2 = _delayed_to_numpy(s1, flow=flow)
@@ -97,7 +97,7 @@ def _fill_1d(
     data: DaskCollection,
     *,
     meta_hist: Histogram,
-    weight: Optional[DaskCollection] = None,
+    weight: DaskCollection | None = None,
 ) -> Delayed:
     """Fill a one dimensional histogram.
 
@@ -118,7 +118,7 @@ def _fill_rectangular(
     sample: DaskCollection,
     *,
     meta_hist: Histogram,
-    weight: Optional[DaskCollection] = None,
+    weight: DaskCollection | None = None,
 ) -> Delayed:
     """Fill nD histogram given a rectangular (multi-column) sample.
 
@@ -173,7 +173,7 @@ def _fill_rectangular(
 def _fill_multiarg(
     *samples: DaskCollection,
     meta_hist: Histogram,
-    weight: Optional[DaskCollection] = None,
+    weight: DaskCollection | None = None,
 ) -> Delayed:
     """Fill nD histogram given a multiarg (vectors) sample.
 
@@ -266,10 +266,10 @@ class Histogram(bh.Histogram, family=dask_histogram):
     ) -> None:
         """Construct a Histogram object."""
         super().__init__(*axes, storage=storage, metadata=metadata)
-        self._staged: Optional[AggHistogram] = None
+        self._staged: AggHistogram | None = None
 
     def concrete_fill(
-        self, *args: Any, weight: Optional[Any] = None, sample=None, threads=None
+        self, *args: Any, weight: Any | None = None, sample=None, threads=None
     ) -> Histogram:
         """Fill the histogram with concrete data (not a Dask collection).
 
@@ -305,7 +305,7 @@ class Histogram(bh.Histogram, family=dask_histogram):
     def fill(
         self,
         *args: DaskCollection,
-        weight: Optional[Any] = None,
+        weight: Any | None = None,
         sample=None,
         threads=None,
     ) -> Histogram:
@@ -511,14 +511,14 @@ class Histogram(bh.Histogram, family=dask_histogram):
         """
         return self.to_delayed().visualize(*args, **kwargs)
 
-    def agg_histogram(self) -> Optional[AggHistogram]:
+    def agg_histogram(self) -> AggHistogram | None:
         if self._staged is None:
             warnings.warn("No staged AggHistogram; returning None")
         return self._staged
 
     def to_dask_array(
         self, flow: bool = False, dd: bool = True
-    ) -> Union[Tuple[da.Array, ...], Tuple[da.Array, Tuple[da.Array, ...]]]:
+    ) -> tuple[da.Array, ...] | tuple[da.Array, tuple[da.Array, ...]]:
         """Convert to dask.array style of return arrays.
 
         Edges are converted to match NumPy standards, with upper edge
@@ -552,19 +552,17 @@ class Histogram(bh.Histogram, family=dask_histogram):
 
 
 def histogramdd(
-    a: Union[DaskCollection, Tuple[DaskCollection, ...]],
+    a: DaskCollection | tuple[DaskCollection, ...],
     bins: BinArg = 10,
     range: RangeArg = None,
-    normed: Optional[bool] = None,
-    weights: Optional[DaskCollection] = None,
+    normed: bool | None = None,
+    weights: DaskCollection | None = None,
     density: bool = False,
     *,
-    histogram: Optional[Any] = None,
+    histogram: Any | None = None,
     storage: storage.Storage = storage.Double(),
-    threads: Optional[int] = None,
-) -> Union[
-    Histogram, Union[Tuple[da.Array, ...], Tuple[da.Array, Tuple[da.Array, ...]]]
-]:
+    threads: int | None = None,
+) -> (Histogram | tuple[da.Array, ...] | tuple[da.Array, tuple[da.Array, ...]]):
     """Histogram dask data in multiple dimensions.
 
     Parameters
@@ -772,14 +770,14 @@ def histogram2d(
     y: DaskCollection,
     bins: BinArg = 10,
     range: RangeArg = None,
-    normed: Optional[bool] = None,
-    weights: Optional[DaskCollection] = None,
+    normed: bool | None = None,
+    weights: DaskCollection | None = None,
     density: bool = False,
     *,
-    histogram: Optional[Any] = None,
+    histogram: Any | None = None,
     storage: storage.Storage = storage.Double(),
-    threads: Optional[int] = None,
-) -> Union[Histogram, Tuple[da.Array, ...]]:
+    threads: int | None = None,
+) -> Histogram | tuple[da.Array, ...]:
     """Histogram dask data in two dimensions.
 
     Parameters
@@ -891,14 +889,14 @@ def histogram(
     x: DaskCollection,
     bins: BinType = 10,
     range: RangeType = None,
-    normed: Optional[bool] = None,
-    weights: Optional[DaskCollection] = None,
+    normed: bool | None = None,
+    weights: DaskCollection | None = None,
     density: bool = False,
     *,
-    histogram: Optional[Any] = None,
+    histogram: Any | None = None,
     storage: storage.Storage = storage.Double(),
-    threads: Optional[int] = None,
-) -> Union[Histogram, Tuple[da.Array, ...]]:
+    threads: int | None = None,
+) -> Histogram | tuple[da.Array, ...]:
     """Histogram dask data in one dimension.
 
     Parameters

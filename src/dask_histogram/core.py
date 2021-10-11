@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import operator
-from typing import TYPE_CHECKING, Any, Callable, Iterable, List, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Iterable
 
 import boost_histogram as bh
 import dask.array as da
@@ -161,7 +161,7 @@ class AggHistogram(db.Item):
         return self.histref.ndim
 
     @property
-    def shape(self) -> Tuple[int, ...]:
+    def shape(self) -> tuple[int, ...]:
         """Shape of the histogram as an array."""
         return self.histref.shape
 
@@ -178,7 +178,7 @@ class AggHistogram(db.Item):
 
     def to_dask_array(
         self, flow: bool = False, dd: bool = False
-    ) -> Union[Tuple[da.Array, ...], Tuple[da.Array, Tuple[da.Array, ...]]]:
+    ) -> tuple[da.Array, ...] | tuple[da.Array, tuple[da.Array, ...]]:
         """Convert histogram object to dask.array form.
 
         Parameters
@@ -276,10 +276,10 @@ class PartitionedHistogram(DaskMethodsMixin):
     def __dask_graph__(self) -> HighLevelGraph:
         return self.dask
 
-    def __dask_keys__(self) -> List[Tuple[str, int]]:
+    def __dask_keys__(self) -> list[tuple[str, int]]:
         return [(self.name, i) for i in range(self.npartitions)]
 
-    def __dask_layers__(self) -> Tuple[str]:
+    def __dask_layers__(self) -> tuple[str]:
         return (self.name,)
 
     def __dask_tokenize__(self) -> str:
@@ -352,7 +352,7 @@ def _reduction(ph: PartitionedHistogram, split_every: int = None) -> AggHistogra
 def _dependencies(
     *args: DaskCollection,
     weights: DaskCollection = None,
-) -> Tuple[DaskCollection, ...]:
+) -> tuple[DaskCollection, ...]:
     if weights is not None:
         return (*args, weights)
     return args
@@ -374,7 +374,7 @@ def _partitioned_histogram(
     weights: DaskCollection = None,
     split_every: int = None,
 ) -> AggHistogram:
-    name = "hist-on-block-{}".format(tokenize(data, histref, weights))
+    name = f"hist-on-block-{tokenize(data, histref, weights)}"
     data_is_df = is_dataframe_like(data[0])
     _weight_check(*data, weights=weights)
     if len(data) == 1 and not data_is_df:
@@ -416,7 +416,7 @@ def to_dask_array(
     agghist: AggHistogram,
     flow: bool = False,
     dd: bool = False,
-) -> Union[Tuple[DaskCollection, List[DaskCollection]], Tuple[DaskCollection, ...]]:
+) -> tuple[DaskCollection, list[DaskCollection]] | tuple[DaskCollection, ...]:
     """Convert `agghist` to a `dask.array` return style.
 
     Parameters
@@ -442,7 +442,7 @@ def to_dask_array(
         return).
 
     """
-    name = "to-dask-array-{}".format(tokenize(agghist))
+    name = f"to-dask-array-{tokenize(agghist)}"
     zeros = (0,) * agghist.histref.ndim
     dsk = {(name, *zeros): (lambda x, f: x.to_numpy(flow=f)[0], agghist.key, flow)}
     graph = HighLevelGraph.from_collections(name, dsk, dependencies=(agghist,))
@@ -468,7 +468,7 @@ class BinaryOpAgg:
         self.__name__ = func.__name__ if name is None else name
 
     def __call__(self, a: AggHistogram, b: AggHistogram) -> AggHistogram:
-        name = "{}-hist-{}".format(self.__name__, tokenize(a, b))
+        name = f"{self.__name__}-hist-{tokenize(a, b)}"
         deps = []
         if is_dask_collection(a):
             deps.append(a)
@@ -505,7 +505,7 @@ def factory(
     weights: DaskCollection = None,
     split_every: int = None,
     keep_partitioned: bool = False,
-) -> Union[AggHistogram, PartitionedHistogram]:
+) -> AggHistogram | PartitionedHistogram:
     """Daskified Histogram collection factory function.
 
     Given data and the characteristics of a histogram (either a

@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 if TYPE_CHECKING:
-    from typing import Sequence, Tuple
+    from typing import Sequence
 
     from .typing import BinArg, BinType, RangeArg, RangeType
 
@@ -93,7 +93,7 @@ def bins_style(ndim: int, bins: BinArg) -> BinsStyle:
 
 def bins_range_styles(
     ndim: int, bins: BinArg, range: RangeArg
-) -> Tuple[BinsStyle, RangeStyle]:
+) -> tuple[BinsStyle, RangeStyle]:
     """Determine the style of the bins and range arguments.
 
     Parameters
@@ -161,7 +161,7 @@ def bins_range_styles(
 
 def normalize_bins_range(
     ndim: int, bins: BinArg, range: RangeArg
-) -> Tuple[Sequence[BinType], Sequence[RangeType]]:
+) -> tuple[Sequence[BinType], Sequence[RangeType]]:
     """Normalize bins and range arguments to tuples.
 
     Parameters
