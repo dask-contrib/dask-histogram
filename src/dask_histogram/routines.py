@@ -46,22 +46,22 @@ def histogram(
         FIXME: Add docs.
     range : RangeType
         FIXME: Add docs.
-    normed : Optional[bool]
+    normed : bool | None
         FIXME: Add docs.
-    weights : Optional[DaskCollection]
+    weights : DaskCollection | None
         FIXME: Add docs.
     density : bool
         FIXME: Add docs.
-    histogram : Optional[Any]
+    histogram : Any | None
         FIXME: Add docs.
     storage : bh.storage.Storage
         FIXME: Add docs.
-    threads : Optional[int]
+    threads : int | None
         FIXME: Add docs.
 
     Returns
     -------
-    Union[AggHistogram, Tuple[da.Array, ...]]
+    AggHistogram | tuple[da.Array, ...]
         FIXME: Add docs.
 
     Examples
@@ -112,22 +112,22 @@ def histogram2d(
         FIXME: Add docs.
     range : RangeArg
         FIXME: Add docs.
-    normed : Optional[bool]
+    normed : bool | None
         FIXME: Add docs.
-    weights : Optional[DaskCollection]
+    weights : DaskCollection | None
         FIXME: Add docs.
     density : bool
         FIXME: Add docs.
-    histogram : Optional[Any]
+    histogram : Any | None
         FIXME: Add docs.
     storage : bh.storage.Storage
         FIXME: Add docs.
-    threads : Optional[int]
+    threads : int | None
         FIXME: Add docs.
 
     Returns
     -------
-    Union[AggHistogram, Tuple[da.Array, ...]]
+    AggHistogram | tuple[da.Array, ...]
         FIXME: Add docs.
 
     Examples
