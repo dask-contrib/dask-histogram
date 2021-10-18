@@ -563,7 +563,7 @@ def histogramdd(
     storage: storage.Storage = storage.Double(),
     threads: int | None = None,
 ) -> (Histogram | tuple[da.Array, ...] | tuple[da.Array, tuple[da.Array, ...]]):
-    """Histogram dask data in multiple dimensions.
+    """Histogram Dask data in multiple dimensions.
 
     Parameters
     ----------

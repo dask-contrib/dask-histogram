@@ -163,41 +163,67 @@ def histogramdd(
     storage: bh.storage.Storage = bh.storage.Double(),
     threads: int | None = None,
 ) -> (AggHistogram | tuple[da.Array, ...] | tuple[da.Array, tuple[da.Array, ...]]):
-    """FIXME: Short description.
-
-    FIXME: Long description.
+    """Histogram Dask data in multiple dimensions.
 
     Parameters
     ----------
-    a : Union[DaskCollection, Tuple[DaskCollection, ...]]
-        FIXME: Add docs.
-    bins : BinArg
-        FIXME: Add docs.
-    range : RangeArg
-        FIXME: Add docs.
-    normed : Optional[bool]
-        FIXME: Add docs.
-    weights : Optional[DaskCollection]
-        FIXME: Add docs.
+    a : DaskCollection or tuple[DaskCollection, ...]
+        Data to histogram. Acceptable input data can be of the form:
+
+        * A dask.array.Array of shape (N, D) where each row is a
+          sample and each column is a specific coordinate for the
+          samples.
+        * A sequence of dask collections where each collection (e.g.
+          array or series) contains all values for one coordinate of
+          all samples.
+    bins : sequence of arrays, int, or sequence of ints
+        The bin specification.
+
+        The possible binning configurations are:
+
+        * A sequence of arrays describing the monotonically increasing
+          bin edges along each dimension.
+        * A single int describing the total number of bins that will
+          be used in each dimension (this requires the `range`
+          argument to be defined).
+        * A sequence of ints describing the total number of bins to be
+          used in each dimension (this requires the `range` argument
+          to be defined).
+
+        When bins are described by arrays, the rightmost edge is
+        included. Bins described by arrays also allows for non-uniform
+        bin widths.
+    range : tuple(tuple(float, float), ...) optional
+        A sequence of length D, each a (min, max) tuple giving the
+        outer bin edges to be used if the edges are not given
+        explicitly in `bins`. If defined, this argument is required to
+        have an entry for each dimension. Unlike
+        :func:`numpy.histogramdd`, if `bins` does not define bin
+        edges, this argument is required (this function will not
+        automatically use the min and max of of the value in a given
+        dimension because the input data may be lazy in dask).
+    normed : bool, optional
+        An unsupported argument that has been deprecated in the NumPy
+        API (preserved to maintain calls dependent on argument order).
+    weights : dask.array.Array or dask.dataframe.Series, optional
+        An array of values weighing each sample in the input data. The
+        chunks of the weights must be identical to the chunking along
+        the 0th (row) axis of the data sample.
     density : bool
-        FIXME: Add docs.
-    histogram : Optional[Any]
-        FIXME: Add docs.
-    storage : bh.storage.Storage
-        FIXME: Add docs.
-    threads : Optional[int]
-        FIXME: Add docs.
+        If ``False`` (default), the returned array represents the
+        number of samples in each bin. If ``True``, the returned array
+        represents the probability density function at each bin.
+    histogram : dask_histogram.Histogram, optional
+        If not ``None``, an AggHistogram collection object is
+        returned, the default behavior is an array style return.
+    storage : boost_histogram.storage.Storage
+        Define the storage used by the :py:class:`Histogram` object.
+    threads : int, optional
+        Enable threading on :py:func:`Histogram.fill` calls.
 
     Returns
     -------
-    Union[ AggHistogram, Union[Tuple[da.Array, ...], Tuple[da.Array, Tuple[da.Array, ...]]] ]
-        FIXME: Add docs.
-
-    Raises
-    ------
-    ValueError
-        FIXME: Add docs.
-    KeyError
+    AggHistogram or tuple[da.Array, ...] or tuple[da.Array, tuple[da.Array, ...]]
         FIXME: Add docs.
 
     Examples

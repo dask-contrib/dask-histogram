@@ -1,54 +1,14 @@
 Examples
 --------
 
-You're encouraged to check out the documentation for boost-histogram_;
-any example you see there should work in dask-histogram if the input
-data is a Dask collection.
 
-Object Example
-^^^^^^^^^^^^^^
+Using the dask_histogram.factory function
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In this example we will fill a 2D histogram with Gaussian data in both
-dimensions (notice that, for convenience, the ``boost_histogram.axis``
-and ``boost_histogram.storage`` namespaces are brought in as
-``dh.axis`` and ``dh.storage``):
+abc
 
-.. code-block:: python
-
-   >>> import dask_histogram as dh
-   >>> import dask.array as da
-   >>> x = da.random.standard_normal(size=(100_000_000, 2), chunks=(10_000_000, 2))
-   >>> h = dh.Histogram(
-   ...     dh.axis.Regular(10, -3, 3),
-   ...     dh.axis.Regular(10, -3, 3),
-   ...     storage=dh.storage.Double(),
-   ... )
-   >>> h.fill(x)  # <-- no computation occurs
-   Histogram(
-     Regular(50, -3, 3),
-     Regular(50, -3, 3),
-     storage=Double()) # (has staged fills)
-   >>> h.empty()
-   True
-   >>> h.compute()   # <-- trigger computation
-   Histogram(
-     Regular(50, -3, 3),
-     Regular(50, -3, 3),
-     storage=Double()) # Sum: 99459483.0 (100000000.0 with flow)
-   >>> h.fill(x)  # fill again; notice the repr tells us we have staged fills.
-   Histogram(
-     Regular(50, -3, 3),
-     Regular(50, -3, 3),
-     storage=Double()) # Sum: 99459483.0 (100000000.0 with flow) (has staged fills)
-   >>> import dask
-   >>> dask.compute(h.to_delayed())  # <-- convert to delayed and use dask.compute
-   (Histogram(
-     Regular(50, -3, 3),
-     Regular(50, -3, 3),
-     storage=Double()) # Sum: 198918966.0 (200000000.0 with flow),)
-
-dask.array/NumPy-like Examples
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+dask.array/NumPy-like Interface
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 We can create the same histogram we created above via the function API
 which mirrors the functions in the ``dask.array`` module. First, we
@@ -146,5 +106,52 @@ With weights and variable width bins:
      Variable([-3, -2, 0, 1, 2, 3]),
      Variable([-2, -1, 1, 2]),
      storage=Weight()) # Sum: WeightedSum(value=0, variance=0) (has staged fills)
+
+Object Example
+^^^^^^^^^^^^^^
+
+You're encouraged to check out the documentation for boost-histogram_;
+any example you see there should work in dask-histogram if the input
+data is a Dask collection.
+
+In this example we will fill a 2D histogram with Gaussian data in both
+dimensions (notice that, for convenience, the ``boost_histogram.axis``
+and ``boost_histogram.storage`` namespaces are brought in as
+``dh.axis`` and ``dh.storage``):
+
+.. code-block:: python
+
+   >>> import dask_histogram as dh
+   >>> import dask.array as da
+   >>> x = da.random.standard_normal(size=(100_000_000, 2), chunks=(10_000_000, 2))
+   >>> h = dh.Histogram(
+   ...     dh.axis.Regular(10, -3, 3),
+   ...     dh.axis.Regular(10, -3, 3),
+   ...     storage=dh.storage.Double(),
+   ... )
+   >>> h.fill(x)  # <-- no computation occurs
+   Histogram(
+     Regular(50, -3, 3),
+     Regular(50, -3, 3),
+     storage=Double()) # (has staged fills)
+   >>> h.empty()
+   True
+   >>> h.compute()   # <-- trigger computation
+   Histogram(
+     Regular(50, -3, 3),
+     Regular(50, -3, 3),
+     storage=Double()) # Sum: 99459483.0 (100000000.0 with flow)
+   >>> h.fill(x)  # fill again; notice the repr tells us we have staged fills.
+   Histogram(
+     Regular(50, -3, 3),
+     Regular(50, -3, 3),
+     storage=Double()) # Sum: 99459483.0 (100000000.0 with flow) (has staged fills)
+   >>> import dask
+   >>> dask.compute(h.to_delayed())  # <-- convert to delayed and use dask.compute
+   (Histogram(
+     Regular(50, -3, 3),
+     Regular(50, -3, 3),
+     storage=Double()) # Sum: 198918966.0 (200000000.0 with flow),)
+
 
 .. note:: More examples are shown in the API Reference.
