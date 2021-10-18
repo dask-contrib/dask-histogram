@@ -34,39 +34,50 @@ def histogram(
     storage: bh.storage.Storage = bh.storage.Double(),
     threads: int | None = None,
 ) -> AggHistogram | tuple[da.Array, ...]:
-    """FIXME: Short description.
-
-    FIXME: Long description.
+    """Histogram Dask data in one dimension.
 
     Parameters
     ----------
-    x : DaskCollection
-        FIXME: Add docs.
-    bins : BinType
-        FIXME: Add docs.
-    range : RangeType
-        FIXME: Add docs.
-    normed : bool | None
-        FIXME: Add docs.
-    weights : DaskCollection | None
-        FIXME: Add docs.
+    x : dask.array.Array or dask.dataframe.Series
+        Data to be histogrammed.
+    bins : int or sequence of scalars.
+        If `bins` is an int, it defines the total number of bins to be
+        used (this requires the `range` argument to be defined). If
+        `bins` is a sequence of scalars (e.g. an array) then it
+        defines the bin edges.
+    range : (float, float)
+        The minimum and maximum of the histogram axis.
+    normed : bool, optional
+        An unsupported argument that has been deprecated in the NumPy
+        API (preserved to maintain calls dependent on argument order).
+    weights : dask.array.Array or dask.dataframe.Series, optional
+        An array of values weighing each sample in the input data. The
+        chunks of the weights must be identical to the chunking along
+        the 0th (row) axis of the data sample.
     density : bool
-        FIXME: Add docs.
-    histogram : Any | None
-        FIXME: Add docs.
-    storage : bh.storage.Storage
-        FIXME: Add docs.
-    threads : int | None
-        FIXME: Add docs.
+        If ``False`` (default), the returned array represents the
+        number of samples in each bin. If ``True``, the returned array
+        represents the probability density function at each bin.
+    histogram : dask_histogram.Histogram, optional
+        If `dh.Histogram`, object based output is enabled.
+    storage : boost_histogram.storage.Storage
+        Define the storage used by the :py:class:`Histogram` object.
+    threads : int, optional
+        Ignored argument kept for compatibility with boost-histogram.
+        We let Dask have complete control over threads.
 
     Returns
     -------
-    AggHistogram | tuple[da.Array, ...]
-        FIXME: Add docs.
+    tuple(dask.array.Array, dask.array.Array) or Histogram
+        The default return is the style of
+        :func:`dask.array.histogram`: An array of bin contents and an
+        array of bin edges. If the `histogram` argument is used then
+        the return is a :obj:`dask_histogram.Histogram` object.
 
-    Examples
+    See Also
     --------
-    FIXME: Add docs.
+    histogram2d
+    histogramdd
 
     """
     h = histogramdd(
@@ -225,6 +236,11 @@ def histogramdd(
     -------
     AggHistogram or tuple[da.Array, ...] or tuple[da.Array, tuple[da.Array, ...]]
         FIXME: Add docs.
+
+    See Also
+    --------
+    histogram
+    histogram2d
 
     Examples
     --------

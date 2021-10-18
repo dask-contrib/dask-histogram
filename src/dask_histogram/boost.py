@@ -305,9 +305,9 @@ class Histogram(bh.Histogram, family=dask_histogram):
     def fill(
         self,
         *args: DaskCollection,
-        weight: Any | None = None,
-        sample=None,
-        threads=None,
+        weight: DaskCollection | None = None,
+        sample: Any | None = None,
+        threads: Any | None = None,
     ) -> Histogram:
         """Stage a fill call using a Dask collection as input.
 
@@ -350,8 +350,9 @@ class Histogram(bh.Histogram, family=dask_histogram):
             chunked/partitioned in a way compatible with the dataset.
         sample : Any
             Unsupported argument from boost_histogram.Histogram.fill.
-        threads : Any
-            Unsupported argument from boost_histogram.Histogram.fill.
+        threads : int, optional
+            Ignored argument kept for compatibility with boost-histogram.
+            We let Dask have complete control over threads.
 
         Returns
         -------
@@ -365,7 +366,7 @@ class Histogram(bh.Histogram, family=dask_histogram):
                 *args,
                 weight=weight,
                 sample=sample,
-                threads=threads,
+                threads=None,
             )
 
         if len(args) == 1 and args[0].ndim == 1:
@@ -618,7 +619,8 @@ def histogramdd(
     storage : boost_histogram.storage.Storage
         Define the storage used by the :py:class:`Histogram` object.
     threads : int, optional
-        Enable threading on :py:func:`Histogram.fill` calls.
+        Ignored argument kept for compatibility with boost-histogram.
+        We let Dask have complete control over threads.
 
     Returns
     -------
@@ -820,7 +822,8 @@ def histogram2d(
     storage : boost_histogram.storage.Storage
         Define the storage used by the :py:class:`Histogram` object.
     threads : int, optional
-        Enable threading on :py:func:`Histogram.fill` calls.
+        Ignored argument kept for compatibility with boost-histogram.
+        We let Dask have complete control over threads.
 
     Returns
     -------
@@ -897,7 +900,7 @@ def histogram(
     storage: storage.Storage = storage.Double(),
     threads: int | None = None,
 ) -> Histogram | tuple[da.Array, ...]:
-    """Histogram dask data in one dimension.
+    """Histogram Dask data in one dimension.
 
     Parameters
     ----------
@@ -926,7 +929,8 @@ def histogram(
     storage : boost_histogram.storage.Storage
         Define the storage used by the :py:class:`Histogram` object.
     threads : int, optional
-        Enable threading on :py:func:`Histogram.fill` calls.
+        Ignored argument kept for compatibility with boost-histogram.
+        We let Dask have complete control over threads.
 
     Returns
     -------
@@ -974,7 +978,6 @@ def histogram(
         density=density,
         histogram=Histogram,
         storage=storage,
-        threads=threads,
     )
 
     if histogram != Histogram:
