@@ -12,34 +12,34 @@ dask.array/NumPy-like Interface
 
 We can create the same histogram we created above via the function API
 which mirrors the functions in the ``dask.array`` module. First, we
-explictly ask for a :py:obj:`Histogram <dask_histogram.Histogram>`
+explictly ask for a :py:obj:`Histogram <dask_histogram.AggHistogram>`
 object by using the `histogram` argument. The computation is still
 lazy, notice the `(has staged fills)` line in the repr.
 
 .. code-block:: python
 
-   >>> h = dh.histogramdd(x, bins=(10, 10), range=((-3, 3), (-3, 3), histogram=dh.Histogram)
+   >>> import dask.array as da
+   >>> import dask_histogram as dh
+   >>> x = da.random.standard_normal(size=(10000, 2), chunks=(2000, 2))
+   >>> h = dh.histogramdd(x, bins=(10, 10), range=((-3, 3), (-3, 3)), histogram=True)
    >>> h
-   Histogram(
-     Regular(10, -3, 3),
-     Regular(10, -3, 3),
-     storage=Double()) # (has staged fills)
+   dask_histogram.AggHistogram<hist-aggregate>
 
-If the `histogram` argument is left as the default value we get the
-return style of the ``dask.array`` module (which itself is supporting
-a NumPy like API), but we're using the ``Histogram`` object in the
-background; again, the computation is still lazy:
+If the `histogram` argument is left as the default (``None``) value we
+get the return style of the ``dask.array`` module (which itself is
+supporting a NumPy like API), but we're using the ``AggHistogram``
+object in the background; again, the computation is still lazy:
 
 .. code-block:: python
 
-   >>> h, edges = dh.histogramdd(x, bins=(10, 10), range=((-3, 3), (-3, 3))
+   >>> h, edges = dh.histogramdd(x, bins=(10, 10), range=((-3, 3), (-3, 3)))
    >>> type(h)
    <class 'dask.array.core.Array'>
    >>> len(edges)
    2
    >>> type(edges[0])
    <class 'dask.array.core.Array'>
-   >>> h.compute() # <-- this is calling dask.array.Array.compute()
+   >>> h.compute() # doctest:+SKIP
    <result will be a NumPy array>
 
 .. _boost-histogram: https://boost-histogram.readthedocs.io/en/latest/
@@ -50,7 +50,7 @@ Let's consider dataframe called ``df`` with four columns: `a`, `b`,
 
 .. code-block:: python
 
-   >>> df
+   >>> df  # doctest:+SKIP
    Dask DataFrame Structure:
                         a        b        c        w
    npartitions=5
@@ -65,33 +65,29 @@ First let's consider a one dimensional histogram of `a` with weights `w`:
 
 .. code-block:: python
 
-   >>> h, edges = dh.histogram(df["a"], bins=12, range=(-3, 3), weights=df["w"])
-   >>> h  # <-- the bin counts
+   >>> h, edges = dh.histogram(df["a"], bins=12, range=(-3, 3), weights=df["w"]) # doctest:+SKIP
+   >>> h  # doctest:+SKIP
    dask.array<from-value, shape=(12,), dtype=float64, chunksize=(12,), chunktype=numpy.ndarray>
-   >>> edges
+   >>> edges # doctest:+SKIP
    dask.array<array, shape=(13,), dtype=float64, chunksize=(13,), chunktype=numpy.ndarray>
 
 We can also grab multiple columns to histogram and return a
-:py:obj:`Histogram <dask_histogram.Histogram>` object:
+:py:obj:`Histogram <dask_histogram.AggHistogram>` object:
 
 .. code-block:: python
 
-   >>> h = dh.histogramdd(
+   >>> h = dh.histogramdd(  # doctest:+SKIP
    ...     df[["a", "b", "c"]],
    ...     bins=(6, 7, 8),
    ...     range=((-3, 3),) * 3,
-   ...     histogram=dh.Histogram,
+   ...     histogram=True,
    ... )
-   >>> h
-   Histogram(
-     Regular(10, -3, 3),
-     Regular(10, -3, 3),
-     Regular(10, -3, 3),
-     storage=Double()) # (has staged fills)
+   >>> h # doctest: +SKIP
+   dask_histogram.AggHistogram<hist-aggregate>
 
 With weights and variable width bins:
 
-   >>> h = dh.histogramdd(
+   >>> h = dh.histogramdd(  # doctest:+SKIP
    ...     df[["a", "c"]],
    ...     bins=[
    ...         [-3, -2, 0, 1, 2, 3],
@@ -99,16 +95,13 @@ With weights and variable width bins:
    ...     ],
    ...     weights=df["w"],
    ...     storage=dh.storage.Weight(),
-   ...     histogram=dh.Histogram,
+   ...     histogram=True,
    ... )
-   >>> h
-   Histogram(
-     Variable([-3, -2, 0, 1, 2, 3]),
-     Variable([-2, -1, 1, 2]),
-     storage=Weight()) # Sum: WeightedSum(value=0, variance=0) (has staged fills)
+   >>> h # doctest:+SKIP
+   dask_histogram.AggHistogram<hist-aggregate>
 
-Object Example
-^^^^^^^^^^^^^^
+boost-histogram Inheriting Example
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You're encouraged to check out the documentation for boost-histogram_;
 any example you see there should work in dask-histogram if the input
@@ -121,33 +114,33 @@ and ``boost_histogram.storage`` namespaces are brought in as
 
 .. code-block:: python
 
-   >>> import dask_histogram as dh
+   >>> import dask_histogram.boost as dhb
    >>> import dask.array as da
    >>> x = da.random.standard_normal(size=(100_000_000, 2), chunks=(10_000_000, 2))
-   >>> h = dh.Histogram(
+   >>> h = dhb.Histogram(
    ...     dh.axis.Regular(10, -3, 3),
    ...     dh.axis.Regular(10, -3, 3),
    ...     storage=dh.storage.Double(),
    ... )
    >>> h.fill(x)  # <-- no computation occurs
    Histogram(
-     Regular(50, -3, 3),
-     Regular(50, -3, 3),
+     Regular(10, -3, 3),
+     Regular(10, -3, 3),
      storage=Double()) # (has staged fills)
    >>> h.empty()
    True
-   >>> h.compute()   # <-- trigger computation
+   >>> h.compute() # doctest:+SKIP
    Histogram(
      Regular(50, -3, 3),
      Regular(50, -3, 3),
      storage=Double()) # Sum: 99459483.0 (100000000.0 with flow)
-   >>> h.fill(x)  # fill again; notice the repr tells us we have staged fills.
+   >>> h.fill(x)  # doctest:+SKIP
    Histogram(
      Regular(50, -3, 3),
      Regular(50, -3, 3),
      storage=Double()) # Sum: 99459483.0 (100000000.0 with flow) (has staged fills)
    >>> import dask
-   >>> dask.compute(h.to_delayed())  # <-- convert to delayed and use dask.compute
+   >>> dask.compute(h.to_delayed())  # doctest:+SKIP
    (Histogram(
      Regular(50, -3, 3),
      Regular(50, -3, 3),
