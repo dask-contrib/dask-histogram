@@ -41,11 +41,13 @@ Using weights and a reference histogram:
 dask.array/NumPy-like Interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-We can create the same histogram we created above via the function API
-which mirrors the functions in the ``dask.array`` module. First, we
-explictly ask for a :py:obj:`Histogram <dask_histogram.AggHistogram>`
-object by using the `histogram` argument. The computation is still
-lazy, notice the `(has staged fills)` line in the repr.
+We can create histograms via the API which mirrors the functions in
+the ``dask.array`` module (of course, ``dask.array`` mirrors the
+``numpy`` API).
+
+First, we explictly ask for an :py:obj:`AggHistogram
+<dask_histogram.AggHistogram>` object by using the `histogram`
+argument.
 
 .. code-block:: python
 
@@ -56,7 +58,7 @@ lazy, notice the `(has staged fills)` line in the repr.
    >>> h
    dask_histogram.AggHistogram<hist-aggregate, ndim=2, storage=Double()>
 
-If the `histogram` argument is left as the default (``None``) value we
+If the `histogram` argument is left as the default value (``None``) we
 get the return style of the ``dask.array`` module (which itself is
 supporting a NumPy like API), but we're using the ``AggHistogram``
 object in the background; again, the computation is still lazy:
@@ -73,10 +75,7 @@ object in the background; again, the computation is still lazy:
    >>> h.compute() # doctest:+SKIP
    <result will be a NumPy array>
 
-.. _boost-histogram: https://boost-histogram.readthedocs.io/en/latest/
-.. _Dask: https://docs.dask.org/en/latest/
-
-Let's consider dataframe called ``df`` with four columns: `a`, `b`,
+Let's consider a DataFrame called ``df`` with four columns: `a`, `b`,
 `c`, and `w`:
 
 .. code-block:: python
@@ -101,6 +100,15 @@ First let's consider a one dimensional histogram of `a` with weights `w`:
    dask.array<from-value, shape=(12,), dtype=float64, chunksize=(12,), chunktype=numpy.ndarray>
    >>> edges # doctest:+SKIP
    dask.array<array, shape=(13,), dtype=float64, chunksize=(13,), chunktype=numpy.ndarray>
+
+Note that the same histogram can be created with
+:py:func:`dask_histogram.factory` like so:
+
+.. code-block:: python
+
+   >>> h = dh.factory(df["a"], axes=(bh.axis.Regular(12, -3, 3),), weights=df["w"]) # doctest:+SKIP
+   >>> h # doctest:+SKIP
+   dask_histogram.AggHistogram<hist-aggregate, ndim=1, storage=Double()>
 
 We can also grab multiple columns to histogram and return a
 :py:obj:`Histogram <dask_histogram.AggHistogram>` object:
@@ -129,7 +137,7 @@ With weights and variable width bins:
    ...     histogram=True,
    ... )
    >>> h # doctest:+SKIP
-   dask_histogram.AggHistogram<hist-aggregate, ndim=3, storage=Weight()>
+   dask_histogram.AggHistogram<hist-aggregate, ndim=2, storage=Weight()>
 
 boost-histogram Inheriting Example
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -179,3 +187,7 @@ and ``boost_histogram.storage`` namespaces are brought in as
 
 
 .. note:: More examples are shown in the API Reference.
+
+
+.. _boost-histogram: https://boost-histogram.readthedocs.io/en/latest/
+.. _Dask: https://docs.dask.org/en/latest/
