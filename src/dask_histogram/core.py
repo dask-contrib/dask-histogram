@@ -156,7 +156,7 @@ class AggHistogram(db.Item):
         return self._histref
 
     @property
-    def _storage_type(self) -> bh.storage.Storage:
+    def _storage_type(self) -> type[bh.storage.Storage]:
         """Storage type of the histogram."""
         return self.histref._storage_type
 
