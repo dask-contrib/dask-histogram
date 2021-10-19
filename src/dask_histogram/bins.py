@@ -1,20 +1,16 @@
 """Help determining bin definitions."""
 
-from enum import Enum
-from typing import TYPE_CHECKING, Optional, Sequence, Tuple, Union
+from __future__ import annotations
 
-if TYPE_CHECKING:
-    from numpy.typing import ArrayLike
-else:
-    ArrayLike = object
+from enum import Enum
+from typing import TYPE_CHECKING
 
 import numpy as np
 
-BinType = Union[int, ArrayLike]
-BinArg = Union[BinType, Sequence[BinType]]
+if TYPE_CHECKING:
+    from typing import Sequence
 
-RangeType = Optional[Tuple[float, float]]
-RangeArg = Optional[Union[RangeType, Sequence[RangeType]]]
+    from .typing import BinArg, BinType, RangeArg, RangeType
 
 
 class BinsStyle(Enum):
@@ -97,7 +93,7 @@ def bins_style(ndim: int, bins: BinArg) -> BinsStyle:
 
 def bins_range_styles(
     ndim: int, bins: BinArg, range: RangeArg
-) -> Tuple[BinsStyle, RangeStyle]:
+) -> tuple[BinsStyle, RangeStyle]:
     """Determine the style of the bins and range arguments.
 
     Parameters
@@ -165,7 +161,7 @@ def bins_range_styles(
 
 def normalize_bins_range(
     ndim: int, bins: BinArg, range: RangeArg
-) -> Tuple[Sequence[BinType], Sequence[RangeType]]:
+) -> tuple[Sequence[BinType], Sequence[RangeType]]:
     """Normalize bins and range arguments to tuples.
 
     Parameters

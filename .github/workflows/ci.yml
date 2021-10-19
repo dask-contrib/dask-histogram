@@ -54,4 +54,4 @@ jobs:
     - name: Run doctests
       shell: bash -l {0}
       run: |
-        pytest -v --doctest-modules --ignore-glob='tests/test_*.py' src
+        pytest -v --doctest-modules --ignore-glob='tests/test_*.py' src docs/examples.rst

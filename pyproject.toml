@@ -2,10 +2,49 @@
 requires = [
     "setuptools>=42",
     "wheel",
-    "setuptools_scm[toml]>=3.4"
+    "setuptools_scm[toml]>=6.0,<6.1"
 ]
-
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "dask-histogram"
+license = {file = "LICENSE"}
+description = "Histogramming with Dask."
+authors = [
+    {email = "ddavis@ddavis.io"},
+    {name = "Doug Davis"}
+]
+maintainers = [
+    {name = "Doug Davis", email = "ddavis@ddavis.io"}
+]
+requires-python = ">= 3.7"
+dependencies = [
+    "boost-histogram >=1.2.0",
+    "dask >=2021.03.0",
+]
+readme = "README.md"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+dynamic = ["version"]
+
+
+[project.urls]
+homepage = "https://github.com/dask-contrib/dask-histogram"
+source = "https://github.com/dask-contrib/dask-histogram"
+tracker = "https://github.com/dask-contrib/dask-histogram/issues"
+documentation = "https://dask-histogram.readthedocs.io/"
 
 [tool.setuptools_scm]
 write_to = "src/dask_histogram/_version.py"
@@ -17,6 +56,7 @@ testpaths = ["tests"]
 [tool.isort]
 profile = "black"
 line_length = 88
+src_paths = ["src", "tests"]
 
 [tool.mypy]
 python_version = 3.7
@@ -26,3 +66,6 @@ files = ["src", "tests"]
 [[tool.mypy.overrides]]
 module = ["dask.*"]
 ignore_missing_imports = true
+
+[tool.pydocstyle]
+ignore = "D105"
