@@ -103,7 +103,7 @@ def histogram(
     >>> w = da.random.uniform(0.0, 1.0, size=x.shape[0], chunks=x.chunksize[0])
     >>> h = dh.histogram(x, bins=bins, weights=w, histogram=True)
     >>> h
-    dask_histogram.AggHistogram<hist-aggregate>
+    dask_histogram.AggHistogram<hist-aggregate, ndim=1, storage=Double()>
 
     """
     h = histogramdd(
@@ -369,7 +369,7 @@ def histogramdd(
     ... ]
     >>> h = dh.histogramdd((x, y, z), bins=bins, histogram=True)
     >>> h
-    dask_histogram.AggHistogram<hist-aggregate>
+    dask_histogram.AggHistogram<hist-aggregate, ndim=3, storage=Double()>
     >>> h.ndim
     3
     >>> h = h.compute()
@@ -397,7 +397,7 @@ def histogramdd(
     ...     storage=dh.storage.Weight()
     ... )
     >>> h
-    dask_histogram.AggHistogram<hist-aggregate>
+    dask_histogram.AggHistogram<hist-aggregate, ndim=3, storage=Weight()>
 
     """
     # Check for invalid argument combinations.

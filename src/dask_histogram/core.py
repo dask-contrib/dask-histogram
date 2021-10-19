@@ -175,7 +175,13 @@ class AggHistogram(db.Item):
         return self.histref.size
 
     def __str__(self) -> str:
-        return f"dask_histogram.AggHistogram<{key_split(self.name)}>"
+        return (
+            "dask_histogram.AggHistogram<"
+            f"{key_split(self.name)}, "
+            f"ndim={self.ndim}, "
+            f"storage={self._storage_type()}"
+            ">"
+        )
 
     __repr__ = __str__
     __dask_scheduler__ = staticmethod(tget)

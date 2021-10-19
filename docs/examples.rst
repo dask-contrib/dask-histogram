@@ -1,11 +1,29 @@
 Examples
 --------
 
-
 Using the dask_histogram.factory function
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-abc
+The :py:func:`dask_histogram.factory` function is the core piece of
+the dask-histogram API; all other parts of the public API use it.
+
+The function takes in data to be histogrammed and the information that
+defines the histogram's axes and storage.
+
+Histogramming one dimensional data:
+
+.. code-block:: python
+
+   >>> import boost_histogram as bh
+   >>> import dask.array as da
+   >>> import dask_histogram as dh
+   >>> x = da.random.uniform(size=(1000,), chunks=(250,))
+   >>> h = dh.factory(x, axes=(bh.axis.Regular(10, 0, 1),))
+   >>> h
+   dask_histogram.AggHistogram<hist-aggregate, ndim=1, storage=Double()>
+   >>> h.compute()
+   Histogram(Regular(10, 0, 1), storage=Double()) # Sum: 1000.0
+
 
 dask.array/NumPy-like Interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -23,7 +41,7 @@ lazy, notice the `(has staged fills)` line in the repr.
    >>> x = da.random.standard_normal(size=(10000, 2), chunks=(2000, 2))
    >>> h = dh.histogramdd(x, bins=(10, 10), range=((-3, 3), (-3, 3)), histogram=True)
    >>> h
-   dask_histogram.AggHistogram<hist-aggregate>
+   dask_histogram.AggHistogram<hist-aggregate, ndim=2, storage=Double()>
 
 If the `histogram` argument is left as the default (``None``) value we
 get the return style of the ``dask.array`` module (which itself is
