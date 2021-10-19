@@ -27,7 +27,6 @@ __all__ = (
     "PartitionedHistogram",
     "clone",
     "factory",
-    "to_dask_array",
 )
 
 
