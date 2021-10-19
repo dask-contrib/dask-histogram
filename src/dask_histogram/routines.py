@@ -10,9 +10,8 @@ import dask.array as da
 from dask.base import is_dask_collection
 from dask.utils import is_arraylike, is_dataframe_like
 
-from dask_histogram.core import AggHistogram, factory
-
 from .bins import normalize_bins_range
+from .core import AggHistogram, factory
 
 if TYPE_CHECKING:
     from .typing import BinArg, BinType, DaskCollection, RangeArg, RangeType
@@ -73,13 +72,13 @@ def histogram(
         The default return is the style of
         :func:`dask.array.histogram`: An array of bin contents and an
         array of bin edges. If the `histogram` argument is used then
-        the return is a :obj:`dask_histogram.Histogram` collection
+        the return is a :obj:`dask_histogram.AggHistogram` collection
         instance.
 
     See Also
     --------
-    dask_histogram.histogram2d
-    dask_histogram.histogramdd
+    histogram2d
+    histogramdd
 
     Examples
     --------
@@ -192,8 +191,8 @@ def histogram2d(
 
     See Also
     --------
-    dask_histogram.histogram
-    dask_histogram.histogramdd
+    histogram
+    histogramdd
 
     Examples
     --------
@@ -326,8 +325,8 @@ def histogramdd(
 
     See Also
     --------
-    dask_histogram.histogram
-    dask_histogram.histogram2d
+    histogram
+    histogram2d
 
     Examples
     --------
