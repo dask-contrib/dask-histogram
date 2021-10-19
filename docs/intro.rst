@@ -38,7 +38,7 @@ exists in the :py:mod:`dask_histogram.boost` module
 (:py:obj:`dask_histogram.boost.Histogram`) which inherits from
 :class:`boost_histogram.Histogram` and overrides the ``fill`` function
 such that it is aware of chunked/partitioned Dask collections. This
-class is backed by :py:obj:`dask_histogram.AggHistogram.`
+class is backed by :py:obj:`dask_histogram.AggHistogram`.
 
 .. _boost-histogram: https://boost-histogram.readthedocs.io/en/latest/
 .. _Dask: https://docs.dask.org/en/latest/
