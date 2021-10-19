@@ -7,8 +7,12 @@ Using the dask_histogram.factory function
 The :py:func:`dask_histogram.factory` function is the core piece of
 the dask-histogram API; all other parts of the public API use it.
 
-The function takes in data to be histogrammed and the information that
-defines the histogram's axes and storage.
+The function takes in two core inputs: the Dask data to be
+histogrammed and the information that defines the histogram's
+structure. The Dask data can be in Array, Series, or DataFrame form.
+The histogram structure can be defined using the `axes` and
+(optionally) `storage` arguments, or the `histref` argument can be
+used.
 
 Histogramming one dimensional data:
 
