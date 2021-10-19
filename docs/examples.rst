@@ -101,7 +101,7 @@ We can also grab multiple columns to histogram and return a
    ...     histogram=True,
    ... )
    >>> h # doctest: +SKIP
-   dask_histogram.AggHistogram<hist-aggregate>
+   dask_histogram.AggHistogram<hist-aggregate, ndim=3, storage=Double()>
 
 With weights and variable width bins:
 
@@ -116,7 +116,7 @@ With weights and variable width bins:
    ...     histogram=True,
    ... )
    >>> h # doctest:+SKIP
-   dask_histogram.AggHistogram<hist-aggregate>
+   dask_histogram.AggHistogram<hist-aggregate, ndim=3, storage=Weight()>
 
 boost-histogram Inheriting Example
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
