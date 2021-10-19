@@ -24,6 +24,15 @@ Histogramming one dimensional data:
    >>> h.compute()
    Histogram(Regular(10, 0, 1), storage=Double()) # Sum: 1000.0
 
+Using weights and a reference histogram:
+
+.. code-block:: python
+
+   >>> w = da.random.uniform(size=(1000,), chunks=(250,))
+   >>> ref = bh.Histogram(bh.axis.Regular(10, 0, 1), storage=bh.storage.Weight())
+   >>> h = dh.factory(x, weights=w, histref=ref)
+   >>> h
+   dask_histogram.AggHistogram<hist-aggregate, ndim=1, storage=Weight()>
 
 dask.array/NumPy-like Interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
