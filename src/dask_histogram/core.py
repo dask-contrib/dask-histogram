@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import operator
-from typing import TYPE_CHECKING, Any, Callable, Iterable
+from typing import TYPE_CHECKING, Any, Callable, Sequence
 
 import boost_histogram as bh
 import dask.array as da
@@ -154,6 +154,11 @@ class AggHistogram(db.Item):
     def histref(self) -> bh.Histogram:
         """Empty reference boost-histogram object."""
         return self._histref
+
+    @property
+    def _storage_type(self) -> bh.storage.Storage:
+        """Storage type of the histogram."""
+        return self.histref._storage_type
 
     @property
     def ndim(self) -> int:
@@ -500,7 +505,7 @@ _itruediv = BinaryOpAgg(operator.itruediv, name="div")
 def factory(
     *data: DaskCollection,
     histref: bh.Histogram = None,
-    axes: Iterable[bh.axis.Axis] = None,
+    axes: Sequence[bh.axis.Axis] = None,
     storage: bh.storage.Storage = None,
     weights: DaskCollection = None,
     split_every: int = None,
@@ -508,24 +513,38 @@ def factory(
 ) -> AggHistogram | PartitionedHistogram:
     """Daskified Histogram collection factory function.
 
-    Given data and the characteristics of a histogram (either a
-    reference :py:obj:`boost_histogram.Histogram` object or a set of
-    axes), create an :py:obj:`AggHistogram` or
+    Given some data represented by Dask collections and the
+    characteristics of a histogram (either a reference
+    :py:obj:`boost_histogram.Histogram` object or a set of axes), this
+    routine will create an :py:obj:`AggHistogram` or
     :py:obj:`PartitionedHistogram` collection.
 
     Parameters
     ----------
     *data : DaskCollection
-        The data to histogram.
+        The data to histogram. The supported forms of input data:
+
+        * Single one dimensional dask array or Series: for creating a
+          1D histogram.
+        * Single multidimensional dask array or DataFrame: for
+          creating multidimensional histograms.
+        * Multiple one dimensional dask arrays or Series: for creating
+          multidimensional histograms.
     histref : bh.Histogram, optional
         A reference histogram object, required if `axes` is not used.
-    axes : Iterable[bh.axis.Axis], optional
+        The dimensionality of `histref` must be compatible with the
+        input data.
+    axes : Sequence[bh.axis.Axis], optional
         The axes of the histogram, required if `histref` is not used.
+        The total number of axes must be equal to the number of
+        dimensions of the resulting histogram given the structure of
+        `data`.
     storage : bh.storage.Storage, optional
         Storage type of the histogram, only compatible with use of the
         `axes` argument.
     weights : DaskCollection, optional
-        Weights associated with the `data`.
+        Weights associated with the `data`. The partitioning/chunking
+        of the weights must be compatible with the input data.
     split_every : int, optional
         How many blocks to use in each split during aggregation.
     keep_partitioned : bool, optional
@@ -542,6 +561,46 @@ def factory(
     ValueError
         If `histref` and `axes` are both not ``None``, or if `storage`
         is used with `histref`.
+
+    Examples
+    --------
+    Creating a three dimensional histogram using the `axes` argument:
+
+    >>> import boost_histogram as bh
+    >>> import dask.array as da
+    >>> import dask_histogram as dh
+    >>> x = da.random.uniform(size=(10000,), chunks=(2000,))
+    >>> y = da.random.uniform(size=(10000,), chunks=(2000,))
+    >>> z = da.random.uniform(size=(10000,), chunks=(2000,))
+    >>> bins = [
+    ...    [0.0, 0.3, 0.4, 0.5, 1.0],
+    ...    [0.0, 0.1, 0.2, 0.8, 1.0],
+    ...    [0.0, 0.2, 0.3, 0.4, 1.0],
+    ... ]
+    >>> axes = [bh.axis.Variable(b) for b in bins]
+    >>> h = dh.factory(x, y, z, axes=axes)
+    >>> h.shape
+    (4, 4, 4)
+    >>> h.compute()
+    Histogram(
+      Variable([0, 0.3, 0.4, 0.5, 1]),
+      Variable([0, 0.1, 0.2, 0.8, 1]),
+      Variable([0, 0.2, 0.3, 0.4, 1]),
+      storage=Double()) # Sum: 10000.0
+
+    Creating a weighted one dimensional histogram with the `histref`
+    argument, then converting to the dask.array histogramming return
+    style.
+
+    >>> x = da.random.uniform(size=(10000,), chunks=(2000,))
+    >>> w = da.random.uniform(size=(10000,), chunks=(2000,))
+    >>> ref = bh.Histogram(bh.axis.Regular(10, 0, 1))
+    >>> h = dh.factory(x, histref=ref, weights=w)
+    >>> counts, edges = h.to_dask_array()
+    >>> counts
+    dask.array<to-dask-array, shape=(10,), dtype=float64, chunksize=(10,), chunktype=numpy.ndarray>
+    >>> edges
+    dask.array<array, shape=(11,), dtype=float64, chunksize=(11,), chunktype=numpy.ndarray>
 
     """
     if histref is None and axes is None:

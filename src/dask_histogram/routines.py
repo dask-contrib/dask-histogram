@@ -58,8 +58,9 @@ def histogram(
         If ``False`` (default), the returned array represents the
         number of samples in each bin. If ``True``, the returned array
         represents the probability density function at each bin.
-    histogram : dask_histogram.Histogram, optional
-        If `dh.Histogram`, object based output is enabled.
+    histogram : Any, optional
+        If not ``None``, a collection instance is returned instead of
+        the array style return.
     storage : boost_histogram.storage.Storage
         Define the storage used by the :py:class:`Histogram` object.
     threads : int, optional
@@ -68,16 +69,41 @@ def histogram(
 
     Returns
     -------
-    tuple(dask.array.Array, dask.array.Array) or Histogram
+    tuple(dask.array.Array, dask.array.Array) or AggHistogram
         The default return is the style of
         :func:`dask.array.histogram`: An array of bin contents and an
         array of bin edges. If the `histogram` argument is used then
-        the return is a :obj:`dask_histogram.Histogram` object.
+        the return is a :obj:`dask_histogram.Histogram` collection
+        instance.
 
     See Also
     --------
-    histogram2d
-    histogramdd
+    dask_histogram.histogram2d
+    dask_histogram.histogramdd
+
+    Examples
+    --------
+    Gaussian distribution with object return style and ``Weight`` storage:
+
+    >>> import dask_histogram as dh
+    >>> import dask.array as da
+    >>> import boost_histogram as bh
+    >>> x = da.random.standard_normal(size=(1000,), chunks=(250,))
+    >>> h = dh.histogram(
+    ...     x, bins=10, range=(-3, 3), histogram=True, storage=bh.storage.Weight()
+    ... )
+
+    Now with variable width bins and the array return style:
+
+    >>> bins = [-3, -2.2, -1.0, -0.2, 0.2, 1.2, 2.2, 3.2]
+    >>> h, edges = dh.histogram(x, bins=bins)
+
+    Now with weights and the object return style:
+
+    >>> w = da.random.uniform(0.0, 1.0, size=x.shape[0], chunks=x.chunksize[0])
+    >>> h = dh.histogram(x, bins=bins, weights=w, histogram=True)
+    >>> h
+    dask_histogram.AggHistogram<hist-aggregate>
 
     """
     h = histogramdd(
@@ -109,41 +135,98 @@ def histogram2d(
     storage: bh.storage.Storage = bh.storage.Double(),
     threads: int | None = None,
 ) -> AggHistogram | tuple[da.Array, ...]:
-    """FIXME: Short description.
-
-    FIXME: Long description.
+    """Histogram Dask data in two dimensions.
 
     Parameters
     ----------
-    x : DaskCollection
-        FIXME: Add docs.
-    y : DaskCollection
-        FIXME: Add docs.
-    bins : BinArg
-        FIXME: Add docs.
-    range : RangeArg
-        FIXME: Add docs.
-    normed : bool | None
-        FIXME: Add docs.
-    weights : DaskCollection | None
-        FIXME: Add docs.
+    x : dask.array.Array or dask.dataframe.Series
+        Array representing the `x` coordinates of the data to the
+        histogrammed.
+    y : dask.array.Array or dask.dataframe.Series
+        Array representing the `y` coordinates of the data to the
+        histogrammed.
+    bins : int, (int, int), array, (array, array), optional
+        The bin specification:
+
+        * If a singe int, both dimensions will that that number of bins
+        * If a pair of ints, the first int is the total number of bins
+          along the `x`-axis, and the second is the total number of
+          bins along the `y`-axis.
+        * If a single array, the array represents the bin edges along
+          each dimension.
+        * If a pair of arrays, the first array corresponds to the
+          edges along `x`-axis, the second corresponds to the edges
+          along the `y`-axis.
+    range : ((float, float), (float, float)), optional
+        If integers are passed to the `bins` argument, `range` is
+        required to define the min and max of each axis, that is:
+        `((xmin, xmax), (ymin, ymax))`.
+    normed : bool, optional
+        An unsupported argument that has been deprecated in the NumPy
+        API (preserved to maintain calls dependent on argument order).
+    weights : dask.array.Array or dask.dataframe.Series, optional
+        An array of values weighing each sample in the input data. The
+        chunks of the weights must be identical to the chunking along
+        the 0th (row) axis of the data sample.
     density : bool
-        FIXME: Add docs.
-    histogram : Any | None
-        FIXME: Add docs.
-    storage : bh.storage.Storage
-        FIXME: Add docs.
-    threads : int | None
-        FIXME: Add docs.
+        If ``False`` (default), the returned array represents the
+        number of samples in each bin. If ``True``, the returned array
+        represents the probability density function at each bin.
+    histogram : Any, optional
+        If not ``None``, a collection instance is returned instead of
+        the array style return.
+    storage : boost_histogram.storage.Storage
+        Define the storage used by the :py:class:`Histogram` object.
+    threads : int, optional
+        Ignored argument kept for compatibility with boost-histogram.
+        We let Dask have complete control over threads.
 
     Returns
     -------
-    AggHistogram | tuple[da.Array, ...]
-        FIXME: Add docs.
+    tuple(dask.array.Array, dask.array.Array, dask.array.Array) or AggHistogram
+        The default return is the style of
+        :func:`dask.array.histogram2d`: An array of bin contents, an
+        array of the x-edges, and an array of the y-edges. If the
+        `histogram` argument is used then the return is a
+        :obj:`dask_histogram.AggHistogram` collection instance.
+
+    See Also
+    --------
+    dask_histogram.histogram
+    dask_histogram.histogramdd
 
     Examples
     --------
-    FIXME: Add docs.
+    Uniform distributions along each dimension with the array return style:
+
+    >>> import dask_histogram as dh
+    >>> import dask.array as da
+    >>> x = da.random.uniform(0.0, 1.0, size=(1000,), chunks=200)
+    >>> y = da.random.uniform(0.4, 0.6, size=(1000,), chunks=200)
+    >>> h, edgesx, edgesy = dh.histogram2d(x, y, bins=(12, 4), range=((0, 1), (0.4, 0.6)))
+
+    Now with the collection object return style:
+
+    >>> h = dh.histogram2d(
+    ...     x, y, bins=(12, 4), range=((0, 1), (0.4, 0.6)), histogram=True
+    ... )
+    >>> type(h)
+    <class 'dask_histogram.core.AggHistogram'>
+
+    With variable bins and sample weights from a
+    :py:obj:`dask.dataframe.Series` originating from a
+    :py:obj:`dask.dataframe.DataFrame` column (`df` below must have
+    `npartitions` equal to the size of the chunks in `x` and `y`):
+
+    >>> x = da.random.uniform(0.0, 1.0, size=(1000,), chunks=200)
+    >>> y = da.random.uniform(0.4, 0.6, size=(1000,), chunks=200)
+    >>> df = dask_dataframe_factory()  # doctest: +SKIP
+    >>> w = df["weights"]              # doctest: +SKIP
+    >>> binsx = [0.0, 0.2, 0.6, 0.8, 1.0]
+    >>> binsy = [0.40, 0.45, 0.50, 0.55, 0.60]
+    >>> h, edges1, edges2 = dh.histogram2d(
+    ...     x, y, bins=[binsx, binsy], weights=w
+    ... ) #  doctest: +SKIP
 
     """
     h = histogramdd(
@@ -224,9 +307,9 @@ def histogramdd(
         If ``False`` (default), the returned array represents the
         number of samples in each bin. If ``True``, the returned array
         represents the probability density function at each bin.
-    histogram : dask_histogram.Histogram, optional
-        If not ``None``, an AggHistogram collection object is
-        returned, the default behavior is an array style return.
+    histogram : Any, optional
+        If not ``None``, a collection instance is returned instead of
+        the array style return.
     storage : boost_histogram.storage.Storage
         Define the storage used by the :py:class:`Histogram` object.
     threads : int, optional
@@ -234,17 +317,87 @@ def histogramdd(
 
     Returns
     -------
-    AggHistogram or tuple[da.Array, ...] or tuple[da.Array, tuple[da.Array, ...]]
-        FIXME: Add docs.
+    tuple[da.Array, tuple[da.Array, ...]] or AggHistogram
+        The default return is the style of
+        :func:`dask.array.histogramdd`: An array of bin contents and
+        arrays of bin edges. If the `histogram` argument is used then
+        the return is a :obj:`dask_histogram.AggHistogram` collection
+        instance.
 
     See Also
     --------
-    histogram
-    histogram2d
+    dask_histogram.histogram
+    dask_histogram.histogram2d
 
     Examples
     --------
-    FIXME: Add docs.
+    Creating a three dimensional histogram with variable width bins in
+    each dimension. First, using three 1D arrays for each coordinate:
+
+    >>> import dask.array as da
+    >>> import dask_histogram as dh
+    >>> x = da.random.standard_normal(size=(10000,), chunks=(2000,))
+    >>> y = da.random.standard_normal(size=(10000,), chunks=(2000,))
+    >>> z = da.random.standard_normal(size=(10000,), chunks=(2000,))
+    >>> bins = [
+    ...    [-3, -2, 0, 1, 3],
+    ...    [-3, -1, 1, 2, 3],
+    ...    [-3, -2, 0, 2, 3],
+    ... ]
+    >>> h, edges = dh.histogramdd((x, y, z), bins=bins)
+    >>> type(h)
+    <class 'dask.array.core.Array'>
+    >>> h.shape
+    (4, 4, 4)
+    >>> len(edges)
+    3
+
+    Now the same histogram but instead of a
+    :py:func:`dask.array.histogramdd` style return (which mirrors the
+    return style of :py:func:`numpy.histogramdd`), we use the
+    `histogram` argument to trigger the return of a collection object:
+
+    >>> import dask.array as da
+    >>> import dask_histogram as dh
+    >>> x = da.random.standard_normal(size=(10000,), chunks=(2000,))
+    >>> y = da.random.standard_normal(size=(10000,), chunks=(2000,))
+    >>> z = da.random.standard_normal(size=(10000,), chunks=(2000,))
+    >>> bins = [
+    ...    [-3, -2, 0, 1, 3],
+    ...    [-3, -1, 1, 2, 3],
+    ...    [-3, -2, 0, 2, 3],
+    ... ]
+    >>> h = dh.histogramdd((x, y, z), bins=bins, histogram=True)
+    >>> h
+    dask_histogram.AggHistogram<hist-aggregate>
+    >>> h.ndim
+    3
+    >>> h = h.compute()
+    >>> h  # doctest: +SKIP
+    Histogram(
+      Variable([-3, -2, 0, 1, 3]),
+      Variable([-3, -1, 1, 2, 3]),
+      Variable([-3, -2, 0, 2, 3]),
+      storage=Double()) # Sum: 9919.0 (10000.0 with flow)
+
+    Another 3D histogram example but with an alternative dataset form
+    (a single array with three columns), fixed bin widths, sample
+    weights, and usage of the boost-histogram ``Weight()`` storage:
+
+    >>> a = da.random.standard_normal(size=(10000, 3), chunks=(2000, 3))
+    >>> w = da.random.uniform(0.5, 0.7, size=(10000,), chunks=2000)
+    >>> bins = (7, 5, 6)
+    >>> range = ((-3, 3), (-2.9, 2.9), (-3.1, 3.1))
+    >>> h = dh.histogramdd(
+    ...     a,
+    ...     bins=bins,
+    ...     range=range,
+    ...     weights=w,
+    ...     histogram=True,
+    ...     storage=dh.storage.Weight()
+    ... )
+    >>> h
+    dask_histogram.AggHistogram<hist-aggregate>
 
     """
     # Check for invalid argument combinations.

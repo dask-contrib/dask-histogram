@@ -780,7 +780,7 @@ def histogram2d(
     storage: storage.Storage = storage.Double(),
     threads: int | None = None,
 ) -> Histogram | tuple[da.Array, ...]:
-    """Histogram dask data in two dimensions.
+    """Histogram Dask data in two dimensions.
 
     Parameters
     ----------
