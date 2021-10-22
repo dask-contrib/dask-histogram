@@ -275,10 +275,10 @@ class PartitionedHistogram(DaskMethodsMixin):
     """
 
     def __init__(
-        self, dsk: HighLevelGraph, name: str, npartitions: int, histref: bh.Histogram
+        self, dsk: HighLevelGraph, key: str, npartitions: int, histref: bh.Histogram
     ) -> None:
         self.dask: HighLevelGraph = dsk
-        self.key: str = name
+        self.key: str = key
         self.npartitions: int = npartitions
         self._histref: bh.Histogram = histref
 
