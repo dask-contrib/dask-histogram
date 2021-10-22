@@ -130,24 +130,13 @@ class AggHistogram(db.Item):
     """
 
     def __init__(self, dsk: HighLevelGraph, key: str, histref: bh.Histogram) -> None:
-        self._dsk = dsk
-        self._key = key
+        self.dask: HighLevelGraph = dsk
+        self.key: str = key
         self._histref: bh.Histogram = histref
 
     @property
-    def dask(self) -> HighLevelGraph:
-        """High level graph object."""
-        return self._dsk
-
-    @property
-    def key(self) -> str:
-        """Key in a Dask graph."""
-        return self._key
-
-    @property
     def name(self) -> str:
-        """Duplicate of `key`."""
-        return self._key
+        return self.key
 
     @property
     def histref(self) -> bh.Histogram:
@@ -185,6 +174,16 @@ class AggHistogram(db.Item):
 
     __repr__ = __str__
     __dask_scheduler__ = staticmethod(tget)
+
+    @property
+    def _args(self) -> tuple[HighLevelGraph, str, bh.Histogram]:
+        return (self.dask, self.key, self.histref)
+
+    def __getstate__(self) -> tuple[HighLevelGraph, str, bh.Histogram]:
+        return self._args
+
+    def __setstate__(self, state: tuple[HighLevelGraph, str, bh.Histogram]) -> None:
+        self.dask, self.key, self._histref = state
 
     def to_dask_array(
         self, flow: bool = False, dd: bool = False
@@ -279,9 +278,13 @@ class PartitionedHistogram(DaskMethodsMixin):
         self, dsk: HighLevelGraph, name: str, npartitions: int, histref: bh.Histogram
     ) -> None:
         self.dask: HighLevelGraph = dsk
-        self.name: str = name
+        self.key: str = name
         self.npartitions: int = npartitions
         self._histref: bh.Histogram = histref
+
+    @property
+    def name(self) -> str:
+        return self.key
 
     def __dask_graph__(self) -> HighLevelGraph:
         return self.dask
@@ -312,6 +315,18 @@ class PartitionedHistogram(DaskMethodsMixin):
 
     __repr__ = __str__
     __dask_scheduler__ = staticmethod(tget)
+
+    @property
+    def _args(self) -> tuple[HighLevelGraph, str, int, bh.Histogram]:
+        return (self.dask, self.key, self.npartititions, self.histref)
+
+    def __getstate__(self) -> tuple[HighLevelGraph, str, int, bh.Histogram]:
+        return self._args
+
+    def __setstate__(
+        self, state: tuple[HighLevelGraph, str, int, bh.Histogram]
+    ) -> None:
+        self.dask, self.key, self.npartitions, self._histref = state
 
     @property
     def histref(self) -> bh.Histogram:
