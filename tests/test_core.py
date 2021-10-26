@@ -11,20 +11,41 @@ import pytest
 import dask_histogram.core as dhc
 
 
+def _gen_storage(weights, sample):
+    if weights is not None and sample is not None:
+        store = bh.storage.WeightedMean()
+    elif weights is None and sample is not None:
+        store = bh.storage.Mean()
+    elif weights is not None and sample is None:
+        store = bh.storage.Weight()
+    else:
+        store = bh.storage.Double()
+    return store
+
+
 @pytest.mark.parametrize("weights", [True, None])
-def test_1d_array(weights):
-    h = bh.Histogram(bh.axis.Regular(10, -3, 3), storage=bh.storage.Weight())
+@pytest.mark.parametrize("sample", [True, None])
+def test_1d_array(weights, sample):
     if weights is not None:
         weights = da.random.uniform(size=(2000,), chunks=(250,))
+    if sample is not None:
+        sample = da.random.uniform(2, 8, size=(2000,), chunks=(250,))
+    store = _gen_storage(weights, sample)
+    h = bh.Histogram(bh.axis.Regular(10, -3, 3), storage=store)
     x = da.random.standard_normal(size=(2000,), chunks=(250,))
-    dh = dhc.factory(x, histref=h, weights=weights, split_every=4)
-    h.fill(x.compute(), weight=weights.compute() if weights is not None else None)
+    dh = dhc.factory(x, histref=h, weights=weights, split_every=4, sample=sample)
+    h.fill(
+        x.compute(),
+        weight=weights.compute() if weights is not None else None,
+        sample=sample.compute() if sample is not None else None,
+    )
     np.testing.assert_allclose(h.counts(flow=True), dh.compute().counts(flow=True))
 
 
 @pytest.mark.parametrize("weights", [True, None])
 @pytest.mark.parametrize("shape", ((2000,), (2000, 2), (2000, 3), (2000, 4)))
-def test_array_input(weights, shape):
+@pytest.mark.parametrize("sample", [True, None])
+def test_array_input(weights, shape, sample):
     oned = len(shape) < 2
     x = da.random.standard_normal(
         size=shape, chunks=(200,) if oned else (200, shape[1])
@@ -32,12 +53,18 @@ def test_array_input(weights, shape):
     xc = (x.compute(),) if oned else x.compute().T
     ax = bh.axis.Regular(10, -3, 3)
     axes = (ax,) if oned else (ax,) * shape[1]
-    weights = (
-        da.random.uniform(size=(2000,), chunks=(200,)) if weights is not None else None
+    if weights:
+        weights = da.random.uniform(size=(2000,), chunks=(200,))
+    if sample:
+        sample = da.random.uniform(3, 9, size=(2000,), chunks=(200,))
+    store = _gen_storage(weights, sample)
+    h = bh.Histogram(*axes, storage=store)
+    dh = dhc.factory(x, histref=h, weights=weights, split_every=4, sample=sample)
+    h.fill(
+        *xc,
+        weight=weights.compute() if weights is not None else None,
+        sample=sample.compute() if sample is not None else None,
     )
-    h = bh.Histogram(*axes, storage=bh.storage.Weight())
-    dh = dhc.factory(x, histref=h, weights=weights, split_every=4)
-    h.fill(*xc, weight=weights.compute() if weights is not None else None)
     np.testing.assert_allclose(h.counts(flow=True), dh.compute().counts(flow=True))
 
 
