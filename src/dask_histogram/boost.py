@@ -42,23 +42,23 @@ def _blocked_fill_1d(
 
 @delayed
 def _blocked_fill_rectangular(
-    sample: Any,
+    data: Any,
     meta_hist: Histogram,
     weight: Any | None = None,
 ):
     hfb = Histogram(*meta_hist.axes, storage=meta_hist._storage_type())
-    hfb.concrete_fill(*(sample.T), weight=weight)
+    hfb.concrete_fill(*(data.T), weight=weight)
     return hfb
 
 
 @delayed
 def _blocked_fill_dataframe(
-    sample: Any,
+    data: Any,
     meta_hist: Histogram,
     weight: Any | None = None,
 ):
     hfb = Histogram(*meta_hist.axes, storage=meta_hist._storage_type())
-    hfb.concrete_fill(*(sample[c] for c in sample.columns), weight=weight)
+    hfb.concrete_fill(*(data[c] for c in data.columns), weight=weight)
     return hfb
 
 
@@ -115,12 +115,12 @@ def _fill_1d(
 
 
 def _fill_rectangular(
-    sample: DaskCollection,
+    data: DaskCollection,
     *,
     meta_hist: Histogram,
     weight: DaskCollection | None = None,
 ) -> Delayed:
-    """Fill nD histogram given a rectangular (multi-column) sample.
+    """Fill nD histogram given a rectangular (multi-column) dataset.
 
     Array Input
     -----------
@@ -148,30 +148,30 @@ def _fill_rectangular(
     the dedicated @delayed fill function.
 
     """
-    if is_arraylike(sample):
-        sample = sample.to_delayed().T[0]  # type: ignore
+    if is_arraylike(data):
+        data = data.to_delayed().T[0]  # type: ignore
         ff = _blocked_fill_rectangular
-    elif is_dataframe_like(sample):
-        sample = sample.to_delayed()  # type: ignore
+    elif is_dataframe_like(data):
+        data = data.to_delayed()  # type: ignore
         ff = _blocked_fill_dataframe
     else:
         raise TypeError(
-            f"sample must be dask array or dataframe like; found {type(sample)}"
+            f"data must be dask array or dataframe like; found {type(data)}"
         )
 
     if weight is None:
-        hists = [ff(s, meta_hist=meta_hist, weight=None) for s in sample]
+        hists = [ff(s, meta_hist=meta_hist, weight=None) for s in data]
     else:
         weights = weight.to_delayed()
-        if len(weights) != len(sample):
-            raise ValueError("sample and weight must have the same number of chunks.")
-        hists = [ff(s, meta_hist=meta_hist, weight=w) for s, w in zip(sample, weights)]
+        if len(weights) != len(data):
+            raise ValueError("data and weight must have the same number of chunks.")
+        hists = [ff(s, meta_hist=meta_hist, weight=w) for s, w in zip(data, weights)]
 
     return delayed(sum)(hists)
 
 
 def _fill_multiarg(
-    *samples: DaskCollection,
+    *data: DaskCollection,
     meta_hist: Histogram,
     weight: DaskCollection | None = None,
 ) -> Delayed:
@@ -182,26 +182,24 @@ def _fill_multiarg(
     objects; they just must have equally sized chunks/partitions.
 
     """
-    D = len(samples)
+    D = len(data)
     # each entry is data along a specific dimension
-    delayed_samples = [a.to_delayed() for a in samples]
+    delayed_data = [a.to_delayed() for a in data]
     # check that all dimensions are chunked identically
-    npartitions = len(delayed_samples[0])
+    npartitions = len(delayed_data[0])
     for i in range(1, D):
-        if len(delayed_samples[i]) != npartitions:
+        if len(delayed_data[i]) != npartitions:
             raise ValueError("All dimensions must be chunked/partitioned identically.")
     # We need to create a data structure that will connect coordinate
     # chunks. We loop over the number of partitions and connect the
     # ith chunk along each dimension (the loop over j is the loop over
     # the total number of dimensions).
-    delayed_samples = [
-        tuple(delayed_samples[j][i] for j in range(D)) for i in range(npartitions)
+    delayed_data = [
+        tuple(delayed_data[j][i] for j in range(D)) for i in range(npartitions)
     ]
 
     if weight is None:
-        hists = [
-            _blocked_fill_multiarg(*d, meta_hist=meta_hist) for d in delayed_samples
-        ]
+        hists = [_blocked_fill_multiarg(*d, meta_hist=meta_hist) for d in delayed_data]
     else:
         weights = weight.to_delayed()
         if len(weights) != npartitions:
@@ -210,7 +208,7 @@ def _fill_multiarg(
             )
         hists = [
             _blocked_fill_multiarg(*d, meta_hist=meta_hist, weight=w)
-            for d, w in zip(delayed_samples, weights)
+            for d, w in zip(delayed_data, weights)
         ]
 
     return delayed(sum)(hists)
@@ -573,10 +571,10 @@ def histogramdd(
 
         * A dask.array.Array of shape (N, D) where each row is a
           sample and each column is a specific coordinate for the
-          samples.
+          data.
         * A sequence of dask collections where each collection (e.g.
           array or series) contains all values for one coordinate of
-          all samples.
+          all data.
     bins : sequence of arrays, int, or sequence of ints
         The bin specification.
 
