@@ -16,11 +16,9 @@ from dask.threaded import get as tget
 from dask.utils import is_dataframe_like, key_split
 
 if TYPE_CHECKING:
-    import numpy as np
+    from numpy.typing import NDArray
 
     from .typing import DaskCollection
-else:
-    DaskCollection = object
 
 __all__ = (
     "AggHistogram",
@@ -52,13 +50,42 @@ def clone(histref: bh.Histogram = None) -> bh.Histogram:
     return bh.Histogram(*histref.axes, storage=histref._storage_type())
 
 
+def _blocked_sa(
+    data: Any,
+    *,
+    histref: bh.Histogram = None,
+) -> bh.Histogram:
+    """Blocked calculation; single argument; unweighted; no sample."""
+    if data.ndim == 1:
+        return clone(histref).fill(data)
+    elif data.ndim == 2:
+        return clone(histref).fill(*(data.T))
+    else:
+        raise ValueError("Data must be one or two dimensional.")
+
+
+def _blocked_sa_s(
+    data: Any,
+    sample: Any,
+    *,
+    histref: bh.Histogram = None,
+) -> bh.Histogram:
+    """Blocked calculation; single argument; unweighted; with sample."""
+    if data.ndim == 1:
+        return clone(histref).fill(data, sample=sample)
+    elif data.ndim == 2:
+        return clone(histref).fill(*(data.T), sample=sample)
+    else:
+        raise ValueError("Data must be one or two dimensional.")
+
+
 def _blocked_sa_w(
     data: Any,
     weights: Any,
     *,
     histref: bh.Histogram = None,
 ) -> bh.Histogram:
-    """Blocked calculation; single argument; weighted."""
+    """Blocked calculation; single argument; weighted; no sample."""
     if data.ndim == 1:
         return clone(histref).fill(data, weight=weights)
     elif data.ndim == 2:
@@ -67,36 +94,76 @@ def _blocked_sa_w(
         raise ValueError("Data must be one or two dimensional.")
 
 
-def _blocked_sa(
+def _blocked_sa_w_s(
     data: Any,
+    weights: Any,
+    sample: Any,
     *,
     histref: bh.Histogram = None,
 ) -> bh.Histogram:
-    """Blocked calculation; single argument; unweighted."""
+    """Blocked calculation; single argument; weighted; with sample."""
     if data.ndim == 1:
-        return clone(histref).fill(data, weight=None)
+        return clone(histref).fill(data, weight=weights, sample=sample)
     elif data.ndim == 2:
-        return clone(histref).fill(*(data.T), weight=None)
+        return clone(histref).fill(*(data.T), weight=weights, sample=sample)
     else:
         raise ValueError("Data must be one or two dimensional.")
-
-
-def _blocked_ma_w(
-    *data: Any,
-    histref: bh.Histogram = None,
-) -> bh.Histogram:
-    """Blocked calculation; multiargument; unweighted."""
-    weights = data[-1]
-    data = data[:-1]
-    return clone(histref).fill(*data, weight=weights)
 
 
 def _blocked_ma(
     *data: Any,
     histref: bh.Histogram = None,
 ) -> bh.Histogram:
-    """Blocked calculation; multiargument; unweighted."""
-    return clone(histref).fill(*data, weight=None)
+    """Blocked calculation; multiargument; unweighted; no sample."""
+    return clone(histref).fill(*data)
+
+
+def _blocked_ma_s(
+    *data: Any,
+    histref: bh.Histogram = None,
+) -> bh.Histogram:
+    """Blocked calculation; multiargument; unweighted; with sample."""
+    sample = data[-1]
+    data = data[:-1]
+    return clone(histref).fill(*data, sample=sample)
+
+
+def _blocked_ma_w(
+    *data: Any,
+    histref: bh.Histogram = None,
+) -> bh.Histogram:
+    """Blocked calculation; multiargument; weighted; no sample."""
+    weights = data[-1]
+    data = data[:-1]
+    return clone(histref).fill(*data, weight=weights)
+
+
+def _blocked_ma_w_s(
+    *data: Any,
+    histref: bh.Histogram = None,
+) -> bh.Histogram:
+    """Blocked calculation; multiargument; weighted; with sample."""
+    weights = data[-2]
+    sample = data[-1]
+    data = data[:-2]
+    return clone(histref).fill(*data, weight=weights, sample=sample)
+
+
+def _blocked_df(
+    data: Any,
+    *,
+    histref: bh.Histogram = None,
+) -> bh.Histogram:
+    return clone(histref).fill(*(data[c] for c in data.columns), weight=None)
+
+
+def _blocked_df_s(
+    data: Any,
+    sample: Any,
+    *,
+    histref: bh.Histogram = None,
+) -> bh.Histogram:
+    return clone(histref).fill(*(data[c] for c in data.columns), sample=sample)
 
 
 def _blocked_df_w(
@@ -105,15 +172,21 @@ def _blocked_df_w(
     *,
     histref: bh.Histogram = None,
 ) -> bh.Histogram:
-    """Blocked calculation; single argument; weighted."""
+    """Blocked calculation; single argument; weighted; no sample."""
     return clone(histref).fill(*(data[c] for c in data.columns), weight=weights)
 
 
-def _blocked_df(
+def _blocked_df_w_s(
     data: Any,
+    weights: Any,
+    sample: Any,
+    *,
     histref: bh.Histogram = None,
 ) -> bh.Histogram:
-    return clone(histref).fill(*(data[c] for c in data.columns), weight=None)
+    """Blocked calculation; single argument; weighted; with sample."""
+    return clone(histref).fill(
+        *(data[c] for c in data.columns), weight=weights, sample=sample
+    )
 
 
 class AggHistogram(db.Item):
@@ -216,7 +289,16 @@ class AggHistogram(db.Item):
         """
         return self.compute()
 
-    def __array__(self) -> np.ndarray:
+    def values(self, flow: bool = False) -> NDArray[Any]:
+        return self.to_boost().values()
+
+    def variances(self, flow: bool = False) -> NDArray[Any] | None:
+        return self.to_boost().variances()
+
+    def counts(self, flow: bool = False) -> NDArray[Any]:
+        return self.to_boost().counts()
+
+    def __array__(self) -> NDArray[Any]:
         return self.compute().__array__()
 
     def __iadd__(self, other) -> AggHistogram:
@@ -376,51 +458,85 @@ def _reduction(ph: PartitionedHistogram, split_every: int = None) -> AggHistogra
 
 def _dependencies(
     *args: DaskCollection,
-    weights: DaskCollection = None,
+    weights: DaskCollection | None = None,
+    sample: DaskCollection | None = None,
 ) -> tuple[DaskCollection, ...]:
-    if weights is not None:
+    if weights is not None and sample is None:
         return (*args, weights)
+    elif weights is None and sample is not None:
+        return (*args, sample)
+    elif weights is not None and sample is not None:
+        return (*args, weights, sample)
     return args
 
 
-def _weight_check(*data: DaskCollection, weights: DaskCollection = None) -> int:
-    if weights is None:
+def _weight_sample_check(
+    *data: DaskCollection,
+    weights: DaskCollection | None = None,
+    sample: DaskCollection | None = None,
+) -> int:
+    if weights is None and sample is None:
         return 0
-    if weights.ndim != 1:
-        raise ValueError("weights must be one dimensional.")
-    if data[0].npartitions != weights.npartitions:
-        raise ValueError("weights must have as many partitions as the data.")
+    if weights is not None:
+        if weights.ndim != 1:
+            raise ValueError("weights must be one dimensional.")
+        if data[0].npartitions != weights.npartitions:
+            raise ValueError("weights must have as many partitions as the data.")
+    if sample is not None:
+        if sample.ndim != 1:
+            raise ValueError("sample must be one dimensional.")
+        if data[0].npartitions != sample.npartitions:
+            raise ValueError("sample must have as many partitions as the data.")
     return 0
 
 
 def _partitioned_histogram(
     *data: DaskCollection,
     histref: bh.Histogram,
-    weights: DaskCollection = None,
-    split_every: int = None,
+    weights: DaskCollection | None = None,
+    sample: DaskCollection | None = None,
+    split_every: int | None = None,
 ) -> AggHistogram:
-    name = f"hist-on-block-{tokenize(data, histref, weights)}"
+    name = f"hist-on-block-{tokenize(data, histref, weights, sample)}"
     data_is_df = is_dataframe_like(data[0])
-    _weight_check(*data, weights=weights)
+    _weight_sample_check(*data, weights=weights)
     if len(data) == 1 and not data_is_df:
         x = data[0]
-        if weights is not None:
+        if weights is not None and sample is not None:
+            g = partitionwise(
+                _blocked_sa_w_s, name, x, weights, sample, histref=histref
+            )
+        elif weights is not None and sample is None:
             g = partitionwise(_blocked_sa_w, name, x, weights, histref=histref)
+        elif weights is None and sample is not None:
+            g = partitionwise(_blocked_sa_s, name, x, sample, histref=histref)
         else:
             g = partitionwise(_blocked_sa, name, x, histref=histref)
     elif len(data) == 1 and data_is_df:
         x = data[0]
-        if weights is not None:
+        if weights is not None and sample is not None:
+            g = partitionwise(
+                _blocked_df_w_s, name, x, weights, sample, histref=histref
+            )
+        elif weights is not None and sample is None:
             g = partitionwise(_blocked_df_w, name, x, weights, histref=histref)
+        elif weights is None and sample is not None:
+            g = partitionwise(_blocked_df_s, name, x, sample, histref=histref)
         else:
             g = partitionwise(_blocked_df, name, x, histref=histref)
     else:
-        if weights is not None:
+        if weights is not None and sample is not None:
+            g = partitionwise(
+                _blocked_ma_w_s, name, *data, weights, sample, histref=histref
+            )
+        elif weights is not None and sample is None:
             g = partitionwise(_blocked_ma_w, name, *data, weights, histref=histref)
+        elif weights is None and sample is not None:
+            g = partitionwise(_blocked_ma_s, name, *data, sample, histref=histref)
         else:
             g = partitionwise(_blocked_ma, name, *data, histref=histref)
 
-    dependencies = _dependencies(*data, weights=weights)
+    dependencies = _dependencies(*data, weights=weights, sample=sample)
     hlg = HighLevelGraph.from_collections(name, g, dependencies=dependencies)
     return PartitionedHistogram(hlg, name, data[0].npartitions, histref=histref)
 
@@ -428,11 +544,16 @@ def _partitioned_histogram(
 def _reduced_histogram(
     *data: DaskCollection,
     histref: bh.Histogram,
-    weights: DaskCollection = None,
-    split_every: int = None,
+    weights: DaskCollection | None = None,
+    sample: DaskCollection | None = None,
+    split_every: int | None = None,
 ) -> AggHistogram:
     ph = _partitioned_histogram(
-        *data, histref=histref, weights=weights, split_every=split_every
+        *data,
+        histref=histref,
+        weights=weights,
+        sample=sample,
+        split_every=split_every,
     )
     return ph.to_agg(split_every=split_every)
 
@@ -524,11 +645,12 @@ _itruediv = BinaryOpAgg(operator.itruediv, name="div")
 
 def factory(
     *data: DaskCollection,
-    histref: bh.Histogram = None,
-    axes: Sequence[bh.axis.Axis] = None,
-    storage: bh.storage.Storage = None,
-    weights: DaskCollection = None,
-    split_every: int = None,
+    histref: bh.Histogram | None = None,
+    axes: Sequence[bh.axis.Axis] | None = None,
+    storage: bh.storage.Storage | None = None,
+    weights: DaskCollection | None = None,
+    sample: DaskCollection | None = None,
+    split_every: int | None = None,
     keep_partitioned: bool = False,
 ) -> AggHistogram | PartitionedHistogram:
     """Daskified Histogram collection factory function.
@@ -565,6 +687,10 @@ def factory(
     weights : DaskCollection, optional
         Weights associated with the `data`. The partitioning/chunking
         of the weights must be compatible with the input data.
+    sample : DaskCollection, optional
+        Provide samples if the histogram storage allows it. The
+        partitioning/chunking of the samples must be compatible with
+        the input data.
     split_every : int, optional
         How many blocks to use in each split during aggregation.
     keep_partitioned : bool, optional
@@ -632,4 +758,11 @@ def factory(
             storage = bh.storage.Double()
         histref = bh.Histogram(*axes, storage=storage)  # type: ignore
     f = _partitioned_histogram if keep_partitioned else _reduced_histogram
-    return f(*data, histref=histref, weights=weights, split_every=split_every)
+    print(sample)
+    return f(
+        *data,
+        histref=histref,
+        weights=weights,
+        sample=sample,
+        split_every=split_every,
+    )
