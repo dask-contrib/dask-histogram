@@ -53,67 +53,67 @@ def clone(histref: bh.Histogram = None) -> bh.Histogram:
 
 
 def _blocked_sa_w(
-    sample: Any,
+    data: Any,
     weights: Any,
     *,
     histref: bh.Histogram = None,
 ) -> bh.Histogram:
     """Blocked calculation; single argument; weighted."""
-    if sample.ndim == 1:
-        return clone(histref).fill(sample, weight=weights)
-    elif sample.ndim == 2:
-        return clone(histref).fill(*(sample.T), weight=weights)
+    if data.ndim == 1:
+        return clone(histref).fill(data, weight=weights)
+    elif data.ndim == 2:
+        return clone(histref).fill(*(data.T), weight=weights)
     else:
         raise ValueError("Data must be one or two dimensional.")
 
 
 def _blocked_sa(
-    sample: Any,
+    data: Any,
     *,
     histref: bh.Histogram = None,
 ) -> bh.Histogram:
     """Blocked calculation; single argument; unweighted."""
-    if sample.ndim == 1:
-        return clone(histref).fill(sample, weight=None)
-    elif sample.ndim == 2:
-        return clone(histref).fill(*(sample.T), weight=None)
+    if data.ndim == 1:
+        return clone(histref).fill(data, weight=None)
+    elif data.ndim == 2:
+        return clone(histref).fill(*(data.T), weight=None)
     else:
         raise ValueError("Data must be one or two dimensional.")
 
 
 def _blocked_ma_w(
-    *sample: Any,
+    *data: Any,
     histref: bh.Histogram = None,
 ) -> bh.Histogram:
     """Blocked calculation; multiargument; unweighted."""
-    weights = sample[-1]
-    sample = sample[:-1]
-    return clone(histref).fill(*sample, weight=weights)
+    weights = data[-1]
+    data = data[:-1]
+    return clone(histref).fill(*data, weight=weights)
 
 
 def _blocked_ma(
-    *sample: Any,
+    *data: Any,
     histref: bh.Histogram = None,
 ) -> bh.Histogram:
     """Blocked calculation; multiargument; unweighted."""
-    return clone(histref).fill(*sample, weight=None)
+    return clone(histref).fill(*data, weight=None)
 
 
 def _blocked_df_w(
-    sample: Any,
+    data: Any,
     weights: Any,
     *,
     histref: bh.Histogram = None,
 ) -> bh.Histogram:
     """Blocked calculation; single argument; weighted."""
-    return clone(histref).fill(*(sample[c] for c in sample.columns), weight=weights)
+    return clone(histref).fill(*(data[c] for c in data.columns), weight=weights)
 
 
 def _blocked_df(
-    sample: Any,
+    data: Any,
     histref: bh.Histogram = None,
 ) -> bh.Histogram:
-    return clone(histref).fill(*(sample[c] for c in sample.columns), weight=None)
+    return clone(histref).fill(*(data[c] for c in data.columns), weight=None)
 
 
 class AggHistogram(db.Item):
