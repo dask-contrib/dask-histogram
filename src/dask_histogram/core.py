@@ -758,7 +758,6 @@ def factory(
             storage = bh.storage.Double()
         histref = bh.Histogram(*axes, storage=storage)  # type: ignore
     f = _partitioned_histogram if keep_partitioned else _reduced_histogram
-    print(sample)
     return f(
         *data,
         histref=histref,
