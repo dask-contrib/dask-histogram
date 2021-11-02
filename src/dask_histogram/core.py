@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, Callable, Sequence
 import boost_histogram as bh
 import dask.array as da
 import dask.bag as db
+import numpy as np
 from dask.bag.core import empty_safe_aggregate, partition_all
 from dask.base import DaskMethodsMixin, is_dask_collection, tokenize
 from dask.dataframe.core import partitionwise_graph as partitionwise
@@ -602,10 +603,16 @@ def to_dask_array(
     dt = int if int_storage else float
     c = da.Array(graph, name=name, shape=shape, chunks=shape, dtype=dt)
     axes = agghist.histref.axes
-    edges = (da.asarray(ax.edges) for ax in axes)
+
+    if flow:
+        edges = [
+            da.asarray(np.concatenate([[-np.inf], ax.edges, [np.inf]])) for ax in axes
+        ]
+    else:
+        edges = [da.asarray(ax.edges) for ax in axes]
     if dd:
-        return (c, list(edges))
-    return (c, *(tuple(edges)))
+        return c, edges
+    return (c, *tuple(edges))
 
 
 class BinaryOpAgg:

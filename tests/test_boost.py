@@ -339,6 +339,28 @@ def test_histogram_da_return():
     np.testing.assert_array_almost_equal(h1.compute(), h2)
     np.testing.assert_array_almost_equal(edges1.compute(), edges2)
 
+    x = da.random.standard_normal(size=(3_000, 3), chunks=(500, 3))
+    bins = (5, 6, 7)
+    range = ((-3, 3),) * 3
+    h1, edges1 = dhb.histogramdd(x, bins=bins, range=range)
+    h2, edges2 = bhnp.histogramdd(x.compute(), bins=bins, range=range)
+    np.testing.assert_array_almost_equal(h1.compute(), h2)
+    for e1, e2 in zip(edges1, edges2):
+        np.testing.assert_array_almost_equal(e1.compute(), e2)
+
+
+@pytest.mark.parametrize("flow", [True, False])
+def test_to_da(flow):
+    x = da.random.standard_normal(size=(3_000,), chunks=500)
+    h1 = dhb.Histogram(dhb.axis.Regular(10, -3, 3))
+    h2 = bh.Histogram(bh.axis.Regular(10, -3, 3))
+    h1.fill(x)
+    h2.fill(x.compute())
+    h1c, h1e = h1.to_dask_array(dd=True, flow=flow)
+    h2c, h2e = h2.to_numpy(dd=True, flow=flow)
+    np.testing.assert_array_almost_equal(h1c.compute(), h2c)
+    np.testing.assert_array_almost_equal(h1e[0].compute(), h2e[0])
+
 
 def test_to_delayed():
     x = da.random.standard_normal(size=(2_000, 3), chunks=(500, 3))
