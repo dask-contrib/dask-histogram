@@ -330,7 +330,7 @@ class Histogram(bh.Histogram, family=dask_histogram):
 
     def to_dask_array(
         self, flow: bool = False, dd: bool = True
-    ) -> tuple[da.Array, ...] | tuple[da.Array, tuple[da.Array, ...]]:
+    ) -> tuple[da.Array, ...] | tuple[da.Array, list[da.Array]]:
         """Convert to dask.array style of return arrays.
 
         Edges are converted to match NumPy standards, with upper edge
@@ -358,10 +358,10 @@ class Histogram(bh.Histogram, family=dask_histogram):
         else:
             counts, edges = self.to_numpy(flow=flow, dd=True, view=False)
             counts = da.from_array(counts)
-            edges = [da.from_array(ea) for ea in edges]
+            edges = [da.from_array(ea) for ea in edges]  # type: ignore
             if dd:
                 return counts, edges
-            return tuple(counts, *edges)
+            return tuple([counts, *edges])
 
 
 def histogramdd(
