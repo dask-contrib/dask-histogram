@@ -11,6 +11,7 @@ import numpy as np
 from dask.bag.core import empty_safe_aggregate, partition_all
 from dask.base import DaskMethodsMixin, is_dask_collection, tokenize
 from dask.dataframe.core import partitionwise_graph as partitionwise
+from dask.delayed import Delayed
 from dask.highlevelgraph import HighLevelGraph
 from dask.threaded import get as tget
 from dask.utils import is_dataframe_like, key_split
@@ -202,10 +203,26 @@ class AggHistogram(DaskMethodsMixin):
 
     """
 
-    def __init__(self, dsk: HighLevelGraph, name: str, histref: bh.Histogram) -> None:
+    def __init__(
+        self,
+        dsk: HighLevelGraph,
+        name: str,
+        histref: bh.Histogram,
+        layer: Any | None = None,
+    ) -> None:
         self._dask: HighLevelGraph = dsk
         self._name: str = name
         self._histref: bh.Histogram = histref
+
+        # NOTE: Layer only used by `Item.from_delayed`, to handle
+        # Delayed objects created by other collections. e.g.:
+        # Item.from_delayed(da.ones(1).to_delayed()[0]) See
+        # Delayed.__init__
+        self._layer = layer or name
+        if isinstance(dsk, HighLevelGraph) and self._layer not in dsk.layers:
+            raise ValueError(
+                f"Layer {self._layer} not in the HighLevelGraph's layers: {list(dsk.layers)}"
+            )
 
     def __dask_graph__(self) -> HighLevelGraph:
         return self._dask
@@ -323,6 +340,12 @@ class AggHistogram(DaskMethodsMixin):
 
         """
         return self.compute()
+
+    def to_delayed(self, optimize_graph: bool = True) -> Delayed:
+        dsk = self.__dask_graph__()
+        if optimize_graph:
+            dsk = self.__dask_optimize__(dsk, self.__dask_keys__())
+        return Delayed(self.name, dsk, layer=self._layer)
 
     def values(self, flow: bool = False) -> NDArray[Any]:
         return self.to_boost().values()
