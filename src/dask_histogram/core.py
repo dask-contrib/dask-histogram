@@ -291,7 +291,7 @@ class AggHistogram(DaskMethodsMixin):
         return self._args
 
     def __setstate__(self, state: tuple[HighLevelGraph, str, bh.Histogram]) -> None:
-        self.dask, self.name, self._histref = state
+        self._dask, self._name, self._histref = state
 
     def to_dask_array(
         self, flow: bool = False, dd: bool = False
@@ -455,7 +455,7 @@ class PartitionedHistogram(DaskMethodsMixin):
     def __setstate__(
         self, state: tuple[HighLevelGraph, str, int, bh.Histogram]
     ) -> None:
-        self.dask, self.name, self.npartitions, self._histref = state
+        self._dask, self._name, self._npartitions, self._histref = state
 
     @property
     def histref(self) -> bh.Histogram:
@@ -679,8 +679,8 @@ class BinaryOpAgg:
             k2 = b.name
         else:
             k2 = b
-        k1 = a.__dask_tokenize__() if is_dask_collection(a) else a
-        k2 = b.__dask_tokenize__() if is_dask_collection(b) else b
+        k1 = a.__dask_tokenize__() if is_dask_collection(a) else a  # type: ignore
+        k2 = b.__dask_tokenize__() if is_dask_collection(b) else b  # type: ignore
         llg = {name: (self.func, k1, k2)}
         g = HighLevelGraph.from_collections(name, llg, dependencies=deps)
         try:
