@@ -341,10 +341,8 @@ class AggHistogram(DaskMethodsMixin):
         """
         return self.compute()
 
-    def to_delayed(self, optimize_graph: bool = True) -> Delayed:
+    def to_delayed(self) -> Delayed:
         dsk = self.__dask_graph__()
-        if optimize_graph:
-            dsk = self.__dask_optimize__(dsk, self.__dask_keys__())
         return Delayed(self.name, dsk, layer=self._layer)
 
     def values(self, flow: bool = False) -> NDArray[Any]:
