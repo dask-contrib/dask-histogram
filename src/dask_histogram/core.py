@@ -3,15 +3,15 @@
 from __future__ import annotations
 
 import operator
-from typing import TYPE_CHECKING, Any, Callable, Sequence
+from typing import TYPE_CHECKING, Any, Callable, Mapping, Sequence
 
 import boost_histogram as bh
 import dask.array as da
-import dask.bag as db
 import numpy as np
 from dask.bag.core import empty_safe_aggregate, partition_all
 from dask.base import DaskMethodsMixin, is_dask_collection, tokenize
 from dask.dataframe.core import partitionwise_graph as partitionwise
+from dask.delayed import Delayed
 from dask.highlevelgraph import HighLevelGraph
 from dask.threaded import get as tget
 from dask.utils import is_dataframe_like, key_split
@@ -190,7 +190,7 @@ def _blocked_df_w_s(
     )
 
 
-class AggHistogram(db.Item):
+class AggHistogram(DaskMethodsMixin):
     """Aggregated Histogram collection.
 
     The class constructor is typically used internally;
@@ -203,14 +203,65 @@ class AggHistogram(db.Item):
 
     """
 
-    def __init__(self, dsk: HighLevelGraph, key: str, histref: bh.Histogram) -> None:
-        self.dask: HighLevelGraph = dsk
-        self.key: str = key
+    def __init__(
+        self,
+        dsk: HighLevelGraph,
+        name: str,
+        histref: bh.Histogram,
+        layer: Any | None = None,
+    ) -> None:
+        self._dask: HighLevelGraph = dsk
+        self._name: str = name
         self._histref: bh.Histogram = histref
+
+        # NOTE: Layer only used by `Item.from_delayed`, to handle
+        # Delayed objects created by other collections. e.g.:
+        # Item.from_delayed(da.ones(1).to_delayed()[0]) See
+        # Delayed.__init__
+        self._layer = layer or name
+        if isinstance(dsk, HighLevelGraph) and self._layer not in dsk.layers:
+            raise ValueError(
+                f"Layer {self._layer} not in the HighLevelGraph's layers: {list(dsk.layers)}"
+            )
+
+    def __dask_graph__(self) -> HighLevelGraph:
+        return self._dask
+
+    def __dask_keys__(self) -> list[str]:
+        return [self.name]
+
+    def __dask_layers__(self) -> tuple[str, ...]:
+        if isinstance(self._dask, HighLevelGraph) and len(self._dask.layers) == 1:
+            return tuple(self._dask.layers)
+        return (self.name,)
+
+    def __dask_tokenize__(self) -> str:
+        return self.name
+
+    def __dask_postcompute__(self) -> Any:
+        return _finalize_agg_histogram, ()
+
+    def __dask_postpersist__(self) -> Any:
+        return self._rebuild, ()
+
+    def _rebuild(
+        self,
+        dsk: HighLevelGraph,
+        *,
+        rename: Mapping[str, str] | None = None,
+    ) -> Any:
+        name = self._name
+        if rename:
+            name = rename.get(name, name)
+        return type(self)(dsk, name, self.meta)
 
     @property
     def name(self) -> str:
-        return self.key
+        return self._name
+
+    @property
+    def dask(self) -> HighLevelGraph:
+        return self._dask
 
     @property
     def histref(self) -> bh.Histogram:
@@ -251,13 +302,13 @@ class AggHistogram(db.Item):
 
     @property
     def _args(self) -> tuple[HighLevelGraph, str, bh.Histogram]:
-        return (self.dask, self.key, self.histref)
+        return (self.dask, self.name, self.histref)
 
     def __getstate__(self) -> tuple[HighLevelGraph, str, bh.Histogram]:
         return self._args
 
     def __setstate__(self, state: tuple[HighLevelGraph, str, bh.Histogram]) -> None:
-        self.dask, self.key, self._histref = state
+        self._dask, self._name, self._histref = state
 
     def to_dask_array(
         self, flow: bool = False, dd: bool = False
@@ -289,6 +340,10 @@ class AggHistogram(db.Item):
 
         """
         return self.compute()
+
+    def to_delayed(self) -> Delayed:
+        dsk = self.__dask_graph__()
+        return Delayed(self.name, dsk, layer=self._layer)
 
     def values(self, flow: bool = False) -> NDArray[Any]:
         return self.to_boost().values()
@@ -343,6 +398,10 @@ def _finalize_partitioned_histogram(results: Any) -> Any:
     return results
 
 
+def _finalize_agg_histogram(results: Any) -> Any:
+    return results[0]
+
+
 class PartitionedHistogram(DaskMethodsMixin):
     """Partitioned Histogram collection.
 
@@ -358,16 +417,24 @@ class PartitionedHistogram(DaskMethodsMixin):
     """
 
     def __init__(
-        self, dsk: HighLevelGraph, key: str, npartitions: int, histref: bh.Histogram
+        self, dsk: HighLevelGraph, name: str, npartitions: int, histref: bh.Histogram
     ) -> None:
-        self.dask: HighLevelGraph = dsk
-        self.key: str = key
-        self.npartitions: int = npartitions
+        self._dask: HighLevelGraph = dsk
+        self._name = name
+        self._npartitions: int = npartitions
         self._histref: bh.Histogram = histref
 
     @property
     def name(self) -> str:
-        return self.key
+        return self._name
+
+    @property
+    def dask(self) -> HighLevelGraph:
+        return self._dask
+
+    @property
+    def npartitions(self) -> int:
+        return self._npartitions
 
     def __dask_graph__(self) -> HighLevelGraph:
         return self.dask
@@ -401,7 +468,7 @@ class PartitionedHistogram(DaskMethodsMixin):
 
     @property
     def _args(self) -> tuple[HighLevelGraph, str, int, bh.Histogram]:
-        return (self.dask, self.key, self.npartititions, self.histref)
+        return (self.dask, self.name, self.npartititions, self.histref)
 
     def __getstate__(self) -> tuple[HighLevelGraph, str, int, bh.Histogram]:
         return self._args
@@ -409,7 +476,7 @@ class PartitionedHistogram(DaskMethodsMixin):
     def __setstate__(
         self, state: tuple[HighLevelGraph, str, int, bh.Histogram]
     ) -> None:
-        self.dask, self.key, self.npartitions, self._histref = state
+        self._dask, self._name, self._npartitions, self._histref = state
 
     @property
     def histref(self) -> bh.Histogram:
@@ -591,7 +658,7 @@ def to_dask_array(
     """
     name = f"to-dask-array-{tokenize(agghist)}"
     zeros = (0,) * agghist.histref.ndim
-    dsk = {(name, *zeros): (lambda x, f: x.to_numpy(flow=f)[0], agghist.key, flow)}
+    dsk = {(name, *zeros): (lambda x, f: x.to_numpy(flow=f)[0], agghist.name, flow)}
     graph = HighLevelGraph.from_collections(name, dsk, dependencies=(agghist,))
     shape = agghist.histref.shape
     if flow:
@@ -633,8 +700,8 @@ class BinaryOpAgg:
             k2 = b.name
         else:
             k2 = b
-        k1 = a.__dask_tokenize__() if is_dask_collection(a) else a
-        k2 = b.__dask_tokenize__() if is_dask_collection(b) else b
+        k1 = a.__dask_tokenize__() if is_dask_collection(a) else a  # type: ignore
+        k2 = b.__dask_tokenize__() if is_dask_collection(b) else b  # type: ignore
         llg = {name: (self.func, k1, k2)}
         g = HighLevelGraph.from_collections(name, llg, dependencies=deps)
         try:
