@@ -282,3 +282,25 @@ def test_bad_weight_structure():
     w = da.random.standard_normal(size=(80, 3), chunks=(20, 3))
     with pytest.raises(ValueError, match="weights must be one dimensional."):
         dhc.factory(x, axes=(bh.axis.Regular(10, -3, 3),), weights=w)
+
+
+@pytest.mark.parametrize("weights", [True, None])
+def test_agghist_to_delayed(weights):
+    h = bh.Histogram(
+        bh.axis.Regular(10, 0, 1),
+        bh.axis.Regular(10, 0, 1),
+        bh.axis.Regular(10, 0, 1),
+        storage=bh.storage.Weight(),
+    )
+    if weights is not None:
+        weights = da.random.uniform(0, 1, size=(2000,), chunks=(250,))
+    x = da.random.uniform(0, 1, size=(2000, 3), chunks=(250, 3))
+    dh = dhc.factory(x, histref=h, weights=weights, split_every=4)
+    h.fill(
+        *(x.compute().T),
+        weight=weights.compute() if weights is not None else None,
+    )
+    delayed_hist = dh.to_delayed()
+    np.testing.assert_allclose(
+        h.counts(flow=True), delayed_hist.compute().counts(flow=True)
+    )
