@@ -4,9 +4,9 @@ import boost_histogram as bh
 import dask.array as da
 import dask.array.utils as dau
 import dask.datasets as dds
-import dask.delayed as delayed
 import numpy as np
 import pytest
+from dask.delayed import delayed
 
 import dask_histogram.core as dhc
 
@@ -152,7 +152,7 @@ def gen_hist_1D(
     range: tuple[float, float] = (-3, 3),
     size: tuple[int, ...] = (1000,),
     chunks: tuple[int, ...] = (250,),
-) -> dhc.AggHistogram:
+):
     hr = bh.Histogram(
         bh.axis.Regular(bins, range[0], range[1]),
         storage=bh.storage.Weight(),

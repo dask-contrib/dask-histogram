@@ -253,7 +253,7 @@ class AggHistogram(DaskMethodsMixin):
         name = self._name
         if rename:
             name = rename.get(name, name)
-        return type(self)(dsk, name, self.meta)
+        return type(self)(dsk, name, self.histref)
 
     @property
     def name(self) -> str:
@@ -312,7 +312,7 @@ class AggHistogram(DaskMethodsMixin):
 
     def to_dask_array(
         self, flow: bool = False, dd: bool = False
-    ) -> tuple[da.Array, ...] | tuple[da.Array, tuple[da.Array, ...]]:
+    ) -> tuple[da.Array, ...] | tuple[da.Array, list[da.Array]]:
         """Convert histogram object to dask.array form.
 
         Parameters
@@ -468,7 +468,7 @@ class PartitionedHistogram(DaskMethodsMixin):
 
     @property
     def _args(self) -> tuple[HighLevelGraph, str, int, bh.Histogram]:
-        return (self.dask, self.name, self.npartititions, self.histref)
+        return (self.dask, self.name, self.npartitions, self.histref)
 
     def __getstate__(self) -> tuple[HighLevelGraph, str, int, bh.Histogram]:
         return self._args
@@ -564,7 +564,7 @@ def _partitioned_histogram(
     weights: DaskCollection | None = None,
     sample: DaskCollection | None = None,
     split_every: int | None = None,
-) -> AggHistogram:
+) -> PartitionedHistogram:
     name = f"hist-on-block-{tokenize(data, histref, weights, sample)}"
     data_is_df = is_dataframe_like(data[0])
     _weight_sample_check(*data, weights=weights)
@@ -630,7 +630,7 @@ def to_dask_array(
     agghist: AggHistogram,
     flow: bool = False,
     dd: bool = False,
-) -> tuple[DaskCollection, list[DaskCollection]] | tuple[DaskCollection, ...]:
+) -> tuple[da.Array, ...] | tuple[da.Array, list[da.Array]]:
     """Convert `agghist` to a `dask.array` return style.
 
     Parameters
@@ -694,12 +694,12 @@ class BinaryOpAgg:
             deps.append(a)
             k1 = a.name
         else:
-            k1 = a
+            k1 = a  # type: ignore
         if is_dask_collection(b):
             deps.append(b)
             k2 = b.name
         else:
-            k2 = b
+            k2 = b  # type: ignore
         k1 = a.__dask_tokenize__() if is_dask_collection(a) else a  # type: ignore
         k2 = b.__dask_tokenize__() if is_dask_collection(b) else b  # type: ignore
         llg = {name: (self.func, k1, k2)}
@@ -832,7 +832,7 @@ def factory(
             storage = bh.storage.Double()
         histref = bh.Histogram(*axes, storage=storage)  # type: ignore
     f = _partitioned_histogram if keep_partitioned else _reduced_histogram
-    return f(
+    return f(  # type: ignore
         *data,
         histref=histref,
         weights=weights,

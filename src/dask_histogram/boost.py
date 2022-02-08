@@ -111,7 +111,7 @@ class Histogram(bh.Histogram, family=dask_histogram):
             )
         return super().fill(*args, weight=weight, sample=sample, threads=threads)
 
-    def fill(
+    def fill(  # type: ignore
         self,
         *args: DaskCollection,
         weight: DaskCollection | None = None,
@@ -193,7 +193,7 @@ class Histogram(bh.Histogram, family=dask_histogram):
         if self._staged is not None:
             self._staged += new_fill
         else:
-            self._staged = new_fill
+            self._staged = new_fill  # type: ignore
 
         return self
 
@@ -360,8 +360,8 @@ class Histogram(bh.Histogram, family=dask_histogram):
             counts = da.from_array(counts)
             edges = [da.from_array(ea) for ea in edges]  # type: ignore
             if dd:
-                return counts, edges
-            return tuple([counts, *edges])
+                return counts, edges  # type: ignore
+            return tuple([counts, *edges])  # type: ignore
 
 
 def histogramdd(
@@ -375,7 +375,7 @@ def histogramdd(
     histogram: Any | None = None,
     storage: storage.Storage = storage.Double(),
     threads: int | None = None,
-) -> (Histogram | tuple[da.Array, ...] | tuple[da.Array, tuple[da.Array, ...]]):
+) -> Histogram | tuple[da.Array, ...] | tuple[da.Array, list[da.Array]]:
     """Histogram Dask data in multiple dimensions.
 
     Parameters
@@ -697,7 +697,7 @@ def histogram2d(
 
     if histogram != Histogram:
         return hist.to_dask_array(flow=False, dd=False)  # type: ignore
-    return hist
+    return hist  # type: ignore
 
 
 def histogram(
@@ -794,4 +794,4 @@ def histogram(
 
     if histogram != Histogram:
         return hist.to_dask_array(flow=False, dd=False)  # type: ignore
-    return hist
+    return hist  # type: ignore

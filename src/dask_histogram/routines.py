@@ -32,7 +32,7 @@ def histogram(
     histogram: Any | None = None,
     storage: bh.storage.Storage = bh.storage.Double(),
     threads: int | None = None,
-) -> AggHistogram | tuple[da.Array, ...]:
+) -> AggHistogram | tuple[da.Array, ...] | tuple[da.Array, list[da.Array]]:
     """Histogram Dask data in one dimension.
 
     Parameters
@@ -118,7 +118,7 @@ def histogram(
     )
     if histogram is None:
         return h.to_dask_array(flow=False, dd=False)  # type: ignore
-    return h
+    return h  # type: ignore
 
 
 def histogram2d(
@@ -241,7 +241,7 @@ def histogram2d(
     )
     if histogram is None:
         return h.to_dask_array(flow=False, dd=False)  # type: ignore
-    return h
+    return h  # type: ignore
 
 
 def histogramdd(
@@ -255,7 +255,7 @@ def histogramdd(
     histogram: Any | None = None,
     storage: bh.storage.Storage = bh.storage.Double(),
     threads: int | None = None,
-) -> (AggHistogram | tuple[da.Array, ...] | tuple[da.Array, tuple[da.Array, ...]]):
+) -> AggHistogram | tuple[da.Array, list[da.Array]]:
     """Histogram Dask data in multiple dimensions.
 
     Parameters
@@ -443,5 +443,5 @@ def histogramdd(
     ah = factory(*a, axes=axes, storage=storage, weights=weights)
 
     if histogram is not None:
-        return ah
-    return ah.to_dask_array(flow=False, dd=True)
+        return ah  # type: ignore
+    return ah.to_dask_array(flow=False, dd=True)  # type: ignore
