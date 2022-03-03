@@ -8,13 +8,14 @@ from typing import TYPE_CHECKING, Any, Callable, Mapping, Sequence
 import boost_histogram as bh
 import dask.array as da
 import numpy as np
-from dask.bag.core import empty_safe_aggregate, partition_all
+from dask.bag.core import empty_safe_aggregate
 from dask.base import DaskMethodsMixin, is_dask_collection, tokenize
 from dask.dataframe.core import partitionwise_graph as partitionwise
 from dask.delayed import Delayed
 from dask.highlevelgraph import HighLevelGraph
 from dask.threaded import get as tget
 from dask.utils import is_dataframe_like, key_split
+from tlz import partition_all
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -29,7 +30,7 @@ __all__ = (
 )
 
 
-def clone(histref: bh.Histogram = None) -> bh.Histogram:
+def clone(histref: bh.Histogram | None = None) -> bh.Histogram:
     """Create a Histogram object based on another.
 
     The axes and storage of the `histref` will be used to create a new
@@ -54,7 +55,7 @@ def clone(histref: bh.Histogram = None) -> bh.Histogram:
 def _blocked_sa(
     data: Any,
     *,
-    histref: bh.Histogram = None,
+    histref: bh.Histogram | None = None,
 ) -> bh.Histogram:
     """Blocked calculation; single argument; unweighted; no sample."""
     if data.ndim == 1:
@@ -69,7 +70,7 @@ def _blocked_sa_s(
     data: Any,
     sample: Any,
     *,
-    histref: bh.Histogram = None,
+    histref: bh.Histogram | None = None,
 ) -> bh.Histogram:
     """Blocked calculation; single argument; unweighted; with sample."""
     if data.ndim == 1:
@@ -84,7 +85,7 @@ def _blocked_sa_w(
     data: Any,
     weights: Any,
     *,
-    histref: bh.Histogram = None,
+    histref: bh.Histogram | None = None,
 ) -> bh.Histogram:
     """Blocked calculation; single argument; weighted; no sample."""
     if data.ndim == 1:
@@ -100,7 +101,7 @@ def _blocked_sa_w_s(
     weights: Any,
     sample: Any,
     *,
-    histref: bh.Histogram = None,
+    histref: bh.Histogram | None = None,
 ) -> bh.Histogram:
     """Blocked calculation; single argument; weighted; with sample."""
     if data.ndim == 1:
@@ -113,7 +114,7 @@ def _blocked_sa_w_s(
 
 def _blocked_ma(
     *data: Any,
-    histref: bh.Histogram = None,
+    histref: bh.Histogram | None = None,
 ) -> bh.Histogram:
     """Blocked calculation; multiargument; unweighted; no sample."""
     return clone(histref).fill(*data)
@@ -121,7 +122,7 @@ def _blocked_ma(
 
 def _blocked_ma_s(
     *data: Any,
-    histref: bh.Histogram = None,
+    histref: bh.Histogram | None = None,
 ) -> bh.Histogram:
     """Blocked calculation; multiargument; unweighted; with sample."""
     sample = data[-1]
@@ -131,7 +132,7 @@ def _blocked_ma_s(
 
 def _blocked_ma_w(
     *data: Any,
-    histref: bh.Histogram = None,
+    histref: bh.Histogram | None = None,
 ) -> bh.Histogram:
     """Blocked calculation; multiargument; weighted; no sample."""
     weights = data[-1]
@@ -141,7 +142,7 @@ def _blocked_ma_w(
 
 def _blocked_ma_w_s(
     *data: Any,
-    histref: bh.Histogram = None,
+    histref: bh.Histogram | None = None,
 ) -> bh.Histogram:
     """Blocked calculation; multiargument; weighted; with sample."""
     weights = data[-2]
@@ -153,7 +154,7 @@ def _blocked_ma_w_s(
 def _blocked_df(
     data: Any,
     *,
-    histref: bh.Histogram = None,
+    histref: bh.Histogram | None = None,
 ) -> bh.Histogram:
     return clone(histref).fill(*(data[c] for c in data.columns), weight=None)
 
@@ -162,7 +163,7 @@ def _blocked_df_s(
     data: Any,
     sample: Any,
     *,
-    histref: bh.Histogram = None,
+    histref: bh.Histogram | None = None,
 ) -> bh.Histogram:
     return clone(histref).fill(*(data[c] for c in data.columns), sample=sample)
 
@@ -171,7 +172,7 @@ def _blocked_df_w(
     data: Any,
     weights: Any,
     *,
-    histref: bh.Histogram = None,
+    histref: bh.Histogram | None = None,
 ) -> bh.Histogram:
     """Blocked calculation; single argument; weighted; no sample."""
     return clone(histref).fill(*(data[c] for c in data.columns), weight=weights)
@@ -182,12 +183,16 @@ def _blocked_df_w_s(
     weights: Any,
     sample: Any,
     *,
-    histref: bh.Histogram = None,
+    histref: bh.Histogram | None = None,
 ) -> bh.Histogram:
     """Blocked calculation; single argument; weighted; with sample."""
     return clone(histref).fill(
         *(data[c] for c in data.columns), weight=weights, sample=sample
     )
+
+
+def _blocked_dak(data: Any, *, histref: bh.Histogram | None = None) -> bh.Histogram:
+    return clone(histref).fill(data)
 
 
 class AggHistogram(DaskMethodsMixin):
@@ -346,13 +351,13 @@ class AggHistogram(DaskMethodsMixin):
         return Delayed(self.name, dsk, layer=self._layer)
 
     def values(self, flow: bool = False) -> NDArray[Any]:
-        return self.to_boost().values()
+        return self.to_boost().values(flow=flow)
 
     def variances(self, flow: bool = False) -> NDArray[Any] | None:
-        return self.to_boost().variances()
+        return self.to_boost().variances(flow=flow)
 
     def counts(self, flow: bool = False) -> NDArray[Any]:
-        return self.to_boost().counts()
+        return self.to_boost().counts(flow=flow)
 
     def __array__(self) -> NDArray[Any]:
         return self.compute().__array__()
@@ -483,12 +488,15 @@ class PartitionedHistogram(DaskMethodsMixin):
         """boost_histogram.Histogram: reference histogram."""
         return self._histref
 
-    def to_agg(self, split_every: int = None) -> AggHistogram:
+    def to_agg(self, split_every: int | None = None) -> AggHistogram:
         """Translate into a reduced aggregated histogram."""
         return _reduction(self, split_every=split_every)
 
 
-def _reduction(ph: PartitionedHistogram, split_every: int = None) -> AggHistogram:
+def _reduction(
+    ph: PartitionedHistogram,
+    split_every: int | None = None,
+) -> AggHistogram:
     if split_every is None:
         split_every = 4
     if split_every is False:
@@ -568,7 +576,20 @@ def _partitioned_histogram(
     name = f"hist-on-block-{tokenize(data, histref, weights, sample)}"
     data_is_df = is_dataframe_like(data[0])
     _weight_sample_check(*data, weights=weights)
-    if len(data) == 1 and not data_is_df:
+    if len(data) == 1 and hasattr(data[0], "typetracer"):
+        from dask_awkward.core import partitionwise_layer as pwlayer
+
+        x = data[0]
+        if weights is not None and sample is not None:
+            raise NotImplementedError()
+        elif weights is not None and sample is None:
+            raise NotImplementedError()
+        elif weights is None and sample is not None:
+            raise NotImplementedError()
+        else:
+            g = pwlayer(_blocked_dak, name, x, histref=histref)
+            print(g)
+    elif len(data) == 1 and not data_is_df:
         x = data[0]
         if weights is not None and sample is not None:
             g = partitionwise(
@@ -621,7 +642,6 @@ def _reduced_histogram(
         histref=histref,
         weights=weights,
         sample=sample,
-        split_every=split_every,
     )
     return ph.to_agg(split_every=split_every)
 
@@ -683,7 +703,11 @@ def to_dask_array(
 
 
 class BinaryOpAgg:
-    def __init__(self, func: Callable[[Any, Any], Any], name: str = None) -> None:
+    def __init__(
+        self,
+        func: Callable[[Any, Any], Any],
+        name: str | None = None,
+    ) -> None:
         self.func = func
         self.__name__ = func.__name__ if name is None else name
 
