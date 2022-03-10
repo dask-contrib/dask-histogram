@@ -588,7 +588,6 @@ def _partitioned_histogram(
             raise NotImplementedError()
         else:
             g = pwlayer(_blocked_dak, name, x, histref=histref)
-            print(g)
     elif len(data) == 1 and not data_is_df:
         x = data[0]
         if weights is not None and sample is not None:
