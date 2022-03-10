@@ -576,7 +576,7 @@ def _partitioned_histogram(
     name = f"hist-on-block-{tokenize(data, histref, weights, sample)}"
     data_is_df = is_dataframe_like(data[0])
     _weight_sample_check(*data, weights=weights)
-    if len(data) == 1 and hasattr(data[0], "typetracer"):
+    if len(data) == 1 and hasattr(data[0], "_typetracer"):
         from dask_awkward.core import partitionwise_layer as pwlayer
 
         x = data[0]
