@@ -10,7 +10,7 @@ import numpy as np
 if TYPE_CHECKING:
     from typing import Sequence
 
-    from .typing import BinArg, BinType, RangeArg, RangeType
+    from dask_histogram.typing import BinArg, BinType, RangeArg, RangeType
 
 
 class BinsStyle(Enum):

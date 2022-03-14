@@ -20,7 +20,7 @@ from tlz import partition_all
 if TYPE_CHECKING:
     from numpy.typing import NDArray
 
-    from .typing import DaskCollection
+    from dask_histogram.typing import DaskCollection
 
 __all__ = (
     "AggHistogram",

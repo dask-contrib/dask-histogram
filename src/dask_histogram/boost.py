@@ -14,11 +14,17 @@ from dask.base import is_dask_collection
 from dask.delayed import Delayed, delayed
 from dask.utils import is_arraylike, is_dataframe_like
 
-from .bins import normalize_bins_range
-from .core import AggHistogram, factory
+from dask_histogram.bins import normalize_bins_range
+from dask_histogram.core import AggHistogram, factory
 
 if TYPE_CHECKING:
-    from .typing import BinArg, BinType, DaskCollection, RangeArg, RangeType
+    from dask_histogram.typing import (
+        BinArg,
+        BinType,
+        DaskCollection,
+        RangeArg,
+        RangeType,
+    )
 
 import dask_histogram
 
