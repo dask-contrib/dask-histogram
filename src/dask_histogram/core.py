@@ -3,13 +3,17 @@
 from __future__ import annotations
 
 import operator
-from typing import TYPE_CHECKING, Any, Callable, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Callable, Hashable, Mapping, Sequence
 
 import boost_histogram as bh
-import dask.array as da
 import numpy as np
+from dask.array.core import Array as DaskArray
+from dask.array.core import asarray
 from dask.bag.core import empty_safe_aggregate
-from dask.base import DaskMethodsMixin, is_dask_collection, tokenize
+from dask.base import DaskMethodsMixin, dont_optimize, is_dask_collection, tokenize
+from dask.blockwise import fuse_roots, optimize_blockwise
+from dask.context import globalmethod
+from dask.core import flatten
 from dask.dataframe.core import partitionwise_graph as partitionwise
 from dask.delayed import Delayed
 from dask.highlevelgraph import HighLevelGraph
@@ -195,6 +199,26 @@ def _blocked_dak(data: Any, *, histref: bh.Histogram | None = None) -> bh.Histog
     return clone(histref).fill(data)
 
 
+def optimize(
+    dsk: Mapping,
+    keys: Hashable | list[Hashable] | set[Hashable],
+    **kwargs: Any,
+) -> Mapping:
+    if not isinstance(keys, (list, set)):
+        keys = [keys]
+    keys = list(flatten(keys))
+
+    if not isinstance(dsk, HighLevelGraph):
+        dsk = HighLevelGraph.from_collections(id(dsk), dsk, dependencies=())
+    else:
+        # Perform Blockwise optimizations for HLG input
+        dsk = optimize_blockwise(dsk, keys=keys)
+        dsk = fuse_roots(dsk, keys=keys)  # type: ignore
+    dsk = dsk.cull(set(keys))  # type: ignore
+
+    return dsk
+
+
 class AggHistogram(DaskMethodsMixin):
     """Aggregated Histogram collection.
 
@@ -248,6 +272,12 @@ class AggHistogram(DaskMethodsMixin):
 
     def __dask_postpersist__(self) -> Any:
         return self._rebuild, ()
+
+    __dask_optimize__ = globalmethod(
+        optimize, key="histogram_optimize", falsey=dont_optimize
+    )
+
+    __dask_scheduler__ = staticmethod(tget)
 
     def _rebuild(
         self,
@@ -303,7 +333,6 @@ class AggHistogram(DaskMethodsMixin):
         )
 
     __repr__ = __str__
-    __dask_scheduler__ = staticmethod(tget)
 
     @property
     def _args(self) -> tuple[HighLevelGraph, str, bh.Histogram]:
@@ -317,7 +346,7 @@ class AggHistogram(DaskMethodsMixin):
 
     def to_dask_array(
         self, flow: bool = False, dd: bool = False
-    ) -> tuple[da.Array, ...] | tuple[da.Array, list[da.Array]]:
+    ) -> tuple[DaskArray, ...] | tuple[DaskArray, list[DaskArray]]:
         """Convert histogram object to dask.array form.
 
         Parameters
@@ -462,6 +491,12 @@ class PartitionedHistogram(DaskMethodsMixin):
             name = rename.get(name, name)
         return type(self)(dsk, name, self.npartitions, self.histref)
 
+    __dask_optimize__ = globalmethod(
+        optimize, key="histogram_optimize", falsey=dont_optimize
+    )
+
+    __dask_scheduler__ = staticmethod(tget)
+
     def __str__(self) -> str:
         return "dask_histogram.PartitionedHistogram,<%s, npartitions=%d>" % (
             key_split(self.name),
@@ -469,7 +504,6 @@ class PartitionedHistogram(DaskMethodsMixin):
         )
 
     __repr__ = __str__
-    __dask_scheduler__ = staticmethod(tget)
 
     @property
     def _args(self) -> tuple[HighLevelGraph, str, int, bh.Histogram]:
@@ -649,7 +683,7 @@ def to_dask_array(
     agghist: AggHistogram,
     flow: bool = False,
     dd: bool = False,
-) -> tuple[da.Array, ...] | tuple[da.Array, list[da.Array]]:
+) -> tuple[DaskArray, ...] | tuple[DaskArray, list[DaskArray]]:
     """Convert `agghist` to a `dask.array` return style.
 
     Parameters
@@ -687,15 +721,15 @@ def to_dask_array(
         bh.storage.AtomicInt64,
     )
     dt = int if int_storage else float
-    c = da.Array(graph, name=name, shape=shape, chunks=shape, dtype=dt)
+    c = DaskArray(graph, name=name, shape=shape, chunks=shape, dtype=dt)
     axes = agghist.histref.axes
 
     if flow:
         edges = [
-            da.asarray(np.concatenate([[-np.inf], ax.edges, [np.inf]])) for ax in axes
+            asarray(np.concatenate([[-np.inf], ax.edges, [np.inf]])) for ax in axes
         ]
     else:
-        edges = [da.asarray(ax.edges) for ax in axes]
+        edges = [asarray(ax.edges) for ax in axes]
     if dd:
         return c, edges
     return (c, *tuple(edges))
