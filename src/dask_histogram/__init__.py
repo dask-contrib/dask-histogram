@@ -3,9 +3,9 @@
 import boost_histogram.axis as _axis
 import boost_histogram.storage as _storage
 
-from ._version import version as __version__
-from .core import AggHistogram, PartitionedHistogram, factory
-from .routines import histogram, histogram2d, histogramdd
+from dask_histogram._version import version as __version__
+from dask_histogram.core import AggHistogram, PartitionedHistogram, factory
+from dask_histogram.routines import histogram, histogram2d, histogramdd
 
 version_info = tuple(__version__.split("."))
 
