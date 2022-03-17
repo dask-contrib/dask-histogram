@@ -38,6 +38,7 @@ def histogram(
     histogram: Any | None = None,
     storage: bh.storage.Storage = bh.storage.Double(),
     threads: int | None = None,
+    split_every: int | None = None,
 ) -> AggHistogram | tuple[da.Array, ...] | tuple[da.Array, list[da.Array]]:
     """Histogram Dask data in one dimension.
 
@@ -121,6 +122,7 @@ def histogram(
         histogram=True,
         storage=storage,
         threads=threads,
+        split_every=split_every,
     )
     if histogram is None:
         return h.to_dask_array(flow=False, dd=False)  # type: ignore
@@ -139,6 +141,7 @@ def histogram2d(
     histogram: Any | None = None,
     storage: bh.storage.Storage = bh.storage.Double(),
     threads: int | None = None,
+    split_every: int | None = None,
 ) -> AggHistogram | tuple[da.Array, ...]:
     """Histogram Dask data in two dimensions.
 
@@ -244,6 +247,7 @@ def histogram2d(
         histogram=True,
         storage=storage,
         threads=threads,
+        split_every=split_every,
     )
     if histogram is None:
         return h.to_dask_array(flow=False, dd=False)  # type: ignore
@@ -261,6 +265,7 @@ def histogramdd(
     histogram: Any | None = None,
     storage: bh.storage.Storage = bh.storage.Double(),
     threads: int | None = None,
+    split_every: int | None = None,
 ) -> AggHistogram | tuple[da.Array, list[da.Array]]:
     """Histogram Dask data in multiple dimensions.
 
@@ -446,7 +451,13 @@ def histogramdd(
             axes.append(bh.axis.Regular(bins=b, start=r[0], stop=r[1]))  # type: ignore
 
     # Finally create the histogram object.
-    ah = factory(*a, axes=axes, storage=storage, weights=weights)
+    ah = factory(
+        *a,
+        axes=axes,
+        storage=storage,
+        weights=weights,
+        split_every=split_every,
+    )
 
     if histogram is not None:
         return ah  # type: ignore
