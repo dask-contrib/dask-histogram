@@ -243,7 +243,7 @@ class AggHistogram(DaskMethodsMixin):
     ) -> None:
         self._dask: HighLevelGraph = dsk
         self._name: str = name
-        self._histref: bh.Histogram = histref
+        self._meta: bh.Histogram = histref
 
         # NOTE: Layer only used by `Item.from_delayed`, to handle
         # Delayed objects created by other collections. e.g.:
@@ -303,7 +303,7 @@ class AggHistogram(DaskMethodsMixin):
     @property
     def histref(self) -> bh.Histogram:
         """Empty reference boost-histogram object."""
-        return self._histref
+        return self._meta
 
     @property
     def _storage_type(self) -> type[bh.storage.Storage]:
@@ -337,7 +337,7 @@ class AggHistogram(DaskMethodsMixin):
     __repr__ = __str__
 
     def __reduce__(self):
-        return (AggHistogram, (self._dask, self._name, self._histref))
+        return (AggHistogram, (self._dask, self._name, self._meta))
 
     def to_dask_array(
         self, flow: bool = False, dd: bool = False
@@ -457,7 +457,7 @@ class PartitionedHistogram(DaskMethodsMixin):
         self._dask: HighLevelGraph = dsk
         self._name: str = name
         self._npartitions: int = npartitions
-        self._histref: bh.Histogram = histref
+        self._meta: bh.Histogram = histref
 
     @property
     def name(self) -> str:
@@ -513,14 +513,14 @@ class PartitionedHistogram(DaskMethodsMixin):
                 self._dask,
                 self._name,
                 self._npartitions,
-                self._histref,
+                self._meta,
             ),
         )
 
     @property
     def histref(self) -> bh.Histogram:
         """boost_histogram.Histogram: reference histogram."""
-        return self._histref
+        return self._meta
 
     def collapse(self, split_every: int | None = None) -> AggHistogram:
         """Translate into a reduced aggregated histogram."""
@@ -909,4 +909,19 @@ def factory(
 
 
 def is_awkward_like(x: Any) -> bool:
-    return is_dask_collection(x) and hasattr(x, "_typetracer")
+    """Check if an object is Awkward collection like.
+
+    Parameters
+    ----------
+    x : Any
+        The object of interest.
+
+    Returns
+    -------
+    bool
+        ``True`` if `x` is an Awkward Dask collection.
+
+    """
+    return (
+        hasattr(x, "__dask_graph__") and hasattr(x, "layout") and hasattr(x, "fields")
+    )
