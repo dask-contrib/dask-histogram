@@ -161,7 +161,7 @@ def bins_range_styles(
 
 def normalize_bins_range(
     ndim: int, bins: BinArg, range: RangeArg
-) -> tuple[Sequence[BinType], Sequence[RangeType]]:
+) -> tuple[tuple[BinType, ...], tuple[RangeType, ...]]:
     """Normalize bins and range arguments to tuples.
 
     Parameters
@@ -182,16 +182,26 @@ def normalize_bins_range(
     b_style, r_style = bins_range_styles(ndim=ndim, bins=bins, range=range)
 
     if b_style is BinsStyle.SingleScalar:
-        bins = (bins,) * ndim  # type: ignore
+        out_bins = (bins,) * ndim
     elif b_style is BinsStyle.SingleSequence:
-        bins = (bins,) * ndim  # type: ignore
+        out_bins = (bins,) * ndim
+    elif b_style is BinsStyle.MultiScalar:
+        out_bins = tuple(bins)  # type: ignore
+    elif b_style is BinsStyle.MultiSequence:
+        out_bins = tuple(bins)  # type: ignore
+    else:
+        raise ValueError("incompatible bins argument")
 
     if r_style is RangeStyle.SinglePair:
-        range = (range,) * ndim  # type: ignore
+        out_range = (range,) * ndim
     elif r_style is RangeStyle.IsNone:
-        range = (None,) * ndim  # type: ignore
+        out_range = (None,) * ndim
+    elif r_style is RangeStyle.MultiPair:
+        out_range = tuple(range)  # type: ignore
+    else:
+        raise ValueError("incompatible range argument")
 
-    if len(bins) != len(range):  # type: ignore
+    if len(out_bins) != len(out_range):
         raise ValueError("bins and range arguments must be the same length")
 
-    return bins, range  # type: ignore
+    return out_bins, out_range  # type: ignore

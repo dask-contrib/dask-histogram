@@ -152,7 +152,7 @@ def gen_hist_1D(
     range: tuple[float, float] = (-3, 3),
     size: tuple[int, ...] = (1000,),
     chunks: tuple[int, ...] = (250,),
-):
+) -> dhc.AggHistogram:
     hr = bh.Histogram(
         bh.axis.Regular(bins, range[0], range[1]),
         storage=bh.storage.Weight(),

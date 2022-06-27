@@ -139,7 +139,7 @@ def test_normalize_bins_range():
     ndim = 2
     bins, range = [[1, 2, 3], [4, 5, 6]], None
     bins, range = normalize_bins_range(ndim, bins, range)
-    assert bins == [[1, 2, 3], [4, 5, 6]]
+    assert bins == ([1, 2, 3], [4, 5, 6])
     assert range == (None, None)
 
     # 2D, numpy arrays as bins, no range

@@ -6,12 +6,11 @@ import warnings
 from typing import TYPE_CHECKING, Any
 
 import boost_histogram as bh
-import dask.array as da
 from dask.base import is_dask_collection
 from dask.utils import is_arraylike, is_dataframe_like
 
 from dask_histogram.bins import normalize_bins_range
-from dask_histogram.core import AggHistogram, factory
+from dask_histogram.core import factory
 
 if TYPE_CHECKING:
     from dask_histogram.typing import (
@@ -39,7 +38,7 @@ def histogram(
     storage: bh.storage.Storage = bh.storage.Double(),
     threads: int | None = None,
     split_every: int | None = None,
-) -> AggHistogram | tuple[da.Array, ...] | tuple[da.Array, list[da.Array]]:
+) -> Any:
     """Histogram Dask data in one dimension.
 
     Parameters
@@ -125,8 +124,8 @@ def histogram(
         split_every=split_every,
     )
     if histogram is None:
-        return h.to_dask_array(flow=False, dd=False)  # type: ignore
-    return h  # type: ignore
+        return h.to_dask_array(flow=False, dd=False)
+    return h
 
 
 def histogram2d(
@@ -142,7 +141,7 @@ def histogram2d(
     storage: bh.storage.Storage = bh.storage.Double(),
     threads: int | None = None,
     split_every: int | None = None,
-) -> AggHistogram | tuple[da.Array, ...]:
+) -> Any:
     """Histogram Dask data in two dimensions.
 
     Parameters
@@ -250,8 +249,8 @@ def histogram2d(
         split_every=split_every,
     )
     if histogram is None:
-        return h.to_dask_array(flow=False, dd=False)  # type: ignore
-    return h  # type: ignore
+        return h.to_dask_array(flow=False, dd=False)
+    return h
 
 
 def histogramdd(
@@ -266,7 +265,7 @@ def histogramdd(
     storage: bh.storage.Storage = bh.storage.Double(),
     threads: int | None = None,
     split_every: int | None = None,
-) -> AggHistogram | tuple[da.Array, list[da.Array]]:
+) -> Any:
     """Histogram Dask data in multiple dimensions.
 
     Parameters
@@ -444,7 +443,7 @@ def histogramdd(
 
     # Create the axes based on the bins and range values.
     axes: list[Any] = []
-    for _, (b, r) in enumerate(zip(bins, range)):  # type: ignore
+    for _, (b, r) in enumerate(zip(bins, range)):
         if r is None:
             axes.append(bh.axis.Variable(b))  # type: ignore
         else:
@@ -460,5 +459,5 @@ def histogramdd(
     )
 
     if histogram is not None:
-        return ah  # type: ignore
-    return ah.to_dask_array(flow=False, dd=True)  # type: ignore
+        return ah
+    return ah.to_dask_array(flow=False, dd=True)

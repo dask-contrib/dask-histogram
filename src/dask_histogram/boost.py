@@ -84,7 +84,11 @@ class Histogram(bh.Histogram, family=dask_histogram):
         self._staged: AggHistogram | None = None
 
     def concrete_fill(
-        self, *args: Any, weight: Any | None = None, sample=None, threads=None
+        self,
+        *args: Any,
+        weight: Any | None = None,
+        sample: Any | None = None,
+        threads: int | None = None,
     ) -> Histogram:
         """Fill the histogram with concrete data (not a Dask collection).
 
@@ -199,7 +203,7 @@ class Histogram(bh.Histogram, family=dask_histogram):
         if self._staged is not None:
             self._staged += new_fill
         else:
-            self._staged = new_fill  # type: ignore
+            self._staged = new_fill
 
         return self
 
@@ -321,7 +325,7 @@ class Histogram(bh.Histogram, family=dask_histogram):
             ret += " # (has staged fills)"
         return ret
 
-    def visualize(self, *args, **kwargs) -> Any:
+    def visualize(self, *args: Any, **kwargs: Any) -> Any:
         """Render the task graph with graphviz.
 
         See :py:func:`dask.visualize` for supported keyword arguments.
@@ -381,7 +385,7 @@ def histogramdd(
     histogram: Any | None = None,
     storage: storage.Storage = storage.Double(),
     threads: int | None = None,
-) -> Histogram | tuple[da.Array, ...] | tuple[da.Array, list[da.Array]]:
+) -> Any:
     """Histogram Dask data in multiple dimensions.
 
     Parameters
@@ -571,7 +575,7 @@ def histogramdd(
 
     # Create the axes based on the bins and range values.
     axes = []
-    for _, (b, r) in enumerate(zip(bins, range)):  # type: ignore
+    for _, (b, r) in enumerate(zip(bins, range)):
         if r is None:
             axes.append(axis.Variable(b))  # type: ignore
         else:
@@ -597,7 +601,7 @@ def histogram2d(
     histogram: Any | None = None,
     storage: storage.Storage = storage.Double(),
     threads: int | None = None,
-) -> Histogram | tuple[da.Array, ...]:
+) -> Any:
     """Histogram Dask data in two dimensions.
 
     Parameters
@@ -702,8 +706,8 @@ def histogram2d(
     )
 
     if histogram != Histogram:
-        return hist.to_dask_array(flow=False, dd=False)  # type: ignore
-    return hist  # type: ignore
+        return hist.to_dask_array(flow=False, dd=False)
+    return hist
 
 
 def histogram(
@@ -717,7 +721,7 @@ def histogram(
     histogram: Any | None = None,
     storage: storage.Storage = storage.Double(),
     threads: int | None = None,
-) -> Histogram | tuple[da.Array, ...]:
+) -> Any:
     """Histogram Dask data in one dimension.
 
     Parameters
@@ -799,5 +803,5 @@ def histogram(
     )
 
     if histogram != Histogram:
-        return hist.to_dask_array(flow=False, dd=False)  # type: ignore
-    return hist  # type: ignore
+        return hist.to_dask_array(flow=False, dd=False)
+    return hist
