@@ -8,8 +8,6 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 if TYPE_CHECKING:
-    from typing import Sequence
-
     from dask_histogram.typing import BinArg, BinType, RangeArg, RangeType
 
 
