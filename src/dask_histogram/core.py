@@ -392,7 +392,7 @@ class AggHistogram(DaskMethodsMixin):
     def __array__(self) -> NDArray[Any]:
         return self.compute().__array__()
 
-    def __iadd__(self, other) -> AggHistogram:
+    def __iadd__(self, other: Any) -> AggHistogram:
         return _iadd(self, other)
 
     def __add__(self, other: Any) -> AggHistogram:
@@ -796,7 +796,7 @@ def factory(
     sample: DaskCollection | None = None,
     split_every: int | None = None,
     keep_partitioned: bool = False,
-) -> AggHistogram | PartitionedHistogram:
+) -> AggHistogram:
     """Daskified Histogram collection factory function.
 
     Given some data represented by Dask collections and the
@@ -893,6 +893,30 @@ def factory(
     dask.array<array, shape=(11,), dtype=float64, chunksize=(11,), chunktype=numpy.ndarray>
 
     """
+    if keep_partitioned:
+        raise ValueError(
+            "keep_partitioned=True is no longer supported; "
+            "use dask_histogram.partitioned_factory."
+        )
+    ph = partitioned_factory(
+        *data,
+        histref=histref,
+        axes=axes,
+        storage=storage,
+        weights=weights,
+        sample=sample,
+    )
+    return ph.collapse(split_every=split_every)
+
+
+def partitioned_factory(
+    *data: DaskCollection,
+    histref: bh.Histogram | None = None,
+    axes: Sequence[bh.axis.Axis] | None = None,
+    storage: bh.storage.Storage | None = None,
+    weights: DaskCollection | None = None,
+    sample: DaskCollection | None = None,
+) -> PartitionedHistogram:
     if histref is None and axes is None:
         raise ValueError("Either histref or axes must be defined.")
     if histref is not None and storage is not None:
@@ -902,10 +926,9 @@ def factory(
             storage = bh.storage.Double()
         histref = bh.Histogram(*axes, storage=storage)  # type: ignore
 
-    ph = _partitioned_histogram(*data, histref=histref, weights=weights, sample=sample)
-    if keep_partitioned:
-        return ph
-    return ph.collapse(split_every=split_every)
+    return _partitioned_histogram(
+        *data, histref=histref, weights=weights, sample=sample
+    )
 
 
 def is_awkward_like(x: Any) -> bool:
