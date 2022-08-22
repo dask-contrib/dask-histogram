@@ -1,25 +1,94 @@
 [build-system]
 requires = [
-    "setuptools>=45.0",
-    "setuptools_scm[toml]>=6.3"
+    "hatchling>=1.8.0",
 ]
-build-backend = "setuptools.build_meta"
+build-backend = "hatchling.build"
 
-[tool.setuptools_scm]
-write_to = "src/dask_histogram/_version.py"
+[project]
+name = "dask-histogram"
+description = "Histogramming with Dask."
+readme = "README.md"
+license = "BSD-3-Clause"
+requires-python = ">=3.8"
+authors = [
+    { name = "Doug Davis", email = "ddavis@ddavis.io" },
+]
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+dependencies = [
+    "boost-histogram>=1.2.0",
+    "dask>=2021.03.0",
+]
+dynamic = [
+    "version",
+]
+
+[project.optional-dependencies]
+complete = [
+    "autodocsumm",
+    "dask-sphinx-theme >=3.0.2",
+    "dask[dataframe]",
+    "hist",
+    "pytest",
+    "sphinx >=4.0.0",
+]
+docs = [
+    "autodocsumm",
+    "dask-sphinx-theme >=3.0.2",
+    "dask[dataframe]",
+    "sphinx >=4.0.0",
+]
+test = [
+    "dask[dataframe]",
+    "hist",
+    "pytest",
+]
+
+[project.urls]
+Homepage = "https://github.com/dask-contrib/dask-histogram"
+Documentation = "https://dask-histogram.readthedocs.io/"
+"Bug Tracker" = "https://github.com/dask-contrib/dask-histogram/issues"
+
+[tool.hatch.version]
+path = "src/dask_histogram/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+]
 
 [tool.pytest.ini_options]
 addopts = "-v"
-testpaths = ["tests"]
+testpaths = [
+    "tests",
+]
 
 [tool.isort]
 profile = "black"
 line_length = 88
-src_paths = ["src", "tests"]
+src_paths = [
+    "src",
+    "tests",
+]
 
 [tool.mypy]
 python_version = "3.8"
-files = ["src", "tests"]
+files = [
+    "src",
+    "tests",
+]
 warn_unused_configs = true
 show_error_codes = true
 allow_incomplete_defs = false
@@ -31,7 +100,9 @@ warn_unused_ignores = true
 warn_unreachable = true
 
 [[tool.mypy.overrides]]
-module = ["tlz.*"]
+module = [
+    "tlz.*",
+]
 ignore_missing_imports = true
 
 [tool.pydocstyle]
