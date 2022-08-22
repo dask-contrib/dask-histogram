@@ -3,10 +3,10 @@
 import boost_histogram.axis as _axis
 import boost_histogram.storage as _storage
 
-from dask_histogram._version import version as __version__
 from dask_histogram.core import AggHistogram, PartitionedHistogram, factory
 from dask_histogram.routines import histogram, histogram2d, histogramdd
 
+__version__ = "2022.8.0"
 version_info = tuple(__version__.split("."))
 
 
