@@ -1,69 +1,98 @@
 [build-system]
 requires = [
-    "setuptools>=45.0",
-    "setuptools_scm[toml]>=6.3"
+    "hatchling>=1.8.0",
 ]
-build-backend = "setuptools.build_meta"
+build-backend = "hatchling.build"
 
 [project]
 name = "dask-histogram"
-license = {file = "LICENSE"}
 description = "Histogramming with Dask."
-authors = [
-    {email = "ddavis@ddavis.io"},
-    {name = "Doug Davis"}
-]
-maintainers = [
-    {name = "Doug Davis", email = "ddavis@ddavis.io"}
-]
-requires-python = ">= 3.7"
-dependencies = [
-    "boost-histogram >=1.2.0",
-    "dask >=2021.03.0",
-]
 readme = "README.md"
+license = "BSD-3-Clause"
+requires-python = ">=3.8"
+authors = [
+    { name = "Doug Davis", email = "ddavis@ddavis.io" },
+]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: BSD License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Information Analysis",
     "Topic :: Scientific/Engineering :: Mathematics",
     "Topic :: Scientific/Engineering :: Physics",
 ]
-dynamic = ["version"]
+dependencies = [
+    "boost-histogram>=1.2.0",
+    "dask>=2021.03.0",
+]
+dynamic = [
+    "version",
+]
 
+[project.optional-dependencies]
+complete = [
+    "autodocsumm",
+    "dask-sphinx-theme>=2.0.0",
+    "dask[dataframe]",
+    "hist",
+    "pytest",
+    "sphinx>=4.0.0",
+]
+docs = [
+    "autodocsumm",
+    "dask-sphinx-theme>=2.0.0",
+    "dask[dataframe]",
+    "sphinx>=4.0.0",
+]
+test = [
+    "dask[dataframe]",
+    "hist",
+    "pytest",
+]
 
 [project.urls]
-homepage = "https://github.com/dask-contrib/dask-histogram"
-source = "https://github.com/dask-contrib/dask-histogram"
-tracker = "https://github.com/dask-contrib/dask-histogram/issues"
-documentation = "https://dask-histogram.readthedocs.io/"
+Homepage = "https://github.com/dask-contrib/dask-histogram"
 
-[tool.setuptools_scm]
-write_to = "src/dask_histogram/_version.py"
+[tool.hatch.version]
+path = "src/dask_histogram/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+]
 
 [tool.pytest.ini_options]
 addopts = "-v"
-testpaths = ["tests"]
+testpaths = [
+    "tests",
+]
 
 [tool.isort]
 profile = "black"
 line_length = 88
-src_paths = ["src", "tests"]
+src_paths = [
+    "src",
+    "tests",
+]
 
 [tool.mypy]
-python_version = 3.7
+python_version = 3.8
 warn_unused_configs = true
-files = ["src", "tests"]
+files = [
+    "src",
+    "tests",
+]
 
 [[tool.mypy.overrides]]
-module = ["dask.*"]
+module = [
+    "dask.*",
+]
 ignore_missing_imports = true
 
 [tool.pydocstyle]
