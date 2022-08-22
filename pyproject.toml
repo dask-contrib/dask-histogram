@@ -1,7 +1,5 @@
 [build-system]
-requires = [
-    "hatchling>=1.8.0",
-]
+requires = ["hatchling>=1.8.0", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 [project]
@@ -31,9 +29,7 @@ dependencies = [
     "boost-histogram>=1.2.0",
     "dask>=2021.03.0",
 ]
-dynamic = [
-    "version",
-]
+dynamic = ["version"]
 
 [project.optional-dependencies]
 complete = [
@@ -62,33 +58,27 @@ Documentation = "https://dask-histogram.readthedocs.io/"
 "Bug Tracker" = "https://github.com/dask-contrib/dask-histogram/issues"
 
 [tool.hatch.version]
+source = "vcs"
 path = "src/dask_histogram/__init__.py"
 
+[tool.hatch.build.hooks.vcs]
+version-file = "src/dask_histogram/version.py"
+
 [tool.hatch.build.targets.sdist]
-include = [
-    "/src",
-]
+include = ["/src"]
 
 [tool.pytest.ini_options]
 addopts = "-v"
-testpaths = [
-    "tests",
-]
+testpaths = ["tests"]
 
 [tool.isort]
 profile = "black"
 line_length = 88
-src_paths = [
-    "src",
-    "tests",
-]
+src_paths = ["src", "tests"]
 
 [tool.mypy]
 python_version = "3.8"
-files = [
-    "src",
-    "tests",
-]
+files = ["src", "tests"]
 warn_unused_configs = true
 show_error_codes = true
 allow_incomplete_defs = false
@@ -100,9 +90,7 @@ warn_unused_ignores = true
 warn_unreachable = true
 
 [[tool.mypy.overrides]]
-module = [
-    "tlz.*",
-]
+module = ["tlz.*"]
 ignore_missing_imports = true
 
 [tool.pydocstyle]
