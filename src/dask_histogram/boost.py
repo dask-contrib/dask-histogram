@@ -338,9 +338,7 @@ class Histogram(bh.Histogram, family=dask_histogram):
             warnings.warn("No staged AggHistogram; returning None")
         return self._staged
 
-    def to_dask_array(
-        self, flow: bool = False, dd: bool = True
-    ) -> tuple[da.Array, ...] | tuple[da.Array, list[da.Array]]:
+    def to_dask_array(self, flow: bool = False, dd: bool = True) -> Any:
         """Convert to dask.array style of return arrays.
 
         Edges are converted to match NumPy standards, with upper edge

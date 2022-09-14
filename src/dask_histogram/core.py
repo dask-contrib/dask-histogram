@@ -339,9 +339,7 @@ class AggHistogram(DaskMethodsMixin):
     def __reduce__(self):
         return (AggHistogram, (self._dask, self._name, self._meta))
 
-    def to_dask_array(
-        self, flow: bool = False, dd: bool = False
-    ) -> tuple[DaskArray, ...] | tuple[DaskArray, list[DaskArray]]:
+    def to_dask_array(self, flow: bool = False, dd: bool = False) -> Any:
         """Convert histogram object to dask.array form.
 
         Parameters
@@ -383,7 +381,7 @@ class AggHistogram(DaskMethodsMixin):
     def values(self, flow: bool = False) -> NDArray[Any]:
         return self.to_boost().values(flow=flow)
 
-    def variances(self, flow: bool = False) -> NDArray[Any] | None:
+    def variances(self, flow: bool = False) -> Any:
         return self.to_boost().variances(flow=flow)
 
     def counts(self, flow: bool = False) -> NDArray[Any]:
@@ -692,11 +690,7 @@ def _partitioned_histogram(
     return PartitionedHistogram(hlg, name, data[0].npartitions, histref=histref)
 
 
-def to_dask_array(
-    agghist: AggHistogram,
-    flow: bool = False,
-    dd: bool = False,
-) -> tuple[DaskArray, ...] | tuple[DaskArray, list[DaskArray]]:
+def to_dask_array(agghist: AggHistogram, flow: bool = False, dd: bool = False) -> Any:
     """Convert `agghist` to a `dask.array` return style.
 
     Parameters
