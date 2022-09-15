@@ -622,7 +622,7 @@ def _partitioned_histogram(
 
     # Single awkward array object.
     if len(data) == 1 and data_is_dak:
-        from dask_awkward.core import partitionwise_layer as dak_pwl
+        from dask_awkward.lib.core import partitionwise_layer as dak_pwl
 
         x = data[0]
         if weights is not None and sample is not None:
