@@ -26,8 +26,8 @@ jobs:
 
     - name: Install
       run: |
-        python3 -m pip install pip setuptools wheel
-        python3 -m pip install  --ignore-installed -U -q --no-cache-dir -e .[complete]
+        python3 -m pip install pip wheel
+        python3 -m pip install -q --no-cache-dir -e .[complete]
         python3 -m pip list
 
     - name: Test
@@ -47,8 +47,8 @@ jobs:
 
     - name: Install
       run: |
-        python3 -m pip install pip setuptools
-        python3 -m pip install --ignore-installed -U -q --no-cache-dir -e .[complete]
+        python3 -m pip install pip wheel
+        python3 -m pip install -q --no-cache-dir -e .[complete]
         python3 -m pip list
 
     - name: Run doctests
