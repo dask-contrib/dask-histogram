@@ -617,7 +617,7 @@ def _partitioned_histogram(
 ) -> PartitionedHistogram:
     name = f"hist-on-block-{tokenize(data, histref, weights, sample, split_every)}"
     data_is_df = is_dataframe_like(data[0])
-    data_is_dak = is_awkward_like(data[0])
+    data_is_dak = is_dask_awkward_like(data[0])
     _weight_sample_check(*data, weights=weights)
 
     # Single awkward array object.
@@ -832,8 +832,7 @@ def factory(
     split_every : int, optional
         How many blocks to use in each split during aggregation.
     keep_partitioned : bool, optional
-        If ``True``, return the partitioned histogram collection
-        instead of an aggregated histogram.
+        **Deprecated argument**. Use :py:func:`partitioned_factory`.
 
     Returns
     -------
@@ -911,6 +910,18 @@ def partitioned_factory(
     weights: DaskCollection | None = None,
     sample: DaskCollection | None = None,
 ) -> PartitionedHistogram:
+    """Daskified Histogram collection factory function; keep partitioned.
+
+    This is a version of the :py:func:`factory` function that **remains
+    partitioned**. The :py:func:`factory` function includes a step in the
+    task graph that aggregates all partitions into a single final
+    histogram.
+
+    See Also
+    --------
+    dask_histogram.factory
+
+    """
     if histref is None and axes is None:
         raise ValueError("Either histref or axes must be defined.")
     if histref is not None and storage is not None:
@@ -925,7 +936,7 @@ def partitioned_factory(
     )
 
 
-def is_awkward_like(x: Any) -> bool:
+def is_dask_awkward_like(x: Any) -> bool:
     """Check if an object is Awkward collection like.
 
     Parameters
