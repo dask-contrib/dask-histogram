@@ -26,14 +26,13 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Physics",
 ]
 dependencies = [
-    "boost-histogram>=1.2.0",
+    "boost-histogram>=1.3.2",
     "dask>=2021.03.0",
 ]
 dynamic = ["version"]
 
 [project.optional-dependencies]
 complete = [
-    "autodocsumm",
     "dask-sphinx-theme >=3.0.2",
     "dask[dataframe]",
     "hist",
@@ -41,7 +40,6 @@ complete = [
     "sphinx >=4.0.0",
 ]
 docs = [
-    "autodocsumm",
     "dask-sphinx-theme >=3.0.2",
     "dask[dataframe]",
     "sphinx >=4.0.0",

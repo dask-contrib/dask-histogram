@@ -22,7 +22,7 @@ def test_obj_1D(use_weights):
     h.fill(x, weight=weights)
     h.compute()
 
-    control = bh.Histogram(*h.axes, storage=h._storage_type())
+    control = bh.Histogram(*h.axes, storage=h.storage_type())
     if use_weights:
         control.fill(x.compute(), weight=weights.compute())
     else:
@@ -52,7 +52,7 @@ def test_obj_2D(use_weights):
     h.fill(x, y, weight=weights)
     h.compute()
 
-    control = bh.Histogram(*h.axes, storage=h._storage_type())
+    control = bh.Histogram(*h.axes, storage=h.storage_type())
     if use_weights:
         control.fill(x.compute(), y.compute(), weight=weights.compute())
     else:
@@ -82,7 +82,7 @@ def test_obj_3D_rectangular(use_weights):
     h.fill(x, weight=weights)
     h.compute()
 
-    control = bh.Histogram(*h.axes, storage=h._storage_type())
+    control = bh.Histogram(*h.axes, storage=h.storage_type())
     if use_weights:
         control.fill(*(x.compute().T), weight=weights.compute())
     else:

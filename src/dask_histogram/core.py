@@ -53,7 +53,7 @@ def clone(histref: bh.Histogram | None = None) -> bh.Histogram:
     """
     if histref is None:
         return bh.Histogram()
-    return bh.Histogram(*histref.axes, storage=histref._storage_type())
+    return bh.Histogram(*histref.axes, storage=histref.storage_type())
 
 
 def _blocked_sa(
@@ -308,7 +308,7 @@ class AggHistogram(DaskMethodsMixin):
     @property
     def _storage_type(self) -> type[bh.storage.Storage]:
         """Storage type of the histogram."""
-        return self.histref._storage_type
+        return self.histref.storage_type
 
     @property
     def ndim(self) -> int:
@@ -723,7 +723,7 @@ def to_dask_array(agghist: AggHistogram, flow: bool = False, dd: bool = False) -
     shape = agghist.histref.shape
     if flow:
         shape = tuple(i + 2 for i in shape)
-    int_storage = agghist.histref._storage_type in (
+    int_storage = agghist.histref.storage_type in (
         bh.storage.Int64,
         bh.storage.AtomicInt64,
     )

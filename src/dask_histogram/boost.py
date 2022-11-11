@@ -46,9 +46,9 @@ class Histogram(bh.Histogram, family=dask_histogram):
 
     See Also
     --------
-    histogram
-    histogram2d
-    histogramdd
+    dask_histogram.histogram
+    dask_histogram.histogram2d
+    dask_histogram.histogramdd
 
     Examples
     --------
@@ -304,7 +304,7 @@ class Histogram(bh.Histogram, family=dask_histogram):
         )
         ret += f",{newline}".join(repr(ax) for ax in self.axes)
         ret += "{comma}{newline}storage={storage}".format(
-            storage=self._storage_type(),
+            storage=self.storage_type(),
             newline=newline
             if len(self.axes) > 1
             else " "
