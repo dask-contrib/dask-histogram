@@ -93,3 +93,6 @@ ignore_missing_imports = true
 
 [tool.pydocstyle]
 ignore = "D105"
+
+[tool.ruff]
+ignore = ["E501"]
