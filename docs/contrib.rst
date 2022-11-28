@@ -42,11 +42,11 @@ We use ``black`` for formatting:
 
    $ black src tests
 
-And ``flake8`` for linting:
+And ``ruff`` for linting:
 
 .. code-block:: bash
 
-   $ flake8 src tests
+   $ python -m ruff .
 
 Type hints are encouraged; we use ``mypy`` for static type checking:
 
