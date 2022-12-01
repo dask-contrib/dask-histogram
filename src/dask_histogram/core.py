@@ -667,7 +667,7 @@ def _partitioned_histogram(
 
         # Awkward array collection detected as first argument
         if data_is_dak:
-            from dask_awkward.core import partitionwise_layer as dak_pwl
+            from dask_awkward.lib.core import partitionwise_layer as dak_pwl
 
             if weights is None and sample is None:
                 g = dak_pwl(_blocked_dak_ma, name, *data, histref=histref)
