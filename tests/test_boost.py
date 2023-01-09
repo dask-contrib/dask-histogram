@@ -93,6 +93,42 @@ def test_obj_3D_rectangular(use_weights):
         assert np.allclose(h.variances(), control.variances())
 
 
+@pytest.mark.parametrize("use_weights", [True, False])
+def test_obj_4D_strcat_rectangular(use_weights):
+    x = da.random.standard_normal(size=(2000, 3), chunks=(400, 3))
+    if use_weights:
+        weights = da.random.uniform(0.5, 0.75, size=x.shape[0], chunks=x.chunksize[0])
+        storage = dhb.storage.Weight()
+    else:
+        weights = None
+        storage = dhb.storage.Double()
+
+    h = dhb.Histogram(
+        dhb.axis.StrCategory([], growth=True),
+        dhb.axis.Regular(8, -3.5, 3.5),
+        dhb.axis.Regular(7, -3.3, 3.3),
+        dhb.axis.Regular(9, -3.2, 3.2),
+        storage=storage,
+    )
+    h.fill("testcat1", *(x.T), weight=weights)
+    h.fill("testcat2", *(x.T), weight=weights)
+    h.compute()
+
+    control = bh.Histogram(*h.axes, storage=h.storage_type())
+    if use_weights:
+        control.fill("testcat1", *(x.compute().T), weight=weights.compute())
+        control.fill("testcat2", *(x.compute().T), weight=weights.compute())
+    else:
+        control.fill("testcat1", *(x.compute().T))
+        control.fill("testcat2", *(x.compute().T))
+
+    assert np.allclose(h.counts(), control.counts())
+    if use_weights:
+        assert np.allclose(h.variances(), control.variances())
+
+    assert all(hx == cx for hx, cx in zip(control.axes[0], h.axes[0]))
+
+
 def test_clear_fills():
     x = da.random.standard_normal(size=(8, 2), chunks=(4, 2))
     h = dhb.Histogram(

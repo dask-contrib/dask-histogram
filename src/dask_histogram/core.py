@@ -579,13 +579,14 @@ def _dependencies(
     weights: DaskCollection | None = None,
     sample: DaskCollection | None = None,
 ) -> tuple[DaskCollection, ...]:
+    dask_args = tuple(arg for arg in args if is_dask_collection(arg))
     if weights is not None and sample is None:
-        return (*args, weights)
+        return (*dask_args, weights)
     elif weights is None and sample is not None:
-        return (*args, sample)
+        return (*dask_args, sample)
     elif weights is not None and sample is not None:
-        return (*args, weights, sample)
-    return args
+        return (*dask_args, weights, sample)
+    return dask_args
 
 
 def _weight_sample_check(
@@ -616,9 +617,12 @@ def _partitioned_histogram(
     split_every: int | None = None,
 ) -> PartitionedHistogram:
     name = f"hist-on-block-{tokenize(data, histref, weights, sample, split_every)}"
-    data_is_df = is_dataframe_like(data[0])
-    data_is_dak = is_dask_awkward_like(data[0])
-    _weight_sample_check(*data, weights=weights)
+    dask_data = tuple(datum for datum in data if is_dask_collection(datum))
+    if len(dask_data) == 0:
+        dask_data = data
+    data_is_df = is_dataframe_like(dask_data[0])
+    data_is_dak = is_dask_awkward_like(dask_data[0])
+    _weight_sample_check(*dask_data, weights=weights)
 
     # Single awkward array object.
     if len(data) == 1 and data_is_dak:
@@ -687,7 +691,7 @@ def _partitioned_histogram(
 
     dependencies = _dependencies(*data, weights=weights, sample=sample)
     hlg = HighLevelGraph.from_collections(name, g, dependencies=dependencies)
-    return PartitionedHistogram(hlg, name, data[0].npartitions, histref=histref)
+    return PartitionedHistogram(hlg, name, dask_data[0].npartitions, histref=histref)
 
 
 def to_dask_array(agghist: AggHistogram, flow: bool = False, dd: bool = False) -> Any:

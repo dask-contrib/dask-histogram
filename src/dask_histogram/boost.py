@@ -218,11 +218,9 @@ class Histogram(bh.Histogram, family=dask_histogram):
         """
         if self._staged is None:
             return self
-        if not self.empty():
-            result_view = self.view(flow=True) + self._staged.compute().view(flow=True)
         else:
-            result_view = self._staged.compute().view(flow=True)
-        self[...] = result_view
+            result = self._staged.compute()
+        self += result
         self._staged = None
         return self
 
