@@ -83,6 +83,28 @@ class Histogram(bh.Histogram, family=dask_histogram):
         super().__init__(*axes, storage=storage, metadata=metadata)
         self._staged: AggHistogram | None = None
 
+    def __dask_graph__(self):
+        return self._staged.__dask_graph__()
+
+    def __dask_keys__(self):
+        return self._staged.__dask_keys__()
+
+    def __dask_layers__(self):
+        return self._staged.__dask_layers__()
+
+    def __dask_postcompute__(self):
+        return self._staged.__dask_postcompute__()
+
+    def __dask_postpersist__(self):
+        return self._staged.__dask_postpersist__()
+
+    __dask_scheduler__ = AggHistogram.__dask_scheduler__
+
+    __dask_optimize__ = AggHistogram.__dask_optimize__
+
+    def _rebuild(self, dsk, *, rename):
+        return self._staged._rebuild(dsk, rename=rename)
+
     def concrete_fill(
         self,
         *args: Any,
@@ -331,7 +353,7 @@ class Histogram(bh.Histogram, family=dask_histogram):
         See :py:func:`dask.visualize` for supported keyword arguments.
 
         """
-        return self.to_delayed().visualize(*args, **kwargs)
+        return self._staged.visualize(*args, **kwargs)
 
     def agg_histogram(self) -> AggHistogram | None:
         if self._staged is None:
