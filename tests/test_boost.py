@@ -126,6 +126,7 @@ def test_obj_4D_strcat_rectangular(use_weights):
     if use_weights:
         assert np.allclose(h.variances(), control.variances())
 
+    assert len(h.axes[0]) == 2 and len(control.axes[0]) == 2
     assert all(hx == cx for hx, cx in zip(control.axes[0], h.axes[0]))
 
 
