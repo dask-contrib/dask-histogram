@@ -94,7 +94,7 @@ def test_obj_3D_rectangular(use_weights):
 
 
 @pytest.mark.parametrize("use_weights", [True, False])
-def test_obj_4D_strcat_rectangular(use_weights):
+def test_obj_5D_strcat_intcat_rectangular(use_weights):
     x = da.random.standard_normal(size=(2000, 3), chunks=(400, 3))
     if use_weights:
         weights = da.random.uniform(0.5, 0.75, size=x.shape[0], chunks=x.chunksize[0])
@@ -105,29 +105,33 @@ def test_obj_4D_strcat_rectangular(use_weights):
 
     h = dhb.Histogram(
         dhb.axis.StrCategory([], growth=True),
+        dhb.axis.IntCategory([], growth=True),
         dhb.axis.Regular(8, -3.5, 3.5),
         dhb.axis.Regular(7, -3.3, 3.3),
         dhb.axis.Regular(9, -3.2, 3.2),
         storage=storage,
     )
-    h.fill("testcat1", *(x.T), weight=weights)
-    h.fill("testcat2", *(x.T), weight=weights)
+    h.fill("testcat1", 1, *(x.T), weight=weights)
+    h.fill("testcat2", 2, *(x.T), weight=weights)
     h = h.compute()
 
     control = bh.Histogram(*h.axes, storage=h.storage_type())
     if use_weights:
-        control.fill("testcat1", *(x.compute().T), weight=weights.compute())
-        control.fill("testcat2", *(x.compute().T), weight=weights.compute())
+        control.fill("testcat1", 1, *(x.compute().T), weight=weights.compute())
+        control.fill("testcat2", 2, *(x.compute().T), weight=weights.compute())
     else:
-        control.fill("testcat1", *(x.compute().T))
-        control.fill("testcat2", *(x.compute().T))
+        control.fill("testcat1", 1, *(x.compute().T))
+        control.fill("testcat2", 2, *(x.compute().T))
 
     assert np.allclose(h.counts(), control.counts())
     if use_weights:
         assert np.allclose(h.variances(), control.variances())
 
     assert len(h.axes[0]) == 2 and len(control.axes[0]) == 2
-    assert all(hx == cx for hx, cx in zip(control.axes[0], h.axes[0]))
+    assert all(cx == hx for cx, hx in zip(control.axes[0], h.axes[0]))
+
+    assert len(h.axes[1]) == 2 and len(control.axes[1]) == 2
+    assert all(cx == hx for cx, hx in zip(control.axes[1], h.axes[1]))
 
 
 def test_histogramdd():
