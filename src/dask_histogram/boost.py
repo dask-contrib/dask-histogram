@@ -4,18 +4,22 @@ from __future__ import annotations
 
 import operator
 import warnings
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Mapping
 
 import boost_histogram as bh
 import boost_histogram.axis as axis
 import boost_histogram.storage as storage
 import dask.array as da
-from dask.base import is_dask_collection
+from dask.base import DaskMethodsMixin, dont_optimize, is_dask_collection
+from dask.context import globalmethod
 from dask.delayed import Delayed, delayed
+from dask.highlevelgraph import HighLevelGraph
+from dask.threaded import get as tget
 from dask.utils import is_arraylike, is_dataframe_like
+from tlz import first
 
 from dask_histogram.bins import normalize_bins_range
-from dask_histogram.core import AggHistogram, factory
+from dask_histogram.core import AggHistogram, factory, optimize
 
 if TYPE_CHECKING:
     from dask_histogram.typing import (
@@ -31,7 +35,7 @@ import dask_histogram
 __all__ = ("Histogram", "histogram", "histogram2d", "histogramdd")
 
 
-class Histogram(bh.Histogram, family=dask_histogram):
+class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
     """Histogram object capable of lazy computation.
 
     Parameters
@@ -82,66 +86,58 @@ class Histogram(bh.Histogram, family=dask_histogram):
         """Construct a Histogram object."""
         super().__init__(*axes, storage=storage, metadata=metadata)
         self._staged: AggHistogram | None = None
+        self._name = None
+        self._dask = None
 
-    def __dask_graph__(self):
-        return self._staged.__dask_graph__()
+    def __dask_graph__(self) -> HighLevelGraph:
+        return self._dask
 
-    def __dask_keys__(self):
-        return self._staged.__dask_keys__()
+    def __dask_keys__(self) -> list[str]:
+        return [self.name]
 
-    def __dask_layers__(self):
-        return self._staged.__dask_layers__()
+    def __dask_layers__(self) -> tuple[str, ...]:
+        if isinstance(self._dask, HighLevelGraph) and len(self._dask.layers) == 1:
+            return tuple(self._dask.layers)
+        return (self.name,)
 
-    def __dask_postcompute__(self):
-        return self._staged.__dask_postcompute__()
+    def __dask_tokenize__(self) -> str:
+        return self.name
 
-    def __dask_postpersist__(self):
-        return self._staged.__dask_postpersist__()
+    def __dask_postcompute__(self) -> Any:
+        return first, ()
 
-    __dask_scheduler__ = AggHistogram.__dask_scheduler__
+    def __dask_postpersist__(self) -> Any:
+        return self._rebuild, ()
 
-    __dask_optimize__ = AggHistogram.__dask_optimize__
+    __dask_optimize__ = globalmethod(
+        optimize, key="histogram_optimize", falsey=dont_optimize
+    )
 
-    def _rebuild(self, dsk, *, rename):
-        return self._staged._rebuild(dsk, rename=rename)
+    __dask_scheduler__ = staticmethod(tget)
 
-    def concrete_fill(
+    def _rebuild(
         self,
-        *args: Any,
-        weight: Any | None = None,
-        sample: Any | None = None,
-        threads: int | None = None,
-    ) -> Histogram:
-        """Fill the histogram with concrete data (not a Dask collection).
+        dsk: HighLevelGraph,
+        *,
+        rename: Mapping[str, str] | None = None,
+    ) -> Any:
+        name = self._name
+        if rename:
+            name = rename.get(name, name)
+        new = type(self)(
+            *self.axes, storage=self.storage_type(), metadata=self.metadata
+        )
+        new._name = name
+        new._dask = dsk
+        return new
 
-        Calls the super class fill function
-        :py:func:`boost_histogram.Histogram.fill`.
+    @property
+    def name(self) -> str:
+        return self._name
 
-        Parameters
-        ----------
-        *args : array_like
-            Provide one value or array per dimension
-        weight : array_like, optional
-            Provide weights (only if the storage supports them)
-        sample : array_like
-            Provide samples (only if the storage supports them)
-        threads : int, optional
-            Fill with threads. Defaults to None, which does not
-            activate threaded filling. Using 0 will automatically pick
-            the number of available threads (usually two per core).
-
-        Returns
-        -------
-        dask_histogram.Histogram
-            Class instance now filled with concrete data.
-
-        """
-        if any(is_dask_collection(a) for a in args) or is_dask_collection(weight):
-            raise TypeError(
-                "concrete_fill does not support Dask collections, only materialized "
-                "data; use the Histogram.fill method."
-            )
-        return super().fill(*args, weight=weight, sample=sample, threads=threads)
+    @property
+    def dask(self) -> HighLevelGraph:
+        return self._dask
 
     def fill(  # type: ignore
         self,
@@ -203,14 +199,6 @@ class Histogram(bh.Histogram, family=dask_histogram):
             Class instance with a staged (delayed) fill added.
 
         """
-        # Pass to concrete fill if non-dask-collection
-        if all(not is_dask_collection(a) for a in args):
-            return self.concrete_fill(
-                *args,
-                weight=weight,
-                sample=sample,
-                threads=None,
-            )
 
         if len(args) == 1 and args[0].ndim == 1:
             pass
@@ -222,35 +210,14 @@ class Histogram(bh.Histogram, family=dask_histogram):
             raise ValueError(f"Cannot interpret input data: {args}")
 
         new_fill = factory(*args, histref=self, weights=weight, sample=sample)
-        if self._staged is not None:
-            self._staged += new_fill
-        else:
-            self._staged = new_fill
-
-        return self
-
-    def compute(self) -> Histogram:
-        """Compute any staged (delayed) fills.
-
-        Returns
-        -------
-        dask_histogram.Histogram
-            Concrete histogram with all staged (delayed) fills executed.
-
-        """
         if self._staged is None:
-            return self
-        if not self.empty():
-            result_view = self.view(flow=True) + self._staged.compute().view(flow=True)
+            self._staged = new_fill
         else:
-            result_view = self._staged.compute().view(flow=True)
-        self[...] = result_view
-        self._staged = None
-        return self
+            self._staged += self._staged
+        self._dask = self._staged.__dask_graph__()
+        self._name = self._staged.name
 
-    def clear_fills(self) -> None:
-        """Drop any uncomputed fills."""
-        self._staged = None
+        return self
 
     def staged_fills(self) -> bool:
         """Check if histogram has staged fills.
@@ -346,14 +313,6 @@ class Histogram(bh.Histogram, family=dask_histogram):
         elif self.staged_fills():
             ret += " # (has staged fills)"
         return ret
-
-    def visualize(self, *args: Any, **kwargs: Any) -> Any:
-        """Render the task graph with graphviz.
-
-        See :py:func:`dask.visualize` for supported keyword arguments.
-
-        """
-        return self._staged.visualize(*args, **kwargs)
 
     def agg_histogram(self) -> AggHistogram | None:
         if self._staged is None:
@@ -561,8 +520,6 @@ def histogramdd(
     >>> h.staged_fills()
     True
     >>> h = h.compute()
-    >>> h.staged_fills()
-    False
 
     """
 

@@ -20,7 +20,7 @@ def test_obj_1D(use_weights):
 
     h = dhb.Histogram(dhb.axis.Regular(12, -3, 3), storage=storage)
     h.fill(x, weight=weights)
-    h.compute()
+    h = h.compute()
 
     control = bh.Histogram(*h.axes, storage=h.storage_type())
     if use_weights:
@@ -50,7 +50,7 @@ def test_obj_2D(use_weights):
         storage=storage,
     )
     h.fill(x, y, weight=weights)
-    h.compute()
+    h = h.compute()
 
     control = bh.Histogram(*h.axes, storage=h.storage_type())
     if use_weights:
@@ -80,7 +80,7 @@ def test_obj_3D_rectangular(use_weights):
         storage=storage,
     )
     h.fill(x, weight=weights)
-    h.compute()
+    h = h.compute()
 
     control = bh.Histogram(*h.axes, storage=h.storage_type())
     if use_weights:
@@ -91,44 +91,6 @@ def test_obj_3D_rectangular(use_weights):
     assert np.allclose(h.counts(), control.counts())
     if use_weights:
         assert np.allclose(h.variances(), control.variances())
-
-
-def test_clear_fills():
-    x = da.random.standard_normal(size=(8, 2), chunks=(4, 2))
-    h = dhb.Histogram(
-        dhb.axis.Regular(8, -3.5, 3.5),
-        dhb.axis.Regular(9, -3.2, 3.2),
-    )
-    h.fill(x)
-    assert h.staged_fills()
-    h.clear_fills()
-    assert not h.staged_fills()
-
-
-def test_concrete_fill():
-    x = da.random.standard_normal(size=(500, 2), chunks=(4, 2))
-    h = dhb.Histogram(
-        dhb.axis.Regular(8, -3.5, 3.5),
-        dhb.axis.Regular(9, -3.2, 3.2),
-    )
-
-    h.fill(x)
-    material_x = x.compute()
-    h.fill(*material_x.T)
-    h.compute()
-
-    h2 = bh.Histogram(*h.axes)
-    h2.fill(*material_x.T)
-    h2.fill(*material_x.T)
-
-    np.testing.assert_array_almost_equal(h2.values(), h.values())
-
-    with pytest.raises(
-        TypeError,
-        match="concrete_fill does not support Dask collections, "
-        "only materialized data; use the Histogram.fill method.",
-    ):
-        h.concrete_fill(x)
 
 
 def test_histogramdd():
@@ -182,7 +144,7 @@ def test_histogramdd_series():
         histogram=dhb.Histogram,
         storage=dhb.storage.Weight(),
     )
-    h1.compute()
+    h1 = h1.compute()
     h2 = bhnp.histogramdd(
         (x.compute(), y.compute()),
         bins=bins,
@@ -209,7 +171,7 @@ def test_histogramdd_arrays_and_series():
         histogram=dhb.Histogram,
         storage=dhb.storage.Weight(),
     )
-    h1.compute()
+    h1 = h1.compute()
     h2 = bhnp.histogramdd(
         (x.compute(), y.compute()),
         bins=bins,
@@ -234,7 +196,7 @@ def test_histogramdd_dataframe():
         histogram=dhb.Histogram,
         storage=dhb.storage.Weight(),
     )
-    h1.compute()
+    h1 = h1.compute()
     h2 = bhnp.histogramdd(
         df.compute().to_numpy(),
         bins=bins,
@@ -375,8 +337,8 @@ def test_to_delayed():
         dhb.axis.Variable(bins[2]),
     )
     dh.fill(x)
-    dh.compute()
     dh.fill(x)
+
     ch = dhc.clone(dh)
     ch.fill(*(x.compute().T))
     ch.fill(*(x.compute().T))
