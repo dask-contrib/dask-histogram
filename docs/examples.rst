@@ -174,6 +174,11 @@ and ``boost_histogram.storage`` namespaces are brought in as
      Regular(50, -3, 3),
      storage=Double()) # Sum: 99459483.0 (100000000.0 with flow)
    >>> import dask
+   >>> dask.compute(h)  # doctest:+SKIP
+   (Histogram(
+     Regular(50, -3, 3),
+     Regular(50, -3, 3),
+     storage=Double()) # Sum: 99459483.0 (100000000.0 with flow),)
    >>> dask.compute(h.to_delayed())  # doctest:+SKIP
    (Histogram(
      Regular(50, -3, 3),
