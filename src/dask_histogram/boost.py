@@ -85,22 +85,22 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
         """Construct a Histogram object."""
         super().__init__(*axes, storage=storage, metadata=metadata)
         self._staged: AggHistogram | None = None
-        self._name = None
+        self._dask_name = None
         self._dask = None
 
     def __dask_graph__(self) -> HighLevelGraph:
         return self._dask
 
     def __dask_keys__(self) -> list[str]:
-        return [self.name]
+        return [self.dask_name]
 
     def __dask_layers__(self) -> tuple[str, ...]:
         if isinstance(self._dask, HighLevelGraph) and len(self._dask.layers) == 1:
             return tuple(self._dask.layers)
-        return (self.name,)
+        return (self.dask_name,)
 
     def __dask_tokenize__(self) -> str:
-        return self.name
+        return self.dask_name
 
     def __dask_postcompute__(self) -> Any:
         return first, ()
@@ -120,19 +120,19 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
         *,
         rename: Mapping[str, str] | None = None,
     ) -> Any:
-        name = self._name
+        dask_name = self._dask_name
         if rename:
             name = rename.get(name, name)
         new = type(self)(
             *self.axes, storage=self.storage_type(), metadata=self.metadata
         )
-        new._name = name
+        new._dask_name = dask_name
         new._dask = dsk
         return new
 
     @property
-    def name(self) -> str:
-        return self._name
+    def dask_name(self) -> str:
+        return self._dask_name
 
     @property
     def dask(self) -> HighLevelGraph:
@@ -214,7 +214,7 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
         else:
             self._staged += new_fill
         self._dask = self._staged.__dask_graph__()
-        self._name = self._staged.name
+        self._dask_name = self._staged.name
 
         return self
 
