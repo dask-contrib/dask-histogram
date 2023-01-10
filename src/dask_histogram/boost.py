@@ -213,7 +213,7 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
         if self._staged is None:
             self._staged = new_fill
         else:
-            self._staged += self._staged
+            self._staged += new_fill
         self._dask = self._staged.__dask_graph__()
         self._name = self._staged.name
 
@@ -272,9 +272,7 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
         >>> h, = dask.compute(h.to_delayed())
 
         """
-        if self.staged_fills() and not self.empty():
-            return delayed(operator.add)(self._staged, delayed(self))
-        elif self._staged is not None:
+        if self._staged is not None:
             return self._staged.to_delayed()
         return delayed(bh.Histogram(self))
 

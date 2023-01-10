@@ -337,11 +337,11 @@ def test_to_delayed():
         dhb.axis.Variable(bins[2]),
     )
     dh.fill(x)
-    dh.fill(x)
+    dh.fill(x * 0.8)
 
     ch = dhc.clone(dh)
     ch.fill(*(x.compute().T))
-    ch.fill(*(x.compute().T))
+    ch.fill(*((x.compute() * 0.8).T))
     np.testing.assert_array_almost_equal(
         dh.to_delayed().compute().to_numpy()[0], ch.to_numpy()[0]
     )
