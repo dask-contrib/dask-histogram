@@ -122,7 +122,7 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
     ) -> Any:
         dask_name = self._dask_name
         if rename:
-            name = rename.get(name, name)
+            dask_name = rename.get(dask_name, dask_name)
         new = type(self)(
             *self.axes, storage=self.storage_type(), metadata=self.metadata
         )
