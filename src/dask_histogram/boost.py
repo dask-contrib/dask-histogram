@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import operator
 import warnings
 from typing import TYPE_CHECKING, Any, Mapping
 
