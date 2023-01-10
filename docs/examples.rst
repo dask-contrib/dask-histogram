@@ -178,7 +178,7 @@ and ``boost_histogram.storage`` namespaces are brought in as
    (Histogram(
      Regular(50, -3, 3),
      Regular(50, -3, 3),
-     storage=Double()) # Sum: 99459483.0 (100000000.0 with flow)
+     storage=Double()) # Sum: 99459483.0 (100000000.0 with flow),)
 
 
 .. note:: More examples are shown in the API Reference.
