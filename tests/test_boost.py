@@ -20,7 +20,7 @@ def test_obj_1D(use_weights):
 
     h = dhb.Histogram(dhb.axis.Regular(12, -3, 3), storage=storage)
     h.fill(x, weight=weights)
-    h.compute()
+    h = h.compute()
 
     control = bh.Histogram(*h.axes, storage=h.storage_type())
     if use_weights:
@@ -50,7 +50,7 @@ def test_obj_2D(use_weights):
         storage=storage,
     )
     h.fill(x, y, weight=weights)
-    h.compute()
+    h = h.compute()
 
     control = bh.Histogram(*h.axes, storage=h.storage_type())
     if use_weights:
@@ -80,7 +80,7 @@ def test_obj_3D_rectangular(use_weights):
         storage=storage,
     )
     h.fill(x, weight=weights)
-    h.compute()
+    h = h.compute()
 
     control = bh.Histogram(*h.axes, storage=h.storage_type())
     if use_weights:
@@ -223,7 +223,7 @@ def test_histogramdd_series():
         histogram=dhb.Histogram,
         storage=dhb.storage.Weight(),
     )
-    h1.compute()
+    h1 = h1.compute()
     h2 = bhnp.histogramdd(
         (x.compute(), y.compute()),
         bins=bins,
@@ -250,7 +250,7 @@ def test_histogramdd_arrays_and_series():
         histogram=dhb.Histogram,
         storage=dhb.storage.Weight(),
     )
-    h1.compute()
+    h1 = h1.compute()
     h2 = bhnp.histogramdd(
         (x.compute(), y.compute()),
         bins=bins,
@@ -275,7 +275,7 @@ def test_histogramdd_dataframe():
         histogram=dhb.Histogram,
         storage=dhb.storage.Weight(),
     )
-    h1.compute()
+    h1 = h1.compute()
     h2 = bhnp.histogramdd(
         df.compute().to_numpy(),
         bins=bins,
@@ -416,11 +416,11 @@ def test_to_delayed():
         dhb.axis.Variable(bins[2]),
     )
     dh.fill(x)
-    dh.compute()
-    dh.fill(x)
+    dh.fill(x * 0.8)
+
     ch = dhc.clone(dh)
     ch.fill(*(x.compute().T))
-    ch.fill(*(x.compute().T))
+    ch.fill(*((x.compute() * 0.8).T))
     np.testing.assert_array_almost_equal(
         dh.to_delayed().compute().to_numpy()[0], ch.to_numpy()[0]
     )
