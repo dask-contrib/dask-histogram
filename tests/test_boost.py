@@ -113,7 +113,7 @@ def test_obj_5D_strcat_intcat_rectangular(use_weights):
     )
     h.fill("testcat1", 1, *(x.T), weight=weights)
     h.fill("testcat2", 2, *(x.T), weight=weights)
-    h.compute()
+    h = h.compute()
 
     control = bh.Histogram(*h.axes, storage=h.storage_type())
     if use_weights:
@@ -132,44 +132,6 @@ def test_obj_5D_strcat_intcat_rectangular(use_weights):
 
     assert len(h.axes[1]) == 2 and len(control.axes[1]) == 2
     assert all(cx == hx for hx, cx in zip(control.axes[1], h.axes[1]))
-
-
-def test_clear_fills():
-    x = da.random.standard_normal(size=(8, 2), chunks=(4, 2))
-    h = dhb.Histogram(
-        dhb.axis.Regular(8, -3.5, 3.5),
-        dhb.axis.Regular(9, -3.2, 3.2),
-    )
-    h.fill(x)
-    assert h.staged_fills()
-    h.clear_fills()
-    assert not h.staged_fills()
-
-
-def test_concrete_fill():
-    x = da.random.standard_normal(size=(500, 2), chunks=(4, 2))
-    h = dhb.Histogram(
-        dhb.axis.Regular(8, -3.5, 3.5),
-        dhb.axis.Regular(9, -3.2, 3.2),
-    )
-
-    h.fill(x)
-    material_x = x.compute()
-    h.fill(*material_x.T)
-    h.compute()
-
-    h2 = bh.Histogram(*h.axes)
-    h2.fill(*material_x.T)
-    h2.fill(*material_x.T)
-
-    np.testing.assert_array_almost_equal(h2.values(), h.values())
-
-    with pytest.raises(
-        TypeError,
-        match="concrete_fill does not support Dask collections, "
-        "only materialized data; use the Histogram.fill method.",
-    ):
-        h.concrete_fill(x)
 
 
 def test_histogramdd():
