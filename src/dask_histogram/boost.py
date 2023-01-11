@@ -103,7 +103,7 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
         return self.dask_name
 
     def __dask_postcompute__(self) -> Any:
-        return first, ()
+        return lambda x: self._in_memory_type(first(x)), ()
 
     def __dask_postpersist__(self) -> Any:
         return self._rebuild, ()
@@ -129,6 +129,16 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
         new._dask_name = dask_name
         new._dask = dsk
         return new
+
+    @property
+    def _in_memory_type(self) -> type[bh.Histogram]:
+        if type(self) != Histogram:
+            warnings.warn(
+                """dask_histogram.boost.Histogram has been subclassed without
+                overriding '_in_memory_type', please do so if you would like to
+                receive an instance of subclass rather than a boost_histogram.Histogram!"""
+            )
+        return bh.Histogram
 
     @property
     def dask_name(self) -> str:
