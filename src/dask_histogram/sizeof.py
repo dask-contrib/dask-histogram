@@ -9,7 +9,7 @@ def register(sizeof):
         return dask.sizeof.sizeof(data.view(flow=True))
 
     @sizeof.register_lazy("hist")
-    def register_hist_Hist():
+    def lazy_register_hist_Hist():
         import hist
 
         @sizeof.register(hist.Hist)
