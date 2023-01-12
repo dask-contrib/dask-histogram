@@ -88,6 +88,22 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
         self._dask_name = None
         self._dask = None
 
+    def __iadd__(self, other):
+        if self.staged_fills() and other.staged_fills():
+            self._staged += other._staged
+        elif not self.staged_fills() and other.staged_fills():
+            self._staged = other._staged
+        if self.staged_fills():
+            self._dask = self._staged.__dask_graph__()
+            self._dask_name = self._staged.name
+        return self
+
+    def __add__(self, other):
+        return self.__iadd__(other)
+
+    def __radd__(self, other):
+        return other.__iadd__(self)
+        
     def __dask_graph__(self) -> HighLevelGraph:
         return self._dask
 
