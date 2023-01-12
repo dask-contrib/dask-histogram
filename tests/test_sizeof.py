@@ -1,7 +1,6 @@
 import boost_histogram as bh
 import dask.sizeof
 import numpy as np
-
 import pytest
 
 hist = pytest.importorskip("hist")
