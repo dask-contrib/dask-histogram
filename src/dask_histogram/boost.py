@@ -103,7 +103,7 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
 
     def __radd__(self, other):
         return other.__iadd__(self)
-        
+
     def __dask_graph__(self) -> HighLevelGraph:
         return self._dask
 
