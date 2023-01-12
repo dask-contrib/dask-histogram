@@ -56,7 +56,7 @@ Documentation = "https://dask-histogram.readthedocs.io/"
 "Bug Tracker" = "https://github.com/dask-contrib/dask-histogram/issues"
 
 [project.entry-points."dask.sizeof"]
-histogram = "dask_histogram.sizeof:register"
+dask_histogram = "dask_histogram.sizeof:register"
 
 [tool.hatch.version]
 source = "vcs"
