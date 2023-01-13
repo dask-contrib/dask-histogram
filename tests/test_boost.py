@@ -386,3 +386,48 @@ def test_to_delayed():
     np.testing.assert_array_almost_equal(
         dh.to_delayed().compute().to_numpy()[0], ch.to_numpy()[0]
     )
+
+
+@pytest.mark.parametrize("use_weights", [True, False])
+def test_add(use_weights):
+    x = da.random.standard_normal(size=(2000,), chunks=(400,))
+    y = da.random.standard_normal(size=(1000,), chunks=(400,))
+    if use_weights:
+        xweights = da.random.uniform(0.5, 0.75, size=x.shape, chunks=x.chunks)
+        yweights = da.random.uniform(0.25, 0.5, size=y.shape, chunks=y.chunks)
+        store = dhb.storage.Weight
+    else:
+        xweights = None
+        yweights = None
+        store = dhb.storage.Double
+
+    h1 = dhb.Histogram(dhb.axis.Regular(12, -3, 3), storage=store())
+    h1.fill(x, weight=xweights)
+    h2 = dhb.Histogram(dhb.axis.Regular(12, -3, 3), storage=store())
+    h2.fill(y, weight=yweights)
+
+    h3 = h1 + h2
+
+    h3 = h3.compute()
+
+    h4 = dhb.Histogram(dhb.axis.Regular(12, -3, 3), storage=store())
+    h4.fill(x, weight=xweights)
+    h4 += h2
+    h4 = h4.compute()
+
+    controlx = bh.Histogram(*h1.axes, storage=h1.storage_type())
+    controly = bh.Histogram(*h2.axes, storage=h2.storage_type())
+    if use_weights:
+        controlx.fill(x.compute(), weight=xweights.compute())
+        controly.fill(y.compute(), weight=yweights.compute())
+    else:
+        controlx.fill(x.compute())
+        controlx.fill(y.compute())
+
+    c3 = controlx + controly
+
+    assert np.allclose(h3.counts(), c3.counts())
+    assert np.allclose(h4.counts(), c3.counts())
+    if use_weights:
+        assert np.allclose(h3.variances(), c3.variances())
+        assert np.allclose(h4.variances(), c3.variances())
