@@ -7,14 +7,10 @@ from typing import TYPE_CHECKING, Any, Callable, Hashable, Mapping, Sequence
 
 import boost_histogram as bh
 import numpy as np
-from dask.array.core import Array as DaskArray
-from dask.array.core import asarray
-from dask.bag.core import empty_safe_aggregate
 from dask.base import DaskMethodsMixin, dont_optimize, is_dask_collection, tokenize
 from dask.blockwise import fuse_roots, optimize_blockwise
 from dask.context import globalmethod
 from dask.core import flatten
-from dask.dataframe.core import partitionwise_graph as partitionwise
 from dask.delayed import Delayed
 from dask.highlevelgraph import HighLevelGraph
 from dask.threaded import get as tget
@@ -539,6 +535,8 @@ def _reduction(
     ph: PartitionedHistogram,
     split_every: int | None = None,
 ) -> AggHistogram:
+    from dask.bag.core import empty_safe_aggregate
+
     if split_every is None:
         split_every = 4
     if split_every is False:
@@ -616,6 +614,8 @@ def _partitioned_histogram(
     sample: DaskCollection | None = None,
     split_every: int | None = None,
 ) -> PartitionedHistogram:
+    from dask.dataframe.core import partitionwise_graph as partitionwise
+
     name = f"hist-on-block-{tokenize(data, histref, weights, sample, split_every)}"
     dask_data = tuple(datum for datum in data if is_dask_collection(datum))
     if len(dask_data) == 0:
@@ -720,6 +720,8 @@ def to_dask_array(agghist: AggHistogram, flow: bool = False, dd: bool = False) -
         return).
 
     """
+    from dask.array import Array, asarray
+
     name = f"to-dask-array-{tokenize(agghist)}"
     zeros = (0,) * agghist.histref.ndim
     dsk = {(name, *zeros): (lambda x, f: x.to_numpy(flow=f)[0], agghist.name, flow)}
@@ -732,7 +734,7 @@ def to_dask_array(agghist: AggHistogram, flow: bool = False, dd: bool = False) -
         bh.storage.AtomicInt64,
     )
     dt = int if int_storage else float
-    c = DaskArray(graph, name=name, shape=shape, chunks=shape, dtype=dt)
+    c = Array(graph, name=name, shape=shape, chunks=shape, dtype=dt)
     axes = agghist.histref.axes
 
     if flow:
