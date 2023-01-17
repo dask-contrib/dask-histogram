@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Any, Callable, Hashable, Mapping, Sequence
 
 import boost_histogram as bh
 import numpy as np
-from dask.bag.core import empty_safe_aggregate
 from dask.base import DaskMethodsMixin, dont_optimize, is_dask_collection, tokenize
 from dask.blockwise import fuse_roots, optimize_blockwise
 from dask.context import globalmethod
@@ -536,6 +535,8 @@ def _reduction(
     ph: PartitionedHistogram,
     split_every: int | None = None,
 ) -> AggHistogram:
+    from dask.bag.core import empty_safe_aggregate
+
     if split_every is None:
         split_every = 4
     if split_every is False:
