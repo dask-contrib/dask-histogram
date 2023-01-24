@@ -192,11 +192,26 @@ def _blocked_df_w_s(
 
 
 def _blocked_dak(data: Any, *, histref: bh.Histogram | None = None) -> bh.Histogram:
-    return clone(histref).fill(data)
+    import awkward as ak
+
+    thedata = data
+    if isinstance(thedata, ak.Array) and ak.backend(thedata) == "typetracer":
+        thedata.layout._touch_data(recursive=True)
+        thedata = data.layout.form.length_zero_array()
+
+    return clone(histref).fill(thedata)
 
 
 def _blocked_dak_ma(*data: Any, histref: bh.Histogram | None = None) -> bh.Histogram:
-    return clone(histref).fill(*data)
+    import awkward as ak
+
+    thedata = list(data)
+    for idata, adatum in enumerate(thedata):
+        if isinstance(adatum, ak.Array) and ak.backend(adatum) == "typetracer":
+            adatum.layout._touch_data(recursive=True)
+            thedata[idata] = adatum.layout.form.length_zero_array()
+
+    return clone(histref).fill(*tuple(thedata))
 
 
 def optimize(
