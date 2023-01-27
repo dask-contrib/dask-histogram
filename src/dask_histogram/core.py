@@ -19,8 +19,9 @@ from dask.utils import is_dataframe_like, key_split
 from tlz import partition_all
 
 if TYPE_CHECKING:
-    from numpy.typing import NDArray
     from dask.blockwise import Blockwise
+    from numpy.typing import NDArray
+
     from dask_histogram.typing import DaskCollection
 
 __all__ = (
