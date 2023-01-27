@@ -56,4 +56,26 @@ jobs:
     - name: Run doctests
       shell: bash -l {0}
       run: |
-        pytest -v --doctest-modules --ignore-glob='tests/test_*.py' src docs/examples.rst
+        python3 -m pytest -v --doctest-modules --ignore-glob='tests/test_*.py' src docs/examples.rst
+
+  mindeps:
+    runs-on: "ubuntu-latest"
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v3
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
+
+    - name: Install
+      run: |
+        python3 -m pip install pip wheel pytest
+        python3 -m pip install -q --no-cache-dir -e .
+        python3 -m pip list
+
+    - name: Run tests
+      shell: bash -l {0}
+      run: |
+        python3 -m pytest
