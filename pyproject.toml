@@ -34,18 +34,18 @@ dynamic = ["version"]
 [project.optional-dependencies]
 complete = [
     "dask-sphinx-theme >=3.0.2",
-    "dask[dataframe]",
+    "dask",
     "hist",
     "pytest",
     "sphinx >=4.0.0",
 ]
 docs = [
     "dask-sphinx-theme >=3.0.2",
-    "dask[dataframe]",
+    "dask[array,dataframe]",
     "sphinx >=4.0.0",
 ]
 test = [
-    "dask[dataframe]",
+    "dask[array,dataframe]",
     "hist",
     "pytest",
 ]
