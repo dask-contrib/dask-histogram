@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, Callable, Hashable, Mapping, Sequence
 
 import boost_histogram as bh
 import numpy as np
+import dask.config
 from dask.base import DaskMethodsMixin, dont_optimize, is_dask_collection, tokenize
 from dask.blockwise import fuse_roots, optimize_blockwise
 from dask.context import globalmethod
@@ -225,9 +226,21 @@ def optimize(
 
     if not isinstance(dsk, HighLevelGraph):
         dsk = HighLevelGraph.from_collections(id(dsk), dsk, dependencies=())
+    else:
 
-    dsk = optimize_blockwise(dsk, keys=keys)
-    dsk = fuse_roots(dsk, keys=keys)  # type: ignore
+        # Here we try to run dask-awkward's column optimization (if we
+        # detect that dask-awkward has been imported). There is no
+        # cost to running this optimization even in cases where it's
+        # unncessary because if no dask-awkward AwkwardInputLayer's
+        # are detected then the original graph is returned unchanged.
+        if dask.config.get("awkward.optimization.enabled", default=False):
+            from dask_awkward.lib.optimize import optimize_columns
+
+            dsk = optimize_columns(dsk)
+
+        dsk = optimize_blockwise(dsk, keys=keys)
+        dsk = fuse_roots(dsk, keys=keys)  # type: ignore
+
     dsk = dsk.cull(set(keys))  # type: ignore
     return dsk
 
