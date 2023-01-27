@@ -20,7 +20,7 @@ from tlz import partition_all
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
-
+    from dask.blockwise import Blockwise
     from dask_histogram.typing import DaskCollection
 
 __all__ = (
@@ -652,7 +652,7 @@ def _partitionwise(
     layer_name: str,
     *args: Any,
     **kwargs: Any,
-):
+) -> Blockwise:
     from dask.array.core import Array as DaskArray
 
     pairs: list[Any] = []
@@ -679,12 +679,19 @@ def _partitionwise(
                 pairs.extend([arg, "ij"])
             else:
                 raise ValueError(
-                    f"BlockwiseDep arg {arg!r} has {len(arg.numblocks)} dimensions; only 1 or 2 are supported."
+                    f"BlockwiseDep arg {arg!r} has {len(arg.numblocks)} dimensions; "
+                    "only 1 or 2 are supported."
                 )
         else:
             pairs.extend([arg, None])
     return blockwise(
-        func, layer_name, "i", *pairs, numblocks=numblocks, concatenate=True, **kwargs
+        func,
+        layer_name,
+        "i",
+        *pairs,
+        numblocks=numblocks,
+        concatenate=True,
+        **kwargs,
     )
 
 
