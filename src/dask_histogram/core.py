@@ -647,26 +647,18 @@ def _is_dask_series(obj):
     )
 
 
-def _is_dask_array(obj):
-    return (
-        obj.__class__.__module__ == "dask.array.core"
-        and obj.__class__.__name__ == "Array"
-    )
-
-
 def _partitionwise(
     func: Callable,
     layer_name: str,
     *args: Any,
     **kwargs: Any,
 ):
+    from dask.array.core import Array as DaskArray
+
     pairs: list[Any] = []
     numblocks: dict[Any, int | tuple[int, ...]] = {}
     for arg in args:
-        if _is_dask_dataframe(arg) or _is_dask_series(arg):
-            pairs.extend([arg._name, "i"])
-            numblocks[arg._name] = (arg.npartitions,)
-        elif _is_dask_array(arg):
+        if isinstance(arg, DaskArray):
             if arg.ndim == 1:
                 pairs.extend([arg.name, "i"])
             elif arg.ndim == 0:
@@ -676,6 +668,10 @@ def _partitionwise(
             else:
                 raise ValueError("Can't add multi-dimensional array to dataframes")
             numblocks[arg._name] = arg.numblocks
+
+        elif _is_dask_dataframe(arg) or _is_dask_series(arg):
+            pairs.extend([arg._name, "i"])
+            numblocks[arg._name] = (arg.npartitions,)
         elif isinstance(arg, BlockwiseDep):
             if len(arg.numblocks) == 1:
                 pairs.extend([arg, "i"])
