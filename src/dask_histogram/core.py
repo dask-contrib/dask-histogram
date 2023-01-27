@@ -6,8 +6,8 @@ import operator
 from typing import TYPE_CHECKING, Any, Callable, Hashable, Mapping, Sequence
 
 import boost_histogram as bh
-import numpy as np
 import dask.config
+import numpy as np
 from dask.base import DaskMethodsMixin, dont_optimize, is_dask_collection, tokenize
 from dask.blockwise import fuse_roots, optimize_blockwise
 from dask.context import globalmethod
