@@ -71,7 +71,7 @@ jobs:
 
     - name: Install
       run: |
-        python3 -m pip install pip wheel
+        python3 -m pip install pip wheel pytest
         python3 -m pip install -q --no-cache-dir -e .
         python3 -m pip list
 
