@@ -226,21 +226,19 @@ def optimize(
 
     if not isinstance(dsk, HighLevelGraph):
         dsk = HighLevelGraph.from_collections(id(dsk), dsk, dependencies=())
-    else:
 
-        # Here we try to run dask-awkward's column optimization (if we
-        # detect that dask-awkward has been imported). There is no
-        # cost to running this optimization even in cases where it's
-        # unncessary because if no dask-awkward' AwkwardInputLayers
-        # are not detected then the original graph is returned unchanged.
-        if dask.config.get("awkward.optimization.enabled", default=False):
-            from dask_awkward.lib.optimize import optimize_columns
+    # Here we try to run optimizations from dask-awkward (if we detect
+    # that dask-awkward has been imported). There is no cost to
+    # running this optimization even in cases where it's unncessary
+    # because if no dask-awkward's AwkwardInputLayers are not detected
+    # then the original graph is returned unchanged.
+    if dask.config.get("awkward", default=False):
+        from dask_awkward.lib.optimize import optimize
 
-            dsk = optimize_columns(dsk)
+        dsk = optimize(dsk, keys=keys)
 
-        dsk = optimize_blockwise(dsk, keys=keys)
-        dsk = fuse_roots(dsk, keys=keys)  # type: ignore
-
+    dsk = optimize_blockwise(dsk, keys=keys)
+    dsk = fuse_roots(dsk, keys=keys)  # type: ignore
     dsk = dsk.cull(set(keys))  # type: ignore
     return dsk
 
