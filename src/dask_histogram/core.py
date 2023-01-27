@@ -230,8 +230,8 @@ def optimize(
     # Here we try to run optimizations from dask-awkward (if we detect
     # that dask-awkward has been imported). There is no cost to
     # running this optimization even in cases where it's unncessary
-    # because if no dask-awkward's AwkwardInputLayers are not detected
-    # then the original graph is returned unchanged.
+    # because if no AwkwardInputLayers from daks-awkward are not
+    # detected then the original graph is returned unchanged.
     if dask.config.get("awkward", default=False):
         from dask_awkward.lib.optimize import optimize
 
