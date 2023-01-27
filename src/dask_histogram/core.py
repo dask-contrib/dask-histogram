@@ -9,7 +9,7 @@ import boost_histogram as bh
 import dask.config
 import numpy as np
 from dask.base import DaskMethodsMixin, dont_optimize, is_dask_collection, tokenize
-from dask.blockwise import fuse_roots, optimize_blockwise
+from dask.blockwise import BlockwiseDep, blockwise, fuse_roots, optimize_blockwise
 from dask.context import globalmethod
 from dask.core import flatten
 from dask.delayed import Delayed
@@ -19,6 +19,7 @@ from dask.utils import is_dataframe_like, key_split
 from tlz import partition_all
 
 if TYPE_CHECKING:
+    from dask.blockwise import Blockwise
     from numpy.typing import NDArray
 
     from dask_histogram.typing import DaskCollection
@@ -633,6 +634,68 @@ def _weight_sample_check(
     return 0
 
 
+def _is_dask_dataframe(obj):
+    return (
+        obj.__class__.__module__ == "dask.dataframe.core"
+        and obj.__class__.__name__ == "DataFrame"
+    )
+
+
+def _is_dask_series(obj):
+    return (
+        obj.__class__.__module__ == "dask.dataframe.core"
+        and obj.__class__.__name__ == "Series"
+    )
+
+
+def _partitionwise(
+    func: Callable,
+    layer_name: str,
+    *args: Any,
+    **kwargs: Any,
+) -> Blockwise:
+    from dask.array.core import Array as DaskArray
+
+    pairs: list[Any] = []
+    numblocks: dict[Any, int | tuple[int, ...]] = {}
+    for arg in args:
+        if isinstance(arg, DaskArray):
+            if arg.ndim == 1:
+                pairs.extend([arg.name, "i"])
+            elif arg.ndim == 0:
+                pairs.extend([arg.name, ""])
+            elif arg.ndim == 2:
+                pairs.extend([arg.name, "ij"])
+            else:
+                raise ValueError("Can't add multi-dimensional array to dataframes")
+            numblocks[arg._name] = arg.numblocks
+
+        elif _is_dask_dataframe(arg) or _is_dask_series(arg):
+            pairs.extend([arg._name, "i"])
+            numblocks[arg._name] = (arg.npartitions,)
+        elif isinstance(arg, BlockwiseDep):
+            if len(arg.numblocks) == 1:
+                pairs.extend([arg, "i"])
+            elif len(arg.numblocks) == 2:
+                pairs.extend([arg, "ij"])
+            else:
+                raise ValueError(
+                    f"BlockwiseDep arg {arg!r} has {len(arg.numblocks)} dimensions; "
+                    "only 1 or 2 are supported."
+                )
+        else:
+            pairs.extend([arg, None])
+    return blockwise(
+        func,
+        layer_name,
+        "i",
+        *pairs,
+        numblocks=numblocks,
+        concatenate=True,
+        **kwargs,
+    )
+
+
 def _partitioned_histogram(
     *data: DaskCollection,
     histref: bh.Histogram,
@@ -640,8 +703,6 @@ def _partitioned_histogram(
     sample: DaskCollection | None = None,
     split_every: int | None = None,
 ) -> PartitionedHistogram:
-    from dask.dataframe.core import partitionwise_graph as partitionwise
-
     name = f"hist-on-block-{tokenize(data, histref, weights, sample, split_every)}"
     dask_data = tuple(datum for datum in data if is_dask_collection(datum))
     if len(dask_data) == 0:
@@ -668,29 +729,29 @@ def _partitioned_histogram(
     elif len(data) == 1 and not data_is_df:
         x = data[0]
         if weights is not None and sample is not None:
-            g = partitionwise(
+            g = _partitionwise(
                 _blocked_sa_w_s, name, x, weights, sample, histref=histref
             )
         elif weights is not None and sample is None:
-            g = partitionwise(_blocked_sa_w, name, x, weights, histref=histref)
+            g = _partitionwise(_blocked_sa_w, name, x, weights, histref=histref)
         elif weights is None and sample is not None:
-            g = partitionwise(_blocked_sa_s, name, x, sample, histref=histref)
+            g = _partitionwise(_blocked_sa_s, name, x, sample, histref=histref)
         else:
-            g = partitionwise(_blocked_sa, name, x, histref=histref)
+            g = _partitionwise(_blocked_sa, name, x, histref=histref)
 
     # Single object, is a dataframe
     elif len(data) == 1 and data_is_df:
         x = data[0]
         if weights is not None and sample is not None:
-            g = partitionwise(
+            g = _partitionwise(
                 _blocked_df_w_s, name, x, weights, sample, histref=histref
             )
         elif weights is not None and sample is None:
-            g = partitionwise(_blocked_df_w, name, x, weights, histref=histref)
+            g = _partitionwise(_blocked_df_w, name, x, weights, histref=histref)
         elif weights is None and sample is not None:
-            g = partitionwise(_blocked_df_s, name, x, sample, histref=histref)
+            g = _partitionwise(_blocked_df_s, name, x, sample, histref=histref)
         else:
-            g = partitionwise(_blocked_df, name, x, histref=histref)
+            g = _partitionwise(_blocked_df, name, x, histref=histref)
 
     # Multiple objects
     else:
@@ -705,15 +766,15 @@ def _partitioned_histogram(
                 raise NotImplementedError()
         # Not an awkward array collection
         elif weights is not None and sample is not None:
-            g = partitionwise(
+            g = _partitionwise(
                 _blocked_ma_w_s, name, *data, weights, sample, histref=histref
             )
         elif weights is not None and sample is None:
-            g = partitionwise(_blocked_ma_w, name, *data, weights, histref=histref)
+            g = _partitionwise(_blocked_ma_w, name, *data, weights, histref=histref)
         elif weights is None and sample is not None:
-            g = partitionwise(_blocked_ma_s, name, *data, sample, histref=histref)
+            g = _partitionwise(_blocked_ma_s, name, *data, sample, histref=histref)
         else:
-            g = partitionwise(_blocked_ma, name, *data, histref=histref)
+            g = _partitionwise(_blocked_ma, name, *data, histref=histref)
 
     dependencies = _dependencies(*data, weights=weights, sample=sample)
     hlg = HighLevelGraph.from_collections(name, g, dependencies=dependencies)
