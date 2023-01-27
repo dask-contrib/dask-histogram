@@ -3,7 +3,6 @@ from __future__ import annotations
 import boost_histogram as bh
 import dask.array as da
 import dask.array.utils as dau
-import dask.datasets as dds
 import numpy as np
 import pytest
 from dask.delayed import delayed
@@ -109,6 +108,9 @@ def test_nd_array(weights):
 
 @pytest.mark.parametrize("weights", [True, None])
 def test_df_input(weights):
+    pytest.importorskip("pandas")
+    import dask.datasets as dds
+
     h = bh.Histogram(
         bh.axis.Regular(12, 0, 1),
         bh.axis.Regular(12, 0, 1),

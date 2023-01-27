@@ -172,6 +172,8 @@ def test_histogramdd_multicolumn_input():
 
 
 def test_histogramdd_series():
+    pytest.importorskip("pandas")
+
     x = da.random.standard_normal(size=(1000,), chunks=(200,)).to_dask_dataframe()
     y = da.random.standard_normal(size=(1000,), chunks=(200,)).to_dask_dataframe()
     w = da.random.uniform(size=(1000,), chunks=(200,)).to_dask_dataframe()
@@ -199,6 +201,8 @@ def test_histogramdd_series():
 
 
 def test_histogramdd_arrays_and_series():
+    pytest.importorskip("pandas")
+
     x = da.random.standard_normal(size=(1000,), chunks=(200,))
     y = da.random.standard_normal(size=(1000,), chunks=(200,)).to_dask_dataframe()
     w = da.random.uniform(size=(1000,), chunks=(200,))
@@ -226,6 +230,7 @@ def test_histogramdd_arrays_and_series():
 
 
 def test_histogramdd_dataframe():
+    pytest.importorskip("pandas")
     x = da.random.standard_normal(size=(1000, 3), chunks=(200, 3))
     df = x.to_dask_dataframe(columns=["a", "b", "c"])
     w = da.random.uniform(size=(1000,), chunks=(200,))
