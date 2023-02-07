@@ -755,7 +755,6 @@ def _partitioned_histogram(
 
     # Multiple objects
     else:
-
         # Awkward array collection detected as first argument
         if data_is_dak:
             from dask_awkward.lib.core import partitionwise_layer as dak_pwl
