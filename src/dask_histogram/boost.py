@@ -9,7 +9,7 @@ import boost_histogram as bh
 import boost_histogram.axis as axis
 import boost_histogram.storage as storage
 import dask.array as da
-from dask.base import DaskMethodsMixin, dont_optimize, is_dask_collection
+from dask.base import DaskMethodsMixin, dont_optimize, is_dask_collection, tokenize
 from dask.context import globalmethod
 from dask.delayed import Delayed, delayed
 from dask.highlevelgraph import HighLevelGraph
@@ -116,6 +116,8 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
         return (self.dask_name,)
 
     def __dask_tokenize__(self) -> str:
+        if self._dask_name is None:
+            return tokenize(*self.axes, self.storage_type, self.metadata)
         return self.dask_name
 
     def __dask_postcompute__(self) -> Any:
