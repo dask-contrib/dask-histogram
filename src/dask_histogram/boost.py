@@ -85,8 +85,8 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
         """Construct a Histogram object."""
         super().__init__(*axes, storage=storage, metadata=metadata)
         self._staged: AggHistogram | None = None
-        self._dask_name = None
-        self._dask = None
+        self._dask_name: str | None = None
+        self._dask: HighLevelGraph | None = None
 
     def __iadd__(self, other):
         if self.staged_fills() and other.staged_fills():
@@ -105,14 +105,14 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
         return other.__iadd__(self)
 
     def __dask_graph__(self) -> HighLevelGraph:
-        return self._dask
+        return self.dask
 
     def __dask_keys__(self) -> list[str]:
         return [self.dask_name]
 
     def __dask_layers__(self) -> tuple[str, ...]:
-        if isinstance(self._dask, HighLevelGraph) and len(self._dask.layers) == 1:
-            return tuple(self._dask.layers)
+        if isinstance(self.dask, HighLevelGraph) and len(self.dask.layers) == 1:
+            return tuple(self.dask.layers)
         return (self.dask_name,)
 
     def __dask_tokenize__(self) -> str:
@@ -136,7 +136,7 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
         *,
         rename: Mapping[str, str] | None = None,
     ) -> Any:
-        dask_name = self._dask_name
+        dask_name = self.dask_name
         if rename:
             dask_name = rename.get(dask_name, dask_name)
         new = type(self)(
@@ -158,10 +158,18 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
 
     @property
     def dask_name(self) -> str:
+        if self._dask_name is None:
+            raise RuntimeError(
+                "The dask name should never be None when it's requested."
+            )
         return self._dask_name
 
     @property
     def dask(self) -> HighLevelGraph:
+        if self._dask is None:
+            raise RuntimeError(
+                "The dask graph should never be None when it's requested."
+            )
         return self._dask
 
     def fill(  # type: ignore
@@ -372,8 +380,8 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
             counts = da.from_array(counts)
             edges = [da.from_array(ea) for ea in edges]  # type: ignore
             if dd:
-                return counts, edges  # type: ignore
-            return tuple([counts, *edges])  # type: ignore
+                return counts, edges
+            return tuple([counts, *edges])
 
 
 def histogramdd(
