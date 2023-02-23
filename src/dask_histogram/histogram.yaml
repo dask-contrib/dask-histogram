@@ -1,0 +1,10 @@
+histogram:
+
+  # Aggregation specific configuration table
+  aggregation:
+
+    # When converting from a partitioned histogram to a single
+    # aggregated histogram this parameter controls how the tree
+    # reduction is handled; this number of nodes will be combined at a
+    # time as a new dask task.
+    split_every: 8
