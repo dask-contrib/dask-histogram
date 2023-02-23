@@ -136,7 +136,7 @@ def test_obj_5D_strcat_intcat_rectangular(use_weights):
 
 @pytest.mark.parametrize("use_weights", [True, False])
 def test_obj_5D_strcat_intcat_rectangular_dak(use_weights):
-    import dask_awkward as dak
+    dak = pytest.importorskip("dask_awkward")
 
     x = dak.from_dask_array(da.random.standard_normal(size=2000, chunks=400))
     y = dak.from_dask_array(da.random.standard_normal(size=2000, chunks=400))
