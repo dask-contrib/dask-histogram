@@ -35,6 +35,7 @@ dynamic = ["version"]
 complete = [
     "dask-sphinx-theme >=3.0.2",
     "dask[array,dataframe]",
+    "dask_awkward",
     "hist",
     "pytest",
     "sphinx >=4.0.0",
@@ -42,10 +43,12 @@ complete = [
 docs = [
     "dask-sphinx-theme >=3.0.2",
     "dask[array,dataframe]",
+    "dask_awkward",
     "sphinx >=4.0.0",
 ]
 test = [
     "dask[array,dataframe]",
+    "dask_awkward",
     "hist",
     "pytest",
 ]
