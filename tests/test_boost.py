@@ -134,6 +134,54 @@ def test_obj_5D_strcat_intcat_rectangular(use_weights):
     assert all(cx == hx for cx, hx in zip(control.axes[1], h.axes[1]))
 
 
+@pytest.mark.parametrize("use_weights", [True, False])
+def test_obj_5D_strcat_intcat_rectangular_dak(use_weights):
+    dak = pytest.importorskip("dask_awkward")
+
+    x = dak.from_dask_array(da.random.standard_normal(size=2000, chunks=400))
+    y = dak.from_dask_array(da.random.standard_normal(size=2000, chunks=400))
+    z = dak.from_dask_array(da.random.standard_normal(size=2000, chunks=400))
+    if use_weights:
+        weights = dak.from_dask_array(
+            da.random.uniform(0.5, 0.75, size=2000, chunks=400)
+        )
+        storage = dhb.storage.Weight()
+    else:
+        weights = None
+        storage = dhb.storage.Double()
+
+    h = dhb.Histogram(
+        dhb.axis.StrCategory([], growth=True),
+        dhb.axis.IntCategory([], growth=True),
+        dhb.axis.Regular(8, -3.5, 3.5),
+        dhb.axis.Regular(7, -3.3, 3.3),
+        dhb.axis.Regular(9, -3.2, 3.2),
+        storage=storage,
+    )
+    h.fill("testcat1", 1, x, y, z, weight=weights)
+    h.fill("testcat2", 2, x, y, z, weight=weights)
+    h = h.compute()
+
+    control = bh.Histogram(*h.axes, storage=h.storage_type())
+    x_c, y_c, z_c = x.compute(), y.compute(), z.compute()
+    if use_weights:
+        control.fill("testcat1", 1, x_c, y_c, z_c, weight=weights.compute())
+        control.fill("testcat2", 2, x_c, y_c, z_c, weight=weights.compute())
+    else:
+        control.fill("testcat1", 1, x_c, y_c, z_c)
+        control.fill("testcat2", 2, x_c, y_c, z_c)
+
+    assert np.allclose(h.counts(), control.counts())
+    if use_weights:
+        assert np.allclose(h.variances(), control.variances())
+
+    assert len(h.axes[0]) == 2 and len(control.axes[0]) == 2
+    assert all(cx == hx for cx, hx in zip(control.axes[0], h.axes[0]))
+
+    assert len(h.axes[1]) == 2 and len(control.axes[1]) == 2
+    assert all(cx == hx for cx, hx in zip(control.axes[1], h.axes[1]))
+
+
 def test_histogramdd():
     x = da.random.standard_normal(size=(3_000,), chunks=500)
     y = da.random.standard_normal(size=(3_000,), chunks=500)

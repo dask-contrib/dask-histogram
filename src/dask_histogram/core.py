@@ -193,18 +193,37 @@ def _blocked_df_w_s(
     )
 
 
-def _blocked_dak(data: Any, *, histref: bh.Histogram | None = None) -> bh.Histogram:
+def _blocked_dak(
+    data: Any,
+    weights: Any | None,
+    sample: Any | None,
+    *,
+    histref: bh.Histogram | None = None,
+) -> bh.Histogram:
     import awkward as ak
 
     thedata = data
+    theweights = weights
+    thesample = sample
     if isinstance(thedata, ak.Array) and ak.backend(thedata) == "typetracer":
         thedata.layout._touch_data(recursive=True)
         thedata = data.layout.form.length_zero_array()
 
-    return clone(histref).fill(thedata)
+    if isinstance(theweights, ak.Array) and ak.backend(theweights) == "typetracer":
+        theweights.layout._touch_data(recursive=True)
+        theweights = weights.layout.form.length_zero_array()
+
+    if isinstance(thesample, ak.Array) and ak.backend(thesample) == "typetracer":
+        thesample.layout._touch_data(recursive=True)
+        thesample = sample.layout.form.length_zero_array()
+
+    return clone(histref).fill(thedata, weight=theweights, sample=thesample)
 
 
-def _blocked_dak_ma(*data: Any, histref: bh.Histogram | None = None) -> bh.Histogram:
+def _blocked_dak_ma(
+    *data: Any,
+    histref: bh.Histogram | None = None,
+) -> bh.Histogram:
     import awkward as ak
 
     thedata = list(data)
@@ -214,6 +233,71 @@ def _blocked_dak_ma(*data: Any, histref: bh.Histogram | None = None) -> bh.Histo
             thedata[idata] = adatum.layout.form.length_zero_array()
 
     return clone(histref).fill(*tuple(thedata))
+
+
+def _blocked_dak_ma_w(
+    *data: Any,
+    histref: bh.Histogram | None = None,
+) -> bh.Histogram:
+    import awkward as ak
+
+    thedata = list(data[:-1])
+    theweights = data[-1]
+    for idata, adatum in enumerate(thedata):
+        if isinstance(adatum, ak.Array) and ak.backend(adatum) == "typetracer":
+            adatum.layout._touch_data(recursive=True)
+            thedata[idata] = adatum.layout.form.length_zero_array()
+
+    if isinstance(theweights, ak.Array) and ak.backend(theweights) == "typetracer":
+        theweights.layout._touch_data(recursive=True)
+        theweights = data[-1].layout.form.length_zero_array()
+
+    return clone(histref).fill(*tuple(thedata), weight=theweights)
+
+
+def _blocked_dak_ma_s(
+    *data: Any,
+    histref: bh.Histogram | None = None,
+) -> bh.Histogram:
+    import awkward as ak
+
+    thedata = list(data[:-1])
+    thesample = data[-1]
+    for idata, adatum in enumerate(thedata):
+        if isinstance(adatum, ak.Array) and ak.backend(adatum) == "typetracer":
+            adatum.layout._touch_data(recursive=True)
+            thedata[idata] = adatum.layout.form.length_zero_array()
+
+    if isinstance(thesample, ak.Array) and ak.backend(thesample) == "typetracer":
+        thesample.layout._touch_data(recursive=True)
+        thesample = data[-1].layout.form.length_zero_array()
+
+    return clone(histref).fill(*tuple(thedata), sample=thesample)
+
+
+def _blocked_dak_ma_w_s(
+    *data: Any,
+    histref: bh.Histogram | None = None,
+) -> bh.Histogram:
+    import awkward as ak
+
+    thedata = list(data[:-2])
+    theweights = data[-2]
+    thesample = data[-1]
+    for idata, adatum in enumerate(thedata):
+        if isinstance(adatum, ak.Array) and ak.backend(adatum) == "typetracer":
+            adatum.layout._touch_data(recursive=True)
+            thedata[idata] = adatum.layout.form.length_zero_array()
+
+    if isinstance(theweights, ak.Array) and ak.backend(theweights) == "typetracer":
+        theweights.layout._touch_data(recursive=True)
+        theweights = data[-2].layout.form.length_zero_array()
+
+    if isinstance(thesample, ak.Array) and ak.backend(thesample) == "typetracer":
+        thesample.layout._touch_data(recursive=True)
+        thesample = data[-1].layout.form.length_zero_array()
+
+    return clone(histref).fill(*tuple(thedata), weight=theweights, sample=thesample)
 
 
 def optimize(
@@ -717,13 +801,13 @@ def _partitioned_histogram(
 
         x = data[0]
         if weights is not None and sample is not None:
-            raise NotImplementedError()
+            g = dak_pwl(_blocked_dak, name, x, weights, sample, histref=histref)
         elif weights is not None and sample is None:
-            raise NotImplementedError()
+            g = dak_pwl(_blocked_dak, name, x, weights, None, histref=histref)
         elif weights is None and sample is not None:
-            raise NotImplementedError()
+            g = dak_pwl(_blocked_dak, name, x, None, sample, histref=histref)
         else:
-            g = dak_pwl(_blocked_dak, name, x, histref=histref)
+            g = dak_pwl(_blocked_dak, name, x, None, None, histref=histref)
 
     # Single object, not a dataframe
     elif len(data) == 1 and not data_is_df:
@@ -759,10 +843,21 @@ def _partitioned_histogram(
         if data_is_dak:
             from dask_awkward.lib.core import partitionwise_layer as dak_pwl
 
-            if weights is None and sample is None:
-                g = dak_pwl(_blocked_dak_ma, name, *data, histref=histref)
+            if weights is not None and sample is None:
+                g = dak_pwl(_blocked_dak_ma_w, name, *data, weights, histref=histref)
+            elif weights is not None and sample is not None:
+                g = dak_pwl(
+                    _blocked_dak_ma_w_s,
+                    name,
+                    *data,
+                    weights,
+                    sample,
+                    histref=histref,
+                )
+            elif weights is None and sample is not None:
+                g = dak_pwl(_blocked_dak_ma_s, name, *data, sample, histref=histref)
             else:
-                raise NotImplementedError()
+                g = dak_pwl(_blocked_dak_ma, name, *data, histref=histref)
         # Not an awkward array collection
         elif weights is not None and sample is not None:
             g = _partitionwise(
