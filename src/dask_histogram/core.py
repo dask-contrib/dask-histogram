@@ -649,7 +649,7 @@ def _reduction(
     from dask.bag.core import empty_safe_aggregate
 
     if split_every is None:
-        split_every = 4
+        split_every = dask.config.get("histogram.aggregation.split_every", 8)
     if split_every is False:
         split_every = ph.npartitions
 

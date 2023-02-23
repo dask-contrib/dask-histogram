@@ -1,0 +1,5 @@
+histogram:
+
+  aggregation:
+
+    split_every: 8

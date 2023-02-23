@@ -1,4 +1,4 @@
-"""Histogramming with Dask collections."""
+from dask_histogram import config  # isort:skip; load dask-histogram config
 
 import boost_histogram.axis as _axis
 import boost_histogram.storage as _storage
