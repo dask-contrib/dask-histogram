@@ -102,3 +102,4 @@ ignore = "D105"
 
 [tool.ruff]
 ignore = ["E501"]
+per-file-ignores = {"__init__.py" = ["E402", "F401"]}
