@@ -60,10 +60,13 @@ def _blocked_sa(
     histref: bh.Histogram | None = None,
 ) -> bh.Histogram:
     """Blocked calculation; single argument; unweighted; no sample."""
+    theref = histref
+    if isinstance(histref, Delayed):
+        theref = histref.compute()
     if data.ndim == 1:
-        return clone(histref).fill(data)
+        return clone(theref).fill(data)
     elif data.ndim == 2:
-        return clone(histref).fill(*(data.T))
+        return clone(theref).fill(*(data.T))
     else:
         raise ValueError("Data must be one or two dimensional.")
 
@@ -75,10 +78,13 @@ def _blocked_sa_s(
     histref: bh.Histogram | None = None,
 ) -> bh.Histogram:
     """Blocked calculation; single argument; unweighted; with sample."""
+    theref = histref
+    if isinstance(histref, Delayed):
+        theref = histref.compute()
     if data.ndim == 1:
-        return clone(histref).fill(data, sample=sample)
+        return clone(theref).fill(data, sample=sample)
     elif data.ndim == 2:
-        return clone(histref).fill(*(data.T), sample=sample)
+        return clone(theref).fill(*(data.T), sample=sample)
     else:
         raise ValueError("Data must be one or two dimensional.")
 
@@ -90,10 +96,13 @@ def _blocked_sa_w(
     histref: bh.Histogram | None = None,
 ) -> bh.Histogram:
     """Blocked calculation; single argument; weighted; no sample."""
+    theref = histref
+    if isinstance(histref, Delayed):
+        theref = histref.compute()
     if data.ndim == 1:
-        return clone(histref).fill(data, weight=weights)
+        return clone(theref).fill(data, weight=weights)
     elif data.ndim == 2:
-        return clone(histref).fill(*(data.T), weight=weights)
+        return clone(theref).fill(*(data.T), weight=weights)
     else:
         raise ValueError("Data must be one or two dimensional.")
 
@@ -106,10 +115,13 @@ def _blocked_sa_w_s(
     histref: bh.Histogram | None = None,
 ) -> bh.Histogram:
     """Blocked calculation; single argument; weighted; with sample."""
+    theref = histref
+    if isinstance(histref, Delayed):
+        theref = histref.compute()
     if data.ndim == 1:
-        return clone(histref).fill(data, weight=weights, sample=sample)
+        return clone(theref).fill(data, weight=weights, sample=sample)
     elif data.ndim == 2:
-        return clone(histref).fill(*(data.T), weight=weights, sample=sample)
+        return clone(theref).fill(*(data.T), weight=weights, sample=sample)
     else:
         raise ValueError("Data must be one or two dimensional.")
 
@@ -119,7 +131,10 @@ def _blocked_ma(
     histref: bh.Histogram | None = None,
 ) -> bh.Histogram:
     """Blocked calculation; multiargument; unweighted; no sample."""
-    return clone(histref).fill(*data)
+    theref = histref
+    if isinstance(histref, Delayed):
+        theref = histref.compute()
+    return clone(theref).fill(*data)
 
 
 def _blocked_ma_s(
@@ -127,9 +142,12 @@ def _blocked_ma_s(
     histref: bh.Histogram | None = None,
 ) -> bh.Histogram:
     """Blocked calculation; multiargument; unweighted; with sample."""
+    theref = histref
+    if isinstance(histref, Delayed):
+        theref = histref.compute()
     sample = data[-1]
     data = data[:-1]
-    return clone(histref).fill(*data, sample=sample)
+    return clone(theref).fill(*data, sample=sample)
 
 
 def _blocked_ma_w(
@@ -137,9 +155,12 @@ def _blocked_ma_w(
     histref: bh.Histogram | None = None,
 ) -> bh.Histogram:
     """Blocked calculation; multiargument; weighted; no sample."""
+    theref = histref
+    if isinstance(histref, Delayed):
+        theref = histref.compute()
     weights = data[-1]
     data = data[:-1]
-    return clone(histref).fill(*data, weight=weights)
+    return clone(theref).fill(*data, weight=weights)
 
 
 def _blocked_ma_w_s(
@@ -147,10 +168,13 @@ def _blocked_ma_w_s(
     histref: bh.Histogram | None = None,
 ) -> bh.Histogram:
     """Blocked calculation; multiargument; weighted; with sample."""
+    theref = histref
+    if isinstance(histref, Delayed):
+        theref = histref.compute()
     weights = data[-2]
     sample = data[-1]
     data = data[:-2]
-    return clone(histref).fill(*data, weight=weights, sample=sample)
+    return clone(theref).fill(*data, weight=weights, sample=sample)
 
 
 def _blocked_df(
@@ -158,7 +182,10 @@ def _blocked_df(
     *,
     histref: bh.Histogram | None = None,
 ) -> bh.Histogram:
-    return clone(histref).fill(*(data[c] for c in data.columns), weight=None)
+    theref = histref
+    if isinstance(histref, Delayed):
+        theref = histref.compute()
+    return clone(theref).fill(*(data[c] for c in data.columns), weight=None)
 
 
 def _blocked_df_s(
@@ -167,7 +194,10 @@ def _blocked_df_s(
     *,
     histref: bh.Histogram | None = None,
 ) -> bh.Histogram:
-    return clone(histref).fill(*(data[c] for c in data.columns), sample=sample)
+    theref = histref
+    if isinstance(histref, Delayed):
+        theref = histref.compute()
+    return clone(theref).fill(*(data[c] for c in data.columns), sample=sample)
 
 
 def _blocked_df_w(
@@ -177,7 +207,10 @@ def _blocked_df_w(
     histref: bh.Histogram | None = None,
 ) -> bh.Histogram:
     """Blocked calculation; single argument; weighted; no sample."""
-    return clone(histref).fill(*(data[c] for c in data.columns), weight=weights)
+    theref = histref
+    if isinstance(histref, Delayed):
+        theref = histref.compute()
+    return clone(theref).fill(*(data[c] for c in data.columns), weight=weights)
 
 
 def _blocked_df_w_s(
@@ -188,7 +221,10 @@ def _blocked_df_w_s(
     histref: bh.Histogram | None = None,
 ) -> bh.Histogram:
     """Blocked calculation; single argument; weighted; with sample."""
-    return clone(histref).fill(
+    theref = histref
+    if isinstance(histref, Delayed):
+        theref = histref.compute()
+    return clone(theref).fill(
         *(data[c] for c in data.columns), weight=weights, sample=sample
     )
 
@@ -217,6 +253,11 @@ def _blocked_dak(
         thesample.layout._touch_data(recursive=True)
         thesample = sample.layout.form.length_zero_array()
 
+    if isinstance(histref, Delayed):
+        return clone(histref.compute()).fill(
+            thedata, weight=theweights, sample=thesample
+        )
+
     return clone(histref).fill(thedata, weight=theweights, sample=thesample)
 
 
@@ -231,6 +272,9 @@ def _blocked_dak_ma(
         if isinstance(adatum, ak.Array) and ak.backend(adatum) == "typetracer":
             adatum.layout._touch_data(recursive=True)
             thedata[idata] = adatum.layout.form.length_zero_array()
+
+    if isinstance(histref, Delayed):
+        return clone(histref.compute()).fill(*tuple(thedata))
 
     return clone(histref).fill(*tuple(thedata))
 
@@ -252,6 +296,9 @@ def _blocked_dak_ma_w(
         theweights.layout._touch_data(recursive=True)
         theweights = data[-1].layout.form.length_zero_array()
 
+    if isinstance(histref, Delayed):
+        return clone(histref.compute()).fill(*tuple(thedata), weight=theweights)
+
     return clone(histref).fill(*tuple(thedata), weight=theweights)
 
 
@@ -271,6 +318,9 @@ def _blocked_dak_ma_s(
     if isinstance(thesample, ak.Array) and ak.backend(thesample) == "typetracer":
         thesample.layout._touch_data(recursive=True)
         thesample = data[-1].layout.form.length_zero_array()
+
+    if isinstance(histref, Delayed):
+        return clone(histref.compute()).fill(*tuple(thedata), sample=thesample)
 
     return clone(histref).fill(*tuple(thedata), sample=thesample)
 
@@ -296,6 +346,11 @@ def _blocked_dak_ma_w_s(
     if isinstance(thesample, ak.Array) and ak.backend(thesample) == "typetracer":
         thesample.layout._touch_data(recursive=True)
         thesample = data[-1].layout.form.length_zero_array()
+
+    if isinstance(histref, Delayed):
+        return clone(histref.compute()).fill(
+            *tuple(thedata), weight=theweights, sample=thesample
+        )
 
     return clone(histref).fill(*tuple(thedata), weight=theweights, sample=thesample)
 
@@ -782,7 +837,7 @@ def _partitionwise(
 
 def _partitioned_histogram(
     *data: DaskCollection,
-    histref: bh.Histogram,
+    histref: bh.Histogram | Delayed,
     weights: DaskCollection | None = None,
     sample: DaskCollection | None = None,
     split_every: int | None = None,
@@ -903,20 +958,24 @@ def to_dask_array(agghist: AggHistogram, flow: bool = False, dd: bool = False) -
     """
     from dask.array import Array, asarray
 
+    histref = agghist.histref
+    if isinstance(agghist.histref, Delayed):
+        histref = agghist.histref.compute()
+
     name = f"to-dask-array-{tokenize(agghist)}"
-    zeros = (0,) * agghist.histref.ndim
+    zeros = (0,) * histref.ndim
     dsk = {(name, *zeros): (lambda x, f: x.to_numpy(flow=f)[0], agghist.name, flow)}
     graph = HighLevelGraph.from_collections(name, dsk, dependencies=(agghist,))
-    shape = agghist.histref.shape
+    shape = histref.shape
     if flow:
         shape = tuple(i + 2 for i in shape)
-    int_storage = agghist.histref.storage_type in (
+    int_storage = histref.storage_type in (
         bh.storage.Int64,
         bh.storage.AtomicInt64,
     )
     dt = int if int_storage else float
     c = Array(graph, name=name, shape=shape, chunks=shape, dtype=dt)
-    axes = agghist.histref.axes
+    axes = histref.axes
 
     if flow:
         edges = [
@@ -970,7 +1029,7 @@ _itruediv = BinaryOpAgg(operator.itruediv, name="div")
 
 def factory(
     *data: DaskCollection,
-    histref: bh.Histogram | None = None,
+    histref: bh.Histogram | Delayed | None = None,
     axes: Sequence[bh.axis.Axis] | None = None,
     storage: bh.storage.Storage | None = None,
     weights: DaskCollection | None = None,
@@ -997,7 +1056,7 @@ def factory(
           creating multidimensional histograms.
         * Multiple one dimensional dask arrays or Series: for creating
           multidimensional histograms.
-    histref : bh.Histogram, optional
+    histref : bh.Histogram, or dask.Delayed to a bh.Histogram, optional
         A reference histogram object, required if `axes` is not used.
         The dimensionality of `histref` must be compatible with the
         input data.
@@ -1091,7 +1150,7 @@ def factory(
 
 def partitioned_factory(
     *data: DaskCollection,
-    histref: bh.Histogram | None = None,
+    histref: bh.Histogram | Delayed | None = None,
     axes: Sequence[bh.axis.Axis] | None = None,
     storage: bh.storage.Storage | None = None,
     weights: DaskCollection | None = None,

@@ -88,6 +88,12 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
         self._dask_name: str | None = None
         self._dask: HighLevelGraph | None = None
 
+        self._histref = delayed(
+            bh.Histogram(*axes, storage=storage, metadata=metadata),
+            name=f"histref-{tokenize(*axes, storage=storage, metadata=metadata)}",
+            pure=True,
+        ).persist()
+
     def __iadd__(self, other):
         if self.staged_fills() and other.staged_fills():
             self._staged += other._staged
@@ -244,7 +250,7 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
         else:
             raise ValueError(f"Cannot interpret input data: {args}")
 
-        new_fill = factory(*args, histref=self, weights=weight, sample=sample)
+        new_fill = factory(*args, histref=self._histref, weights=weight, sample=sample)
         if self._staged is None:
             self._staged = new_fill
         else:
