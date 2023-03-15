@@ -87,6 +87,11 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
         self._staged: AggHistogram | None = None
         self._dask_name: str | None = None
         self._dask: HighLevelGraph | None = None
+        self._histref = (
+            axes if isinstance(axes, tuple) else (axes,),
+            storage,
+            metadata,
+        )
 
     def __iadd__(self, other):
         if self.staged_fills() and other.staged_fills():
@@ -244,7 +249,7 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
         else:
             raise ValueError(f"Cannot interpret input data: {args}")
 
-        new_fill = factory(*args, histref=self, weights=weight, sample=sample)
+        new_fill = factory(*args, histref=self._histref, weights=weight, sample=sample)
         if self._staged is None:
             self._staged = new_fill
         else:

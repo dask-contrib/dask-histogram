@@ -30,9 +30,10 @@ def test_1d_array(weights, sample):
     if sample is not None:
         sample = da.random.uniform(2, 8, size=(2000,), chunks=(250,))
     store = _gen_storage(weights, sample)
-    h = bh.Histogram(bh.axis.Regular(10, -3, 3), storage=store)
+    histref = ((bh.axis.Regular(10, -3, 3),), store, None)
+    h = bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     x = da.random.standard_normal(size=(2000,), chunks=(250,))
-    dh = dhc.factory(x, histref=h, weights=weights, split_every=4, sample=sample)
+    dh = dhc.factory(x, histref=histref, weights=weights, split_every=4, sample=sample)
     h.fill(
         x.compute(),
         weight=weights.compute() if weights is not None else None,
@@ -57,8 +58,9 @@ def test_array_input(weights, shape, sample):
     if sample:
         sample = da.random.uniform(3, 9, size=(2000,), chunks=(200,))
     store = _gen_storage(weights, sample)
-    h = bh.Histogram(*axes, storage=store)
-    dh = dhc.factory(x, histref=h, weights=weights, split_every=4, sample=sample)
+    histref = (axes, store, None)
+    h = bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
+    dh = dhc.factory(x, histref=histref, weights=weights, split_every=4, sample=sample)
     h.fill(
         *xc,
         weight=weights.compute() if weights is not None else None,
@@ -69,16 +71,24 @@ def test_array_input(weights, shape, sample):
 
 @pytest.mark.parametrize("weights", [True, None])
 def test_multi_array(weights):
+    histref = (
+        (
+            bh.axis.Regular(10, -3, 3),
+            bh.axis.Regular(10, -3, 3),
+        ),
+        bh.storage.Weight(),
+        None,
+    )
     h = bh.Histogram(
-        bh.axis.Regular(10, -3, 3),
-        bh.axis.Regular(10, -3, 3),
-        storage=bh.storage.Weight(),
+        *histref[0],
+        storage=histref[1],
+        metadata=histref[2],
     )
     if weights is not None:
         weights = da.random.uniform(size=(2000,), chunks=(250,))
     x = da.random.standard_normal(size=(2000,), chunks=(250,))
     y = da.random.standard_normal(size=(2000,), chunks=(250,))
-    dh = dhc.factory(x, y, histref=h, weights=weights, split_every=4)
+    dh = dhc.factory(x, y, histref=histref, weights=weights, split_every=4)
     h.fill(
         x.compute(),
         y.compute(),
@@ -89,16 +99,24 @@ def test_multi_array(weights):
 
 @pytest.mark.parametrize("weights", [True, None])
 def test_nd_array(weights):
+    histref = (
+        (
+            bh.axis.Regular(10, 0, 1),
+            bh.axis.Regular(10, 0, 1),
+            bh.axis.Regular(10, 0, 1),
+        ),
+        bh.storage.Weight(),
+        None,
+    )
     h = bh.Histogram(
-        bh.axis.Regular(10, 0, 1),
-        bh.axis.Regular(10, 0, 1),
-        bh.axis.Regular(10, 0, 1),
-        storage=bh.storage.Weight(),
+        *histref[0],
+        storage=histref[1],
+        metadata=histref[2],
     )
     if weights is not None:
         weights = da.random.uniform(0, 1, size=(2000,), chunks=(250,))
     x = da.random.uniform(0, 1, size=(2000, 3), chunks=(250, 3))
-    dh = dhc.factory(x, histref=h, weights=weights, split_every=4)
+    dh = dhc.factory(x, histref=histref, weights=weights, split_every=4)
     h.fill(
         *(x.compute().T),
         weight=weights.compute() if weights is not None else None,
@@ -111,17 +129,21 @@ def test_df_input(weights):
     pytest.importorskip("pandas")
     import dask.datasets as dds
 
-    h = bh.Histogram(
-        bh.axis.Regular(12, 0, 1),
-        bh.axis.Regular(12, 0, 1),
-        storage=bh.storage.Weight(),
+    histref = (
+        (
+            bh.axis.Regular(12, 0, 1),
+            bh.axis.Regular(12, 0, 1),
+        ),
+        bh.storage.Weight(),
+        None,
     )
+    h = bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     df = dds.timeseries(freq="600s", partition_freq="2d")
     dfc = df.compute()
     if weights is not None:
         weights = da.fabs(df["y"].to_dask_array())
     df = df[["x", "y"]]
-    dh = dhc.factory(df, histref=h, weights=weights, split_every=200)
+    dh = dhc.factory(df, histref=histref, weights=weights, split_every=200)
     h.fill(
         *(dfc[["x", "y"]].to_numpy().T),
         weight=weights.compute() if weights is not None else None,
@@ -143,7 +165,9 @@ def test_to_dask_array(weights, shape):
         da.random.uniform(size=(2000,), chunks=(200,)) if weights is not None else None
     )
     h = bh.Histogram(*axes, storage=bh.storage.Weight())
-    dh = dhc.factory(x, histref=h, weights=weights, split_every=4)
+    dh = dhc.factory(
+        x, histref=(axes, bh.storage.Weight(), None), weights=weights, split_every=4
+    )
     h.fill(*xc, weight=weights.compute() if weights is not None else None)
     c, _ = dh.to_dask_array(flow=False, dd=True)
     dau.assert_eq(c, h.to_numpy()[0])
@@ -155,12 +179,13 @@ def gen_hist_1D(
     size: tuple[int, ...] = (1000,),
     chunks: tuple[int, ...] = (250,),
 ) -> dhc.AggHistogram:
-    hr = bh.Histogram(
-        bh.axis.Regular(bins, range[0], range[1]),
-        storage=bh.storage.Weight(),
+    histref = (
+        (bh.axis.Regular(bins, range[0], range[1]),),
+        bh.storage.Weight(),
+        None,
     )
     x = da.random.standard_normal(size=size, chunks=chunks)
-    return dhc.factory(x, histref=hr)
+    return dhc.factory(x, histref=histref)
 
 
 @delayed
@@ -288,16 +313,24 @@ def test_bad_weight_structure():
 
 @pytest.mark.parametrize("weights", [True, None])
 def test_agghist_to_delayed(weights):
+    histref = (
+        (
+            bh.axis.Regular(10, 0, 1),
+            bh.axis.Regular(10, 0, 1),
+            bh.axis.Regular(10, 0, 1),
+        ),
+        bh.storage.Weight(),
+        None,
+    )
     h = bh.Histogram(
-        bh.axis.Regular(10, 0, 1),
-        bh.axis.Regular(10, 0, 1),
-        bh.axis.Regular(10, 0, 1),
-        storage=bh.storage.Weight(),
+        *histref[0],
+        storage=histref[1],
+        metadata=histref[2],
     )
     if weights is not None:
         weights = da.random.uniform(0, 1, size=(2000,), chunks=(250,))
     x = da.random.uniform(0, 1, size=(2000, 3), chunks=(250, 3))
-    dh = dhc.factory(x, histref=h, weights=weights, split_every=4)
+    dh = dhc.factory(x, histref=histref, weights=weights, split_every=4)
     h.fill(
         *(x.compute().T),
         weight=weights.compute() if weights is not None else None,
