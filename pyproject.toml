@@ -58,8 +58,8 @@ Homepage = "https://github.com/dask-contrib/dask-histogram"
 Documentation = "https://dask-histogram.readthedocs.io/"
 "Bug Tracker" = "https://github.com/dask-contrib/dask-histogram/issues"
 
-[project.entry-points."dask.sizeof"]
-dask_histogram = "dask_histogram.sizeof:register"
+# [project.entry-points."dask.sizeof"]
+# dask_histogram = "dask_histogram.sizeof:register"
 
 [tool.hatch.version]
 source = "vcs"

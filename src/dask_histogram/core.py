@@ -6,6 +6,7 @@ import operator
 from typing import TYPE_CHECKING, Any, Callable, Hashable, Mapping, Sequence
 
 import boost_histogram as bh
+from boost_histogram.axis import Axis
 import dask.config
 import numpy as np
 from dask.base import DaskMethodsMixin, dont_optimize, is_dask_collection, tokenize
@@ -345,12 +346,29 @@ class AggHistogram(DaskMethodsMixin):
         self,
         dsk: HighLevelGraph,
         name: str,
-        histref: bh.Histogram,
+        histref: bh.Histogram | None = None,
         layer: Any | None = None,
+        axes: tuple[Axis, ...] | None = None,
+        storage_type: Any | None = None,
+        metadata: Any | None = None,
     ) -> None:
         self._dask: HighLevelGraph = dsk
         self._name: str = name
-        self._meta: bh.Histogram = histref
+
+        if histref is not None:
+            self._meta: bh.Histogram = histref
+            self._axes = histref.axes
+            self._storage_type = histref.storage_type
+            self._metadata = histref.metadata
+        else:
+            self._axes = axes
+            self._storage_type = storage_type
+            self._metadata = metadata
+            self._meta = bh.Histogram(
+                *axes,
+                storage=storage_type(),
+                metadata=metadata,
+            )
 
         # NOTE: Layer only used by `Item.from_delayed`, to handle
         # Delayed objects created by other collections. e.g.:
@@ -444,7 +462,18 @@ class AggHistogram(DaskMethodsMixin):
     __repr__ = __str__
 
     def __reduce__(self):
-        return (AggHistogram, (self._dask, self._name, self._meta))
+        return (
+            AggHistogram,
+            (
+                self._dask,
+                self._name,
+                None,
+                self._layer,
+                self._axes,
+                self._storage_type,
+                self._metadata,
+            ),
+        )
 
     def to_dask_array(self, flow: bool = False, dd: bool = False) -> Any:
         """Convert histogram object to dask.array form.
@@ -557,12 +586,32 @@ class PartitionedHistogram(DaskMethodsMixin):
     """
 
     def __init__(
-        self, dsk: HighLevelGraph, name: str, npartitions: int, histref: bh.Histogram
+        self,
+        dsk: HighLevelGraph,
+        name: str,
+        npartitions: int,
+        histref: bh.Histogram | None = None,
+        axes: tuple[Axis, ...] | None = None,
+        storage_type: Any | None = None,
+        metadata: Any | None = None,
     ) -> None:
         self._dask: HighLevelGraph = dsk
         self._name: str = name
         self._npartitions: int = npartitions
-        self._meta: bh.Histogram = histref
+        if histref is not None:
+            self._meta: bh.Histogram = histref
+            self._axes = histref.axes
+            self._storage_type = histref.storage_type
+            self._metadata = histref.metadata
+        else:
+            self._axes = axes
+            self._storage_type = storage_type
+            self._metadata = metadata
+            self._meta = bh.Histogram(
+                *axes,
+                storage=storage_type(),
+                metadata=metadata,
+            )
 
     @property
     def name(self) -> str:
@@ -611,6 +660,9 @@ class PartitionedHistogram(DaskMethodsMixin):
 
     __repr__ = __str__
 
+    def _rebuild_histref(axes, storage, metadata):
+        return bh.Histogram(*axes, storage=storage, metadata=metadata)
+
     def __reduce__(self):
         return (
             PartitionedHistogram,
@@ -618,7 +670,10 @@ class PartitionedHistogram(DaskMethodsMixin):
                 self._dask,
                 self._name,
                 self._npartitions,
-                self._meta,
+                None,
+                self._axes,
+                self._storage_type,
+                self._metadata,
             ),
         )
 
