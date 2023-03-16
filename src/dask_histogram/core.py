@@ -660,9 +660,6 @@ class PartitionedHistogram(DaskMethodsMixin):
 
     __repr__ = __str__
 
-    def _rebuild_histref(axes, storage, metadata):
-        return bh.Histogram(*axes, storage=storage, metadata=metadata)
-
     def __reduce__(self):
         return (
             PartitionedHistogram,
