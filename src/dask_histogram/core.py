@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import operator
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Callable, Hashable, Mapping, Sequence
 
 import boost_histogram as bh
