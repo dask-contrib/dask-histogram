@@ -26,5 +26,6 @@ hist = pytest.importorskip("hist")
 #     # we don't register this one (should be default)
 #     assert dask.sizeof.sizeof.dispatch(bh.axis.Regular) is dask.sizeof.sizeof_default
 
+
 def test_nothing():
     assert True
