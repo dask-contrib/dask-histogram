@@ -431,9 +431,9 @@ class AggHistogram(DaskMethodsMixin):
         return self._meta
 
     @property
-    def _storage_type(self) -> type[bh.storage.Storage]:
+    def storage_type(self) -> type[bh.storage.Storage]:
         """Storage type of the histogram."""
-        return self.histref.storage_type
+        return self._storage_type
 
     @property
     def ndim(self) -> int:
