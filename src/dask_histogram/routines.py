@@ -442,7 +442,7 @@ def histogramdd(
     bins, range = normalize_bins_range(ndim, bins, range)
 
     # Create the axes based on the bins and range values.
-    axes: list[Any] = []
+    axes: list[bh.axis.Axis] = []
     for _, (b, r) in enumerate(zip(bins, range)):
         if r is None:
             axes.append(bh.axis.Variable(b))  # type: ignore
@@ -452,7 +452,7 @@ def histogramdd(
     # Finally create the histogram object.
     ah = factory(
         *a,
-        axes=axes,
+        axes=bh.axis.AxesTuple(axes),
         storage=storage,
         weights=weights,
         split_every=split_every,

@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 import operator
 from typing import TYPE_CHECKING, Any, Callable, Hashable, Mapping, Sequence
 
 import boost_histogram as bh
 import dask.config
 import numpy as np
-from boost_histogram.axis import Axis
+from boost_histogram.axis import AxesTuple
+from boost_histogram.storage import Storage
 from dask.base import DaskMethodsMixin, dont_optimize, is_dask_collection, tokenize
 from dask.blockwise import BlockwiseDep, blockwise, fuse_roots, optimize_blockwise
 from dask.context import globalmethod
@@ -212,11 +214,11 @@ def _blocked_dak(
 
     if isinstance(theweights, ak.Array) and ak.backend(theweights) == "typetracer":
         theweights.layout._touch_data(recursive=True)
-        theweights = weights.layout.form.length_zero_array()
+        theweights = weights.layout.form.length_zero_array()  # type: ignore
 
     if isinstance(thesample, ak.Array) and ak.backend(thesample) == "typetracer":
         thesample.layout._touch_data(recursive=True)
-        thesample = sample.layout.form.length_zero_array()
+        thesample = sample.layout.form.length_zero_array()  # type: ignore
 
     return clone(histref).fill(thedata, weight=theweights, sample=thesample)
 
@@ -348,9 +350,9 @@ class AggHistogram(DaskMethodsMixin):
         name: str,
         histref: bh.Histogram | None = None,
         layer: Any | None = None,
-        axes: tuple[Axis, ...] | None = None,
+        axes: AxesTuple | None = None,
         storage_type: Any | None = None,
-        metadata: Any | None = None,
+        bh_metadata: Any | None = None,
     ) -> None:
         self._dask: HighLevelGraph = dsk
         self._name: str = name
@@ -359,15 +361,15 @@ class AggHistogram(DaskMethodsMixin):
             self._meta: bh.Histogram = histref
             self._axes = histref.axes
             self._storage_type = histref.storage_type
-            self._metadata = histref.metadata
-        else:
+            self._bh_metadata = histref.metadata
+        if axes is not None and storage_type is not None:
             self._axes = axes
             self._storage_type = storage_type
-            self._metadata = metadata
+            self._bh_metadata = bh_metadata
             self._meta = bh.Histogram(
                 *axes,
                 storage=storage_type(),
-                metadata=metadata,
+                metadata=bh_metadata,
             )
 
         # NOTE: Layer only used by `Item.from_delayed`, to handle
@@ -471,7 +473,7 @@ class AggHistogram(DaskMethodsMixin):
                 self._layer,
                 self._axes,
                 self._storage_type,
-                self._metadata,
+                self._bh_metadata,
             ),
         )
 
@@ -591,9 +593,9 @@ class PartitionedHistogram(DaskMethodsMixin):
         name: str,
         npartitions: int,
         histref: bh.Histogram | None = None,
-        axes: tuple[Axis, ...] | None = None,
+        axes: AxesTuple | None = None,
         storage_type: Any | None = None,
-        metadata: Any | None = None,
+        bh_metadata: Any | None = None,
     ) -> None:
         self._dask: HighLevelGraph = dsk
         self._name: str = name
@@ -602,15 +604,15 @@ class PartitionedHistogram(DaskMethodsMixin):
             self._meta: bh.Histogram = histref
             self._axes = histref.axes
             self._storage_type = histref.storage_type
-            self._metadata = histref.metadata
-        else:
+            self._bh_metadata = histref.metadata
+        if axes is not None and storage_type is not None:
             self._axes = axes
             self._storage_type = storage_type
-            self._metadata = metadata
+            self._bh_metadata = bh_metadata
             self._meta = bh.Histogram(
                 *axes,
                 storage=storage_type(),
-                metadata=metadata,
+                metadata=bh_metadata,
             )
 
     @property
@@ -670,7 +672,7 @@ class PartitionedHistogram(DaskMethodsMixin):
                 None,
                 self._axes,
                 self._storage_type,
-                self._metadata,
+                self._bh_metadata,
             ),
         )
 
@@ -1022,8 +1024,8 @@ _itruediv = BinaryOpAgg(operator.itruediv, name="div")
 
 def factory(
     *data: DaskCollection,
-    histref: bh.Histogram | None = None,
-    axes: Sequence[bh.axis.Axis] | None = None,
+    histref: bh.Histogram | bh.Histogram | None = None,
+    axes: AxesTuple | None = None,
     storage: bh.storage.Storage | None = None,
     weights: DaskCollection | None = None,
     sample: DaskCollection | None = None,
@@ -1144,7 +1146,7 @@ def factory(
 def partitioned_factory(
     *data: DaskCollection,
     histref: bh.Histogram | None = None,
-    axes: Sequence[bh.axis.Axis] | None = None,
+    axes: AxesTuple | None = None,
     storage: bh.storage.Storage | None = None,
     weights: DaskCollection | None = None,
     sample: DaskCollection | None = None,

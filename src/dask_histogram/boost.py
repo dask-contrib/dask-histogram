@@ -244,7 +244,13 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
         else:
             raise ValueError(f"Cannot interpret input data: {args}")
 
-        new_fill = factory(*args, histref=self, weights=weight, sample=sample)
+        new_fill = factory(
+            *args,
+            axes=self.axes,
+            storage=self.storage_type(),
+            weights=weight,
+            sample=sample,
+        )
         if self._staged is None:
             self._staged = new_fill
         else:
