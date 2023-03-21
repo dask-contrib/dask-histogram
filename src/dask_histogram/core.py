@@ -3,14 +3,12 @@
 from __future__ import annotations
 
 import operator
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Callable, Hashable, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Callable, Hashable, Mapping
 
 import boost_histogram as bh
 import dask.config
 import numpy as np
 from boost_histogram.axis import AxesTuple
-from boost_histogram.storage import Storage
 from dask.base import DaskMethodsMixin, dont_optimize, is_dask_collection, tokenize
 from dask.blockwise import BlockwiseDep, blockwise, fuse_roots, optimize_blockwise
 from dask.context import globalmethod
