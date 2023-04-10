@@ -688,14 +688,12 @@ def _dependencies(
     weights: DaskCollection | None = None,
     sample: DaskCollection | None = None,
 ) -> tuple[DaskCollection, ...]:
-    dask_args = tuple(arg for arg in args if is_dask_collection(arg))
-    if weights is not None and sample is None:
-        return (*dask_args, weights)
-    elif weights is None and sample is not None:
-        return (*dask_args, sample)
-    elif weights is not None and sample is not None:
-        return (*dask_args, weights, sample)
-    return dask_args
+    dask_args = [arg for arg in args if is_dask_collection(arg)]
+    if is_dask_collection(weights):
+        dask_args.append(weights)
+    if is_dask_collection(sample):
+        dask_args.append(sample)
+    return tuple(dask_args)
 
 
 def _weight_sample_check(
@@ -793,7 +791,8 @@ def _partitioned_histogram(
         dask_data = data
     data_is_df = is_dataframe_like(dask_data[0])
     data_is_dak = is_dask_awkward_like(dask_data[0])
-    _weight_sample_check(*dask_data, weights=weights)
+    if is_dask_collection(weights):
+        _weight_sample_check(*dask_data, weights=weights)
 
     # Single awkward array object.
     if len(data) == 1 and data_is_dak:
