@@ -306,3 +306,15 @@ def test_agghist_to_delayed(weights):
     np.testing.assert_allclose(
         h.counts(flow=True), delayed_hist.compute().counts(flow=True)
     )
+
+
+def test_float_weight():
+    x = da.random.uniform(size=(1000,), chunks=(250,))
+    xc = x.compute()
+    ref = bh.Histogram(bh.axis.Regular(10, 0, 1), storage=bh.storage.Weight())
+    ref.fill(xc, weight=0.5)
+    h = dhc.factory(x, weights=0.5, histref=ref)
+    np.testing.assert_allclose(
+        ref.counts(flow=True),
+        h.compute().counts(flow=True),
+    )
