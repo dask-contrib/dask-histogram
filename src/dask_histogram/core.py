@@ -16,7 +16,6 @@ from dask.delayed import Delayed
 from dask.highlevelgraph import HighLevelGraph
 from dask.threaded import get as tget
 from dask.utils import is_dataframe_like, key_split
-from tlz import partition_all
 
 if TYPE_CHECKING:
     from dask.blockwise import Blockwise
@@ -729,8 +728,6 @@ def _reduction(
     ph: PartitionedHistogram,
     split_every: int | None = None,
 ) -> AggHistogram:
-    from dask.bag.core import empty_safe_aggregate
-
     if split_every is None:
         split_every = dask.config.get("histogram.aggregation.split_every", 8)
     if split_every is False:
@@ -739,30 +736,18 @@ def _reduction(
     token = tokenize(ph, sum, split_every)
     name = f"hist-aggregate-{token}"
     k = ph.npartitions
-    b = ph.name
-    d = 0
-    dsk = {}
-    while k > split_every:
-        c = f"{name}{d}"
-        for i, inds in enumerate(partition_all(split_every, range(k))):
-            dsk[(c, i)] = (
-                empty_safe_aggregate,
-                sum,
-                [(b, j) for j in inds],
-                False,
-            )
-        k = i + 1
-        b = c
-        d += 1
-    dsk[(name, 0)] = (
-        empty_safe_aggregate,
-        sum,
-        [(b, j) for j in range(k)],
-        True,
+
+    red = dask.layers.DataFrameTreeReduction(
+        name=name,
+        name_input=ph.name,
+        npartitions_input=k,
+        concat_func=sum,
+        tree_node_func=sum,
+        split_every=split_every,
     )
 
-    dsk[name] = dsk.pop((name, 0))  # type: ignore
-    g = HighLevelGraph.from_collections(name, dsk, dependencies=[ph])
+    g = HighLevelGraph.from_collections(name, red, dependencies=[ph])
+
     return AggHistogram(g, name, histref=ph.histref)
 
 
