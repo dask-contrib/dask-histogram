@@ -761,33 +761,6 @@ def _reduction(
 
     return AggHistogram(graph, name_agg, histref=ph.histref)
 
-    # k = ph.npartitions
-    # b = ph.name
-    # d = 0
-    # dsk = {}
-    # while k > split_every:
-    #     c = f"{name}{d}"
-    #     for i, inds in enumerate(partition_all(split_every, range(k))):
-    #         dsk[(c, i)] = (
-    #             empty_safe_aggregate,
-    #             sum,
-    #             [(b, j) for j in inds],
-    #             False,
-    #         )
-    #     k = i + 1
-    #     b = c
-    #     d += 1
-    # dsk[(name, 0)] = (
-    #     empty_safe_aggregate,
-    #     sum,
-    #     [(b, j) for j in range(k)],
-    #     True,
-    # )
-
-    # dsk[name] = dsk.pop((name, 0))  # type: ignore
-    # g = HighLevelGraph.from_collections(name, dsk, dependencies=[ph])
-    # return AggHistogram(g, name, histref=ph.histref)
-
 
 def _dependencies(
     *args: DaskCollection,
