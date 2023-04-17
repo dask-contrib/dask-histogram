@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import operator
-from typing import TYPE_CHECKING, Any, Callable, Hashable, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Callable, Hashable, Literal, Mapping, Sequence
 
 import boost_histogram as bh
 import dask.config
@@ -16,7 +16,6 @@ from dask.delayed import Delayed
 from dask.highlevelgraph import HighLevelGraph
 from dask.threaded import get as tget
 from dask.utils import is_dataframe_like, key_split
-from tlz import partition_all
 
 if TYPE_CHECKING:
     from dask.blockwise import Blockwise
