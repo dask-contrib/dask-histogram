@@ -733,7 +733,6 @@ def _reduction(
     ph: PartitionedHistogram,
     split_every: int | None = None,
 ) -> AggHistogram:
-
     from dask.layers import DataFrameTreeReduction
 
     if split_every is None:
@@ -759,9 +758,7 @@ def _reduction(
         tree_node_name=name_comb,
     )
 
-    graph = HighLevelGraph.from_collections(
-        name_agg, dftr, dependencies=(ph,)
-    )
+    graph = HighLevelGraph.from_collections(name_agg, dftr, dependencies=(ph,))
 
     return AggHistogram(graph, name_agg, histref=ph.histref)
 
