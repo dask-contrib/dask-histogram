@@ -746,11 +746,15 @@ def _reduction(
     name_comb = f"{label}-combine-{token}"
     name_agg = f"{label}-agg-{token}"
 
+    def hist_safe_sum(items):
+        safe_items = [item for item in items if not isinstance(item, tuple)]
+        return sum(safe_items)
+
     dftr = DataFrameTreeReduction(
         name=name_agg,
         name_input=ph.name,
         npartitions_input=ph.npartitions,
-        concat_func=sum,
+        concat_func=hist_safe_sum,
         tree_node_func=lambda x: x,
         finalize_func=lambda x: x,
         split_every=split_every,
