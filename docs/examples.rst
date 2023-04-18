@@ -24,7 +24,7 @@ Histogramming one dimensional data:
    >>> x = da.random.uniform(size=(1000,), chunks=(250,))
    >>> h = dh.factory(x, axes=(bh.axis.Regular(10, 0, 1),))
    >>> h
-   dask_histogram.AggHistogram<hist-aggregate, ndim=1, storage=Double()>
+   dask_histogram.AggHistogram<histreduce-agg, ndim=1, storage=Double()>
    >>> h.compute()
    Histogram(Regular(10, 0, 1), storage=Double()) # Sum: 1000.0
 
@@ -36,7 +36,7 @@ Using weights and a reference histogram:
    >>> ref = bh.Histogram(bh.axis.Regular(10, 0, 1), storage=bh.storage.Weight())
    >>> h = dh.factory(x, weights=w, histref=ref)
    >>> h
-   dask_histogram.AggHistogram<hist-aggregate, ndim=1, storage=Weight()>
+   dask_histogram.AggHistogram<histreduce-agg, ndim=1, storage=Weight()>
 
 dask.array/NumPy-like Interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -56,7 +56,7 @@ argument.
    >>> x = da.random.standard_normal(size=(10000, 2), chunks=(2000, 2))
    >>> h = dh.histogramdd(x, bins=(10, 10), range=((-3, 3), (-3, 3)), histogram=True)
    >>> h
-   dask_histogram.AggHistogram<hist-aggregate, ndim=2, storage=Double()>
+   dask_histogram.AggHistogram<histreduce-agg, ndim=2, storage=Double()>
 
 If the `histogram` argument is left as the default value (``None``) we
 get the return style of the ``dask.array`` module (which itself is
@@ -108,7 +108,7 @@ Note that the same histogram can be created with
 
    >>> h = dh.factory(df["a"], axes=(bh.axis.Regular(12, -3, 3),), weights=df["w"]) # doctest:+SKIP
    >>> h # doctest:+SKIP
-   dask_histogram.AggHistogram<hist-aggregate, ndim=1, storage=Double()>
+   dask_histogram.AggHistogram<histreduce-agg, ndim=1, storage=Double()>
 
 We can also grab multiple columns to histogram and return a
 :py:obj:`Histogram <dask_histogram.AggHistogram>` object:
@@ -122,7 +122,7 @@ We can also grab multiple columns to histogram and return a
    ...     histogram=True,
    ... )
    >>> h # doctest: +SKIP
-   dask_histogram.AggHistogram<hist-aggregate, ndim=3, storage=Double()>
+   dask_histogram.AggHistogram<histreduce-agg, ndim=3, storage=Double()>
 
 With weights and variable width bins:
 
@@ -137,7 +137,7 @@ With weights and variable width bins:
    ...     histogram=True,
    ... )
    >>> h # doctest:+SKIP
-   dask_histogram.AggHistogram<hist-aggregate, ndim=2, storage=Weight()>
+   dask_histogram.AggHistogram<histreduce-agg, ndim=2, storage=Weight()>
 
 boost-histogram Inheriting Example
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

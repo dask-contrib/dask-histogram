@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import operator
-from typing import TYPE_CHECKING, Any, Callable, Hashable, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Callable, Hashable, Literal, Mapping, Sequence
 
 import boost_histogram as bh
 import dask.config
@@ -16,7 +16,6 @@ from dask.delayed import Delayed
 from dask.highlevelgraph import HighLevelGraph
 from dask.threaded import get as tget
 from dask.utils import is_dataframe_like, key_split
-from tlz import partition_all
 
 if TYPE_CHECKING:
     from dask.blockwise import Blockwise
@@ -449,15 +448,15 @@ class AggHistogram(DaskMethodsMixin):
         return self._dask
 
     def __dask_keys__(self) -> list[str]:
-        return [self.name]
+        return [self.key]
 
     def __dask_layers__(self) -> tuple[str, ...]:
         if isinstance(self._dask, HighLevelGraph) and len(self._dask.layers) == 1:
             return tuple(self._dask.layers)
         return (self.name,)
 
-    def __dask_tokenize__(self) -> str:
-        return self.name
+    def __dask_tokenize__(self) -> Any:
+        return self.key
 
     def __dask_postcompute__(self) -> Any:
         return _finalize_agg_histogram, ()
@@ -489,6 +488,10 @@ class AggHistogram(DaskMethodsMixin):
     @property
     def dask(self) -> HighLevelGraph:
         return self._dask
+
+    @property
+    def key(self) -> tuple[str, Literal[0]]:
+        return (self.name, 0)
 
     @property
     def histref(self) -> bh.Histogram:
@@ -729,7 +732,7 @@ def _reduction(
     ph: PartitionedHistogram,
     split_every: int | None = None,
 ) -> AggHistogram:
-    from dask.bag.core import empty_safe_aggregate
+    from dask.layers import DataFrameTreeReduction
 
     if split_every is None:
         split_every = dask.config.get("histogram.aggregation.split_every", 8)
@@ -737,33 +740,30 @@ def _reduction(
         split_every = ph.npartitions
 
     token = tokenize(ph, sum, split_every)
-    name = f"hist-aggregate-{token}"
-    k = ph.npartitions
-    b = ph.name
-    d = 0
-    dsk = {}
-    while k > split_every:
-        c = f"{name}{d}"
-        for i, inds in enumerate(partition_all(split_every, range(k))):
-            dsk[(c, i)] = (
-                empty_safe_aggregate,
-                sum,
-                [(b, j) for j in inds],
-                False,
-            )
-        k = i + 1
-        b = c
-        d += 1
-    dsk[(name, 0)] = (
-        empty_safe_aggregate,
-        sum,
-        [(b, j) for j in range(k)],
-        True,
+
+    label = "histreduce"
+
+    name_comb = f"{label}-combine-{token}"
+    name_agg = f"{label}-agg-{token}"
+
+    def hist_safe_sum(items):
+        safe_items = [item for item in items if not isinstance(item, tuple)]
+        return sum(safe_items)
+
+    dftr = DataFrameTreeReduction(
+        name=name_agg,
+        name_input=ph.name,
+        npartitions_input=ph.npartitions,
+        concat_func=hist_safe_sum,
+        tree_node_func=lambda x: x,
+        finalize_func=lambda x: x,
+        split_every=split_every,
+        tree_node_name=name_comb,
     )
 
-    dsk[name] = dsk.pop((name, 0))  # type: ignore
-    g = HighLevelGraph.from_collections(name, dsk, dependencies=[ph])
-    return AggHistogram(g, name, histref=ph.histref)
+    graph = HighLevelGraph.from_collections(name_agg, dftr, dependencies=(ph,))
+
+    return AggHistogram(graph, name_agg, histref=ph.histref)
 
 
 def _dependencies(
@@ -992,7 +992,7 @@ def to_dask_array(agghist: AggHistogram, flow: bool = False, dd: bool = False) -
             *agghist.histref[0], storage=agghist.histref[1], metadata=agghist.histref[2]
         )
     zeros = (0,) * thehist.ndim
-    dsk = {(name, *zeros): (lambda x, f: x.to_numpy(flow=f)[0], agghist.name, flow)}
+    dsk = {(name, *zeros): (lambda x, f: x.to_numpy(flow=f)[0], agghist.key, flow)}
     graph = HighLevelGraph.from_collections(name, dsk, dependencies=(agghist,))
     shape = thehist.shape
     if flow:
@@ -1030,17 +1030,11 @@ class BinaryOpAgg:
         deps = []
         if is_dask_collection(a):
             deps.append(a)
-            k1 = a.name
-        else:
-            k1 = a  # type: ignore
         if is_dask_collection(b):
             deps.append(b)
-            k2 = b.name
-        else:
-            k2 = b  # type: ignore
-        k1 = a.__dask_tokenize__() if is_dask_collection(a) else a  # type: ignore
-        k2 = b.__dask_tokenize__() if is_dask_collection(b) else b  # type: ignore
-        llg = {name: (self.func, k1, k2)}
+        k1 = a.__dask_keys__()[0] if is_dask_collection(a) else a  # type: ignore
+        k2 = b.__dask_keys__()[0] if is_dask_collection(b) else b  # type: ignore
+        llg = {(name, 0): (self.func, k1, k2)}
         g = HighLevelGraph.from_collections(name, llg, dependencies=deps)
         try:
             ref = a.histref
