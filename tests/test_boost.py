@@ -488,7 +488,8 @@ def test_add(use_weights):
 
 def test_name_assignment():
     import dask.array as da
-    import hist
+
+    hist = pytest.importorskip("hist")
     import hist.dask
 
     x = da.random.normal(size=100)
