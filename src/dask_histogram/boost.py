@@ -87,9 +87,6 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
         self._staged: AggHistogram | None = None
         self._dask_name: str | None = None
         self._dask: HighLevelGraph | None = None
-        print(axes)
-        print(storage)
-        print(metadata)
         self._histref = (
             axes if isinstance(axes, tuple) else (axes,),
             storage,
