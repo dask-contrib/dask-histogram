@@ -87,6 +87,9 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
         self._staged: AggHistogram | None = None
         self._dask_name: str | None = None
         self._dask: HighLevelGraph | None = None
+        print(axes)
+        print(storage)
+        print(metadata)
         self._histref = (
             axes if isinstance(axes, tuple) else (axes,),
             storage,
@@ -248,6 +251,10 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
             pass
         else:
             raise ValueError(f"Cannot interpret input data: {args}")
+
+        # always regenerate the local histref before sending off (so copies, name assignment work)
+        new_histref = (self.axes, self.storage_type(), self.metadata)
+        self._histref = new_histref
 
         new_fill = factory(*args, histref=self._histref, weights=weight, sample=sample)
         if self._staged is None:

@@ -484,3 +484,25 @@ def test_add(use_weights):
     if use_weights:
         assert np.allclose(h3.variances(), c3.variances())
         assert np.allclose(h4.variances(), c3.variances())
+
+
+def test_name_assignment():
+    import dask.array as da
+    import hist
+    import hist.dask
+
+    x = da.random.normal(size=100)
+    h1 = hist.dask.Hist(hist.axis.Regular(10, -2, 2, name="ax1"))
+    h2 = h1.copy()
+    h1.fill(x)
+    h2.axes.name = ("ax2",)
+    h2.fill(x)
+
+    assert h1.axes.name == ("ax1",)
+    assert h2.axes.name == ("ax2",)
+
+    h1c = h1.compute()
+    h2c = h2.compute()
+
+    assert h1c.axes.name == ("ax1",)
+    assert h2c.axes.name == ("ax2",)
