@@ -507,3 +507,18 @@ def test_name_assignment():
 
     assert h1c.axes.name == ("ax1",)
     assert h2c.axes.name == ("ax2",)
+
+
+def test_histref_pickle():
+    import pickle
+
+    import dask.array as da
+
+    hist = pytest.importorskip("hist")
+    import hist.dask
+
+    x = da.random.normal(size=100)
+    h1 = hist.dask.Hist(hist.axis.Regular(10, -2, 2, name="ax1"))
+    h1.fill(x)  # forces the internal state histref update
+
+    pickle.dumps(h1._histref)
