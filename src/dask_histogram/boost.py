@@ -87,10 +87,13 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
         self._staged: AggHistogram | None = None
         self._dask_name: str | None = None
         self._dask: HighLevelGraph | None = None
-        self._histref = (
-            axes if isinstance(axes, tuple) else (axes,),
-            storage,
-            metadata,
+
+    @property
+    def _histref(self):
+        return (
+            tuple(self.axes),
+            self.storage_type(),
+            self.metadata,
         )
 
     def __iadd__(self, other):
