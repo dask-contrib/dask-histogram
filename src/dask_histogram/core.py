@@ -17,6 +17,8 @@ from dask.highlevelgraph import HighLevelGraph
 from dask.threaded import get as tget
 from dask.utils import is_dataframe_like, key_split
 
+from dask_histogram.layers import MockableDataFrameTreeReduction
+
 if TYPE_CHECKING:
     from dask.blockwise import Blockwise
     from numpy.typing import NDArray
@@ -732,8 +734,6 @@ def _reduction(
     ph: PartitionedHistogram,
     split_every: int | None = None,
 ) -> AggHistogram:
-    from dask.layers import DataFrameTreeReduction
-
     if split_every is None:
         split_every = dask.config.get("histogram.aggregation.split_every", 8)
     if split_every is False:
@@ -750,7 +750,7 @@ def _reduction(
         safe_items = [item for item in items if not isinstance(item, tuple)]
         return sum(safe_items)
 
-    dftr = DataFrameTreeReduction(
+    dftr = MockableDataFrameTreeReduction(
         name=name_agg,
         name_input=ph.name,
         npartitions_input=ph.npartitions,
