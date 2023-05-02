@@ -750,7 +750,7 @@ def _reduction(
         safe_items = [item for item in items if not isinstance(item, tuple)]
         return sum(safe_items)
 
-    dftr = MockableDataFrameTreeReduction(
+    mdftr = MockableDataFrameTreeReduction(
         name=name_agg,
         name_input=ph.name,
         npartitions_input=ph.npartitions,
@@ -761,7 +761,7 @@ def _reduction(
         tree_node_name=name_comb,
     )
 
-    graph = HighLevelGraph.from_collections(name_agg, dftr, dependencies=(ph,))
+    graph = HighLevelGraph.from_collections(name_agg, mdftr, dependencies=(ph,))
 
     return AggHistogram(graph, name_agg, histref=ph.histref)
 
