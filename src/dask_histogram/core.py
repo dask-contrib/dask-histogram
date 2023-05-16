@@ -266,15 +266,23 @@ def _blocked_dak(
     thesample = sample
     if isinstance(thedata, ak.Array) and ak.backend(thedata) == "typetracer":
         thedata.layout._touch_data(recursive=True)
-        thedata = data.layout.form.length_zero_array()
+        thedata = ak.Array(
+            data.layout.form.length_zero_array(highlevel=False), behavior=data.behavior
+        )
 
     if isinstance(theweights, ak.Array) and ak.backend(theweights) == "typetracer":
         theweights.layout._touch_data(recursive=True)
-        theweights = weights.layout.form.length_zero_array()
+        theweights = ak.Array(
+            weights.layout.form.length_zero_array(highlevel=False),
+            behavior=weights.behavior,
+        )
 
     if isinstance(thesample, ak.Array) and ak.backend(thesample) == "typetracer":
         thesample.layout._touch_data(recursive=True)
-        thesample = sample.layout.form.length_zero_array()
+        thesample = ak.Array(
+            sample.layout.form.length_zero_array(highlevel=False),
+            behavior=sample.behavior,
+        )
 
     thehist = (
         clone(histref)
@@ -294,7 +302,10 @@ def _blocked_dak_ma(
     for idata, adatum in enumerate(thedata):
         if isinstance(adatum, ak.Array) and ak.backend(adatum) == "typetracer":
             adatum.layout._touch_data(recursive=True)
-            thedata[idata] = adatum.layout.form.length_zero_array()
+            thedata[idata] = ak.Array(
+                adatum.layout.form.length_zero_array(highlevel=False),
+                behavior=adatum.behavior,
+            )
 
     thehist = (
         clone(histref)
@@ -315,11 +326,17 @@ def _blocked_dak_ma_w(
     for idata, adatum in enumerate(thedata):
         if isinstance(adatum, ak.Array) and ak.backend(adatum) == "typetracer":
             adatum.layout._touch_data(recursive=True)
-            thedata[idata] = adatum.layout.form.length_zero_array()
+            thedata[idata] = ak.Array(
+                adatum.layout.form.length_zero_array(highlevel=False),
+                behavior=adatum.behavior,
+            )
 
     if isinstance(theweights, ak.Array) and ak.backend(theweights) == "typetracer":
         theweights.layout._touch_data(recursive=True)
-        theweights = data[-1].layout.form.length_zero_array()
+        theweights = ak.Array(
+            data[-1].layout.form.length_zero_array(highlevel=False),
+            behavior=data[-1].behavior,
+        )
 
     thehist = (
         clone(histref)
@@ -340,11 +357,17 @@ def _blocked_dak_ma_s(
     for idata, adatum in enumerate(thedata):
         if isinstance(adatum, ak.Array) and ak.backend(adatum) == "typetracer":
             adatum.layout._touch_data(recursive=True)
-            thedata[idata] = adatum.layout.form.length_zero_array()
+            thedata[idata] = ak.Array(
+                adatum.layout.form.length_zero_array(highlevel=False),
+                behavior=adatum.behavior,
+            )
 
     if isinstance(thesample, ak.Array) and ak.backend(thesample) == "typetracer":
         thesample.layout._touch_data(recursive=True)
-        thesample = data[-1].layout.form.length_zero_array()
+        thesample = ak.Array(
+            data[-1].layout.form.length_zero_array(highlevel=False),
+            behavior=data[-1].behavior,
+        )
 
     thehist = (
         clone(histref)
@@ -366,15 +389,24 @@ def _blocked_dak_ma_w_s(
     for idata, adatum in enumerate(thedata):
         if isinstance(adatum, ak.Array) and ak.backend(adatum) == "typetracer":
             adatum.layout._touch_data(recursive=True)
-            thedata[idata] = adatum.layout.form.length_zero_array()
+            thedata[idata] = ak.Array(
+                adatum.layout.form.length_zero_array(highlevel=False),
+                behavior=adatum.behavior,
+            )
 
     if isinstance(theweights, ak.Array) and ak.backend(theweights) == "typetracer":
         theweights.layout._touch_data(recursive=True)
-        theweights = data[-2].layout.form.length_zero_array()
+        theweights = ak.Array(
+            data[-2].layout.form.length_zero_array(highlevel=False),
+            behavior=data[-2].behavior,
+        )
 
     if isinstance(thesample, ak.Array) and ak.backend(thesample) == "typetracer":
         thesample.layout._touch_data(recursive=True)
-        thesample = data[-1].layout.form.length_zero_array()
+        thesample = ak.Array(
+            data[-1].layout.form.length_zero_array(highlevel=False),
+            behavior=data[-1].behavior,
+        )
 
     thehist = (
         clone(histref)
