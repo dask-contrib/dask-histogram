@@ -261,9 +261,21 @@ def _blocked_dak(
 ) -> bh.Histogram:
     import awkward as ak
 
-    thedata = ak.typetracer.length_zero_if_typetracer(data) if isinstance(data, ak.Array) else data
-    theweights = ak.typetracer.length_zero_if_typetracer(weights) if isinstance(weights, ak.Array) else weights
-    thesample = ak.typetracer.length_zero_if_typetracer(sample) if isinstance(sample, ak.Array) else sample
+    thedata = (
+        ak.typetracer.length_zero_if_typetracer(data)
+        if isinstance(data, ak.Array)
+        else data
+    )
+    theweights = (
+        ak.typetracer.length_zero_if_typetracer(weights)
+        if isinstance(weights, ak.Array)
+        else weights
+    )
+    thesample = (
+        ak.typetracer.length_zero_if_typetracer(sample)
+        if isinstance(sample, ak.Array)
+        else sample
+    )
 
     thehist = (
         clone(histref)
@@ -279,7 +291,12 @@ def _blocked_dak_ma(
 ) -> bh.Histogram:
     import awkward as ak
 
-    thedata = [ak.typetracer.length_zero_if_typetracer(datum) if isinstance(datum, ak.Array) else datum for datum in data]
+    thedata = [
+        ak.typetracer.length_zero_if_typetracer(datum)
+        if isinstance(datum, ak.Array)
+        else datum
+        for datum in data
+    ]
 
     thehist = (
         clone(histref)
@@ -295,8 +312,17 @@ def _blocked_dak_ma_w(
 ) -> bh.Histogram:
     import awkward as ak
 
-    thedata = [ak.typetracer.length_zero_if_typetracer(datum) if isinstance(datum, ak.Array) else datum for datum in data[:-1]]
-    theweights = ak.typetracer.length_zero_if_typetracer(data[-1]) if isinstance(data[-1], ak.Array) else data[-1]
+    thedata = [
+        ak.typetracer.length_zero_if_typetracer(datum)
+        if isinstance(datum, ak.Array)
+        else datum
+        for datum in data[:-1]
+    ]
+    theweights = (
+        ak.typetracer.length_zero_if_typetracer(data[-1])
+        if isinstance(data[-1], ak.Array)
+        else data[-1]
+    )
 
     thehist = (
         clone(histref)
@@ -312,8 +338,17 @@ def _blocked_dak_ma_s(
 ) -> bh.Histogram:
     import awkward as ak
 
-    thedata = [ak.typetracer.length_zero_if_typetracer(datum) if isinstance(datum, ak.Array) else datum for datum in data[:-1]]
-    thesample = ak.typetracer.length_zero_if_typetracer(data[-1]) if isinstance(data[-1], ak.Array) else data[-1]
+    thedata = [
+        ak.typetracer.length_zero_if_typetracer(datum)
+        if isinstance(datum, ak.Array)
+        else datum
+        for datum in data[:-1]
+    ]
+    thesample = (
+        ak.typetracer.length_zero_if_typetracer(data[-1])
+        if isinstance(data[-1], ak.Array)
+        else data[-1]
+    )
 
     thehist = (
         clone(histref)
@@ -329,9 +364,22 @@ def _blocked_dak_ma_w_s(
 ) -> bh.Histogram:
     import awkward as ak
 
-    thedata = [ak.typetracer.length_zero_if_typetracer(datum) if isinstance(datum, ak.Array) else datum for datum in data[:-2]]
-    theweights = ak.typetracer.length_zero_if_typetracer(data[-2]) if isinstance(data[-2], ak.Array) else data[-2]
-    thesample = ak.typetracer.length_zero_if_typetracer(data[-1]) if isinstance(data[-1], ak.Array) else data[-1]
+    thedata = [
+        ak.typetracer.length_zero_if_typetracer(datum)
+        if isinstance(datum, ak.Array)
+        else datum
+        for datum in data[:-2]
+    ]
+    theweights = (
+        ak.typetracer.length_zero_if_typetracer(data[-2])
+        if isinstance(data[-2], ak.Array)
+        else data[-2]
+    )
+    thesample = (
+        ak.typetracer.length_zero_if_typetracer(data[-1])
+        if isinstance(data[-1], ak.Array)
+        else data[-1]
+    )
 
     thehist = (
         clone(histref)
