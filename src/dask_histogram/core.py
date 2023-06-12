@@ -261,28 +261,9 @@ def _blocked_dak(
 ) -> bh.Histogram:
     import awkward as ak
 
-    thedata = data
-    theweights = weights
-    thesample = sample
-    if isinstance(thedata, ak.Array) and ak.backend(thedata) == "typetracer":
-        thedata.layout._touch_data(recursive=True)
-        thedata = ak.Array(
-            data.layout.form.length_zero_array(highlevel=False), behavior=data.behavior
-        )
-
-    if isinstance(theweights, ak.Array) and ak.backend(theweights) == "typetracer":
-        theweights.layout._touch_data(recursive=True)
-        theweights = ak.Array(
-            weights.layout.form.length_zero_array(highlevel=False),
-            behavior=weights.behavior,
-        )
-
-    if isinstance(thesample, ak.Array) and ak.backend(thesample) == "typetracer":
-        thesample.layout._touch_data(recursive=True)
-        thesample = ak.Array(
-            sample.layout.form.length_zero_array(highlevel=False),
-            behavior=sample.behavior,
-        )
+    thedata = ak.typetracer.length_zero_if_typetracer(data) if isinstance(data, ak.Array) else data
+    theweights = ak.typetracer.length_zero_if_typetracer(weights) if isinstance(weights, ak.Array) else weights
+    thesample = ak.typetracer.length_zero_if_typetracer(sample) if isinstance(sample, ak.Array) else sample
 
     thehist = (
         clone(histref)
@@ -298,14 +279,7 @@ def _blocked_dak_ma(
 ) -> bh.Histogram:
     import awkward as ak
 
-    thedata = list(data)
-    for idata, adatum in enumerate(thedata):
-        if isinstance(adatum, ak.Array) and ak.backend(adatum) == "typetracer":
-            adatum.layout._touch_data(recursive=True)
-            thedata[idata] = ak.Array(
-                adatum.layout.form.length_zero_array(highlevel=False),
-                behavior=adatum.behavior,
-            )
+    thedata = [ak.typetracer.length_zero_if_typetracer(datum) if isinstance(datum, ak.Array) else datum for datum in data]
 
     thehist = (
         clone(histref)
@@ -321,22 +295,8 @@ def _blocked_dak_ma_w(
 ) -> bh.Histogram:
     import awkward as ak
 
-    thedata = list(data[:-1])
-    theweights = data[-1]
-    for idata, adatum in enumerate(thedata):
-        if isinstance(adatum, ak.Array) and ak.backend(adatum) == "typetracer":
-            adatum.layout._touch_data(recursive=True)
-            thedata[idata] = ak.Array(
-                adatum.layout.form.length_zero_array(highlevel=False),
-                behavior=adatum.behavior,
-            )
-
-    if isinstance(theweights, ak.Array) and ak.backend(theweights) == "typetracer":
-        theweights.layout._touch_data(recursive=True)
-        theweights = ak.Array(
-            data[-1].layout.form.length_zero_array(highlevel=False),
-            behavior=data[-1].behavior,
-        )
+    thedata = [ak.typetracer.length_zero_if_typetracer(datum) if isinstance(datum, ak.Array) else datum for datum in data[:-1]]
+    theweights = ak.typetracer.length_zero_if_typetracer(data[-1]) if isinstance(data[-1], ak.Array) else data[-1]
 
     thehist = (
         clone(histref)
@@ -352,22 +312,8 @@ def _blocked_dak_ma_s(
 ) -> bh.Histogram:
     import awkward as ak
 
-    thedata = list(data[:-1])
-    thesample = data[-1]
-    for idata, adatum in enumerate(thedata):
-        if isinstance(adatum, ak.Array) and ak.backend(adatum) == "typetracer":
-            adatum.layout._touch_data(recursive=True)
-            thedata[idata] = ak.Array(
-                adatum.layout.form.length_zero_array(highlevel=False),
-                behavior=adatum.behavior,
-            )
-
-    if isinstance(thesample, ak.Array) and ak.backend(thesample) == "typetracer":
-        thesample.layout._touch_data(recursive=True)
-        thesample = ak.Array(
-            data[-1].layout.form.length_zero_array(highlevel=False),
-            behavior=data[-1].behavior,
-        )
+    thedata = [ak.typetracer.length_zero_if_typetracer(datum) if isinstance(datum, ak.Array) else datum for datum in data[:-1]]
+    thesample = ak.typetracer.length_zero_if_typetracer(data[-1]) if isinstance(data[-1], ak.Array) else data[-1]
 
     thehist = (
         clone(histref)
@@ -383,30 +329,9 @@ def _blocked_dak_ma_w_s(
 ) -> bh.Histogram:
     import awkward as ak
 
-    thedata = list(data[:-2])
-    theweights = data[-2]
-    thesample = data[-1]
-    for idata, adatum in enumerate(thedata):
-        if isinstance(adatum, ak.Array) and ak.backend(adatum) == "typetracer":
-            adatum.layout._touch_data(recursive=True)
-            thedata[idata] = ak.Array(
-                adatum.layout.form.length_zero_array(highlevel=False),
-                behavior=adatum.behavior,
-            )
-
-    if isinstance(theweights, ak.Array) and ak.backend(theweights) == "typetracer":
-        theweights.layout._touch_data(recursive=True)
-        theweights = ak.Array(
-            data[-2].layout.form.length_zero_array(highlevel=False),
-            behavior=data[-2].behavior,
-        )
-
-    if isinstance(thesample, ak.Array) and ak.backend(thesample) == "typetracer":
-        thesample.layout._touch_data(recursive=True)
-        thesample = ak.Array(
-            data[-1].layout.form.length_zero_array(highlevel=False),
-            behavior=data[-1].behavior,
-        )
+    thedata = [ak.typetracer.length_zero_if_typetracer(datum) if isinstance(datum, ak.Array) else datum for datum in data[:-2]]
+    theweights = ak.typetracer.length_zero_if_typetracer(data[-2]) if isinstance(data[-2], ak.Array) else data[-2]
+    thesample = ak.typetracer.length_zero_if_typetracer(data[-1]) if isinstance(data[-1], ak.Array) else data[-1]
 
     thehist = (
         clone(histref)
