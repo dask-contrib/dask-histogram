@@ -58,7 +58,7 @@ def clone(histref: bh.Histogram | None = None) -> bh.Histogram:
 def _blocked_sa(
     data: Any,
     *,
-    histref: bh.Histogram | None = None,
+    histref: tuple | bh.Histogram | None = None,
 ) -> bh.Histogram:
     """Blocked calculation; single argument; unweighted; no sample."""
     thehist = (
@@ -78,7 +78,7 @@ def _blocked_sa_s(
     data: Any,
     sample: Any,
     *,
-    histref: bh.Histogram | None = None,
+    histref: tuple | bh.Histogram | None = None,
 ) -> bh.Histogram:
     """Blocked calculation; single argument; unweighted; with sample."""
     thehist = (
@@ -98,7 +98,7 @@ def _blocked_sa_w(
     data: Any,
     weights: Any,
     *,
-    histref: bh.Histogram | None = None,
+    histref: tuple | bh.Histogram | None = None,
 ) -> bh.Histogram:
     """Blocked calculation; single argument; weighted; no sample."""
     thehist = (
@@ -119,7 +119,7 @@ def _blocked_sa_w_s(
     weights: Any,
     sample: Any,
     *,
-    histref: bh.Histogram | None = None,
+    histref: tuple | bh.Histogram | None = None,
 ) -> bh.Histogram:
     """Blocked calculation; single argument; weighted; with sample."""
     thehist = (
@@ -137,7 +137,7 @@ def _blocked_sa_w_s(
 
 def _blocked_ma(
     *data: Any,
-    histref: bh.Histogram | None = None,
+    histref: tuple | bh.Histogram | None = None,
 ) -> bh.Histogram:
     """Blocked calculation; multiargument; unweighted; no sample."""
     thehist = (
@@ -150,7 +150,7 @@ def _blocked_ma(
 
 def _blocked_ma_s(
     *data: Any,
-    histref: bh.Histogram | None = None,
+    histref: tuple | bh.Histogram | None = None,
 ) -> bh.Histogram:
     """Blocked calculation; multiargument; unweighted; with sample."""
     sample = data[-1]
@@ -165,7 +165,7 @@ def _blocked_ma_s(
 
 def _blocked_ma_w(
     *data: Any,
-    histref: bh.Histogram | None = None,
+    histref: tuple | bh.Histogram | None = None,
 ) -> bh.Histogram:
     """Blocked calculation; multiargument; weighted; no sample."""
     weights = data[-1]
@@ -180,7 +180,7 @@ def _blocked_ma_w(
 
 def _blocked_ma_w_s(
     *data: Any,
-    histref: bh.Histogram | None = None,
+    histref: tuple | bh.Histogram | None = None,
 ) -> bh.Histogram:
     """Blocked calculation; multiargument; weighted; with sample."""
     weights = data[-2]
@@ -197,7 +197,7 @@ def _blocked_ma_w_s(
 def _blocked_df(
     data: Any,
     *,
-    histref: bh.Histogram | None = None,
+    histref: tuple | bh.Histogram | None = None,
 ) -> bh.Histogram:
     thehist = (
         clone(histref)
@@ -211,7 +211,7 @@ def _blocked_df_s(
     data: Any,
     sample: Any,
     *,
-    histref: bh.Histogram | None = None,
+    histref: tuple | bh.Histogram | None = None,
 ) -> bh.Histogram:
     thehist = (
         clone(histref)
@@ -225,7 +225,7 @@ def _blocked_df_w(
     data: Any,
     weights: Any,
     *,
-    histref: bh.Histogram | None = None,
+    histref: tuple | bh.Histogram | None = None,
 ) -> bh.Histogram:
     """Blocked calculation; single argument; weighted; no sample."""
     thehist = (
@@ -241,7 +241,7 @@ def _blocked_df_w_s(
     weights: Any,
     sample: Any,
     *,
-    histref: bh.Histogram | None = None,
+    histref: tuple | bh.Histogram | None = None,
 ) -> bh.Histogram:
     """Blocked calculation; single argument; weighted; with sample."""
     thehist = (
@@ -257,7 +257,7 @@ def _blocked_dak(
     weights: Any | None,
     sample: Any | None,
     *,
-    histref: bh.Histogram | None = None,
+    histref: tuple | bh.Histogram | None = None,
 ) -> bh.Histogram:
     import awkward as ak
 
@@ -287,7 +287,7 @@ def _blocked_dak(
 
 def _blocked_dak_ma(
     *data: Any,
-    histref: bh.Histogram | None = None,
+    histref: tuple | bh.Histogram | None = None,
 ) -> bh.Histogram:
     import awkward as ak
 
@@ -308,7 +308,7 @@ def _blocked_dak_ma(
 
 def _blocked_dak_ma_w(
     *data: Any,
-    histref: bh.Histogram | None = None,
+    histref: tuple | bh.Histogram | None = None,
 ) -> bh.Histogram:
     import awkward as ak
 
@@ -334,7 +334,7 @@ def _blocked_dak_ma_w(
 
 def _blocked_dak_ma_s(
     *data: Any,
-    histref: bh.Histogram | None = None,
+    histref: tuple | bh.Histogram | None = None,
 ) -> bh.Histogram:
     import awkward as ak
 
@@ -360,7 +360,7 @@ def _blocked_dak_ma_s(
 
 def _blocked_dak_ma_w_s(
     *data: Any,
-    histref: bh.Histogram | None = None,
+    histref: tuple | bh.Histogram | None = None,
 ) -> bh.Histogram:
     import awkward as ak
 
@@ -409,7 +409,7 @@ def optimize(
     if dask.config.get("awkward", default=False):
         from dask_awkward.lib.optimize import optimize
 
-        dsk = optimize(dsk, keys=keys)
+        dsk = optimize(dsk, keys=keys)  # type: ignore[arg-type]
 
     dsk = optimize_blockwise(dsk, keys=keys)
     dsk = fuse_roots(dsk, keys=keys)  # type: ignore
@@ -454,7 +454,7 @@ class AggHistogram(DaskMethodsMixin):
     def __dask_graph__(self) -> HighLevelGraph:
         return self._dask
 
-    def __dask_keys__(self) -> list[str]:
+    def __dask_keys__(self) -> list[tuple[str, int]]:
         return [self.key]
 
     def __dask_layers__(self) -> tuple[str, ...]:
@@ -501,7 +501,7 @@ class AggHistogram(DaskMethodsMixin):
         return (self.name, 0)
 
     @property
-    def histref(self) -> bh.Histogram:
+    def histref(self):
         """Empty reference boost-histogram object."""
         return self._meta
 
@@ -650,12 +650,16 @@ class PartitionedHistogram(DaskMethodsMixin):
     """
 
     def __init__(
-        self, dsk: HighLevelGraph, name: str, npartitions: int, histref: bh.Histogram
+        self,
+        dsk: HighLevelGraph,
+        name: str,
+        npartitions: int,
+        histref: bh.Histogram | tuple,
     ) -> None:
         self._dask: HighLevelGraph = dsk
         self._name: str = name
         self._npartitions: int = npartitions
-        self._meta: bh.Histogram = histref
+        self._meta: tuple | bh.Histogram = histref
 
     @property
     def name(self) -> str:
@@ -716,7 +720,7 @@ class PartitionedHistogram(DaskMethodsMixin):
         )
 
     @property
-    def histref(self) -> bh.Histogram:
+    def histref(self):
         """boost_histogram.Histogram: reference histogram."""
         return self._meta
 
@@ -778,9 +782,9 @@ def _dependencies(
 ) -> tuple[DaskCollection, ...]:
     dask_args = [arg for arg in args if is_dask_collection(arg)]
     if is_dask_collection(weights):
-        dask_args.append(weights)
+        dask_args.append(weights)  # type: ignore[arg-type]
     if is_dask_collection(sample):
-        dask_args.append(sample)
+        dask_args.append(sample)  # type: ignore[arg-type]
     return tuple(dask_args)
 
 
@@ -818,16 +822,11 @@ def _is_dask_series(obj):
     )
 
 
-def _partitionwise(
-    func: Callable,
-    layer_name: str,
-    *args: Any,
-    **kwargs: Any,
-) -> Blockwise:
+def _partitionwise(func, layer_name, *args, **kwargs):
     from dask.array.core import Array as DaskArray
 
-    pairs: list[Any] = []
-    numblocks: dict[Any, int | tuple[int, ...]] = {}
+    pairs = []
+    numblocks = {}
     for arg in args:
         if isinstance(arg, DaskArray):
             if arg.ndim == 1:
@@ -868,7 +867,7 @@ def _partitionwise(
 
 def _partitioned_histogram(
     *data: DaskCollection,
-    histref: bh.Histogram,
+    histref: bh.Histogram | tuple,
     weights: DaskCollection | None = None,
     sample: DaskCollection | None = None,
     split_every: int | None = None,
@@ -1037,8 +1036,8 @@ class BinaryOpAgg:
             deps.append(a)
         if is_dask_collection(b):
             deps.append(b)
-        k1 = a.__dask_keys__()[0] if is_dask_collection(a) else a  # type: ignore
-        k2 = b.__dask_keys__()[0] if is_dask_collection(b) else b  # type: ignore
+        k1 = a.__dask_keys__()[0] if is_dask_collection(a) else a
+        k2 = b.__dask_keys__()[0] if is_dask_collection(b) else b
         llg = {(name, 0): (self.func, k1, k2)}
         g = HighLevelGraph.from_collections(name, llg, dependencies=deps)
         try:
@@ -1056,7 +1055,7 @@ _itruediv = BinaryOpAgg(operator.itruediv, name="div")
 
 def factory(
     *data: DaskCollection,
-    histref: bh.Histogram | None = None,
+    histref: bh.Histogram | tuple | None = None,
     axes: Sequence[bh.axis.Axis] | None = None,
     storage: bh.storage.Storage | None = None,
     weights: DaskCollection | None = None,
@@ -1083,10 +1082,12 @@ def factory(
           creating multidimensional histograms.
         * Multiple one dimensional dask arrays or Series: for creating
           multidimensional histograms.
-    histref : bh.Histogram, optional
+    histref : bh.Histogram or tuple, optional
         A reference histogram object, required if `axes` is not used.
         The dimensionality of `histref` must be compatible with the
-        input data.
+        input data. If a tuple, it must be three elements where
+        element one is a tuple of axes, element two is the storage,
+        and element three is the metadata.
     axes : Sequence[bh.axis.Axis], optional
         The axes of the histogram, required if `histref` is not used.
         The total number of axes must be equal to the number of
@@ -1177,7 +1178,7 @@ def factory(
 
 def partitioned_factory(
     *data: DaskCollection,
-    histref: bh.Histogram | None = None,
+    histref: bh.Histogram | tuple | None = None,
     axes: Sequence[bh.axis.Axis] | None = None,
     storage: bh.storage.Storage | None = None,
     weights: DaskCollection | None = None,
