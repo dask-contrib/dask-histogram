@@ -13,8 +13,13 @@ from dask_histogram.bins import normalize_bins_range
 from dask_histogram.core import factory
 
 if TYPE_CHECKING:
-    from dask_histogram.typing import (BinArg, BinType, DaskCollection,
-                                       RangeArg, RangeType)
+    from dask_histogram.typing import (
+        BinArg,
+        BinType,
+        DaskCollection,
+        RangeArg,
+        RangeType,
+    )
 else:
     DaskCollection = object
 
