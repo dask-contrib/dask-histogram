@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 import operator
-from typing import TYPE_CHECKING, Any, Callable, Hashable, Literal, Mapping, Sequence
+from typing import (TYPE_CHECKING, Any, Callable, Hashable, Literal, Mapping,
+                    Sequence)
 
 import boost_histogram as bh
 import dask.config
 import numpy as np
-from dask.base import DaskMethodsMixin, dont_optimize, is_dask_collection, tokenize
-from dask.blockwise import BlockwiseDep, blockwise, fuse_roots, optimize_blockwise
+from dask.base import (DaskMethodsMixin, dont_optimize, is_dask_collection,
+                       tokenize)
+from dask.blockwise import (BlockwiseDep, blockwise, fuse_roots,
+                            optimize_blockwise)
 from dask.context import globalmethod
 from dask.core import flatten
 from dask.delayed import Delayed

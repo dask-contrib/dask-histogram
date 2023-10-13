@@ -3,12 +3,8 @@ from dask_histogram import config  # isort:skip; load dask-histogram config
 import boost_histogram.axis as _axis
 import boost_histogram.storage as _storage
 
-from dask_histogram.core import (
-    AggHistogram,
-    PartitionedHistogram,
-    factory,
-    partitioned_factory,
-)
+from dask_histogram.core import (AggHistogram, PartitionedHistogram, factory,
+                                 partitioned_factory)
 from dask_histogram.routines import histogram, histogram2d, histogramdd
 from dask_histogram.version import __version__
 

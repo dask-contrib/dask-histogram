@@ -9,7 +9,8 @@ import boost_histogram as bh
 import boost_histogram.axis as axis
 import boost_histogram.storage as storage
 import dask.array as da
-from dask.base import DaskMethodsMixin, dont_optimize, is_dask_collection, tokenize
+from dask.base import (DaskMethodsMixin, dont_optimize, is_dask_collection,
+                       tokenize)
 from dask.context import globalmethod
 from dask.delayed import Delayed, delayed
 from dask.highlevelgraph import HighLevelGraph
