@@ -115,7 +115,7 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
     def __dask_graph__(self) -> HighLevelGraph:
         return self.dask
 
-    def __dask_keys__(self) -> list[str]:
+    def __dask_keys__(self) -> list[tuple[str, int]]:
         return [(self.dask_name, 0)]
 
     def __dask_layers__(self) -> tuple[str, ...]:
