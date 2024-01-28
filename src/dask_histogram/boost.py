@@ -85,8 +85,17 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
         """Construct a Histogram object."""
         super().__init__(*axes, storage=storage, metadata=metadata)
         self._staged: AggHistogram | None = None
-        self._dask_name: str | None = None
-        self._dask: HighLevelGraph | None = None
+        self._dask_name: str | None = (
+            f"empty-histogram-{tokenize(*axes, storage, metadata)}"
+        )
+        self._dask: HighLevelGraph | None = HighLevelGraph(
+            {
+                self._dask_name: {
+                    (self._dask_name, 0): (lambda: self._in_memory_type(self),)
+                }
+            },
+            {},
+        )
 
     @property
     def _histref(self):
