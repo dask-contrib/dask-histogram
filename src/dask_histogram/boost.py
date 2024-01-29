@@ -36,11 +36,6 @@ import dask_histogram
 __all__ = ("Histogram", "histogram", "histogram2d", "histogramdd")
 
 
-def _hist_safe_sum(items):
-    safe_items = [item for item in items if not isinstance(item, tuple)]
-    return sum(safe_items)
-
-
 def _build_staged_tree_reduce(
     stages: list[AggHistogram], split_every: int | bool
 ) -> HighLevelGraph:
@@ -178,8 +173,6 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
         return self
 
     def __add__(self, other):
-        print(self)
-        print(other)
         return self.__iadd__(other)
 
     def __radd__(self, other):
@@ -390,7 +383,7 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
 
         """
         if self._staged is not None:
-            return sum(self._staged).to_delayed()
+            return sum(self._staged[1:], start=self._staged[0]).to_delayed()
         return delayed(bh.Histogram(self))
 
     def __repr__(self) -> str:
