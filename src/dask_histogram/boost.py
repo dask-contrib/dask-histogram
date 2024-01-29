@@ -89,11 +89,7 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
             f"empty-histogram-{tokenize(*axes, storage, metadata)}"
         )
         self._dask: HighLevelGraph | None = HighLevelGraph(
-            {
-                self._dask_name: {
-                    (self._dask_name, 0): (lambda: self._in_memory_type(self),)
-                }
-            },
+            {self._dask_name: {(self._dask_name, 0): (lambda: self,)}},
             {},
         )
 
