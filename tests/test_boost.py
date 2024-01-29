@@ -8,6 +8,22 @@ import dask_histogram.boost as dhb
 import dask_histogram.core as dhc
 
 
+def test_empty():
+    h = dhb.Histogram(
+        dhb.axis.StrCategory([], growth=True),
+        dhb.axis.IntCategory([], growth=True),
+        dhb.axis.Regular(8, -3.5, 3.5),
+        dhb.axis.Regular(7, -3.3, 3.3),
+        dhb.axis.Regular(9, -3.2, 3.2),
+        storage=dhb.storage.Weight(),
+    )
+    control = bh.Histogram(*h.axes, storage=h.storage_type())
+    computed = h.compute()
+
+    assert type(computed) is type(control)
+    assert np.allclose(computed.values(), control.values())
+
+
 @pytest.mark.parametrize("use_weights", [True, False])
 def test_obj_1D(use_weights):
     x = da.random.standard_normal(size=(2000,), chunks=(400,))
