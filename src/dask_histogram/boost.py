@@ -340,11 +340,9 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
         ret += f",{newline}".join(repr(ax) for ax in self.axes)
         ret += "{comma}{newline}storage={storage}".format(
             storage=self.storage_type(),
-            newline=newline
-            if len(self.axes) > 1
-            else " "
-            if len(self.axes) > 0
-            else "",
+            newline=(
+                newline if len(self.axes) > 1 else " " if len(self.axes) > 0 else ""
+            ),
             comma=sep,
         )
         ret += ")"
