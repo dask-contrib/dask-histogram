@@ -291,9 +291,11 @@ def _blocked_dak_ma(
     import awkward as ak
 
     thedata = [
-        ak.typetracer.length_zero_if_typetracer(datum)
-        if isinstance(datum, ak.Array)
-        else datum
+        (
+            ak.typetracer.length_zero_if_typetracer(datum)
+            if isinstance(datum, ak.Array)
+            else datum
+        )
         for datum in data
     ]
 
@@ -312,9 +314,11 @@ def _blocked_dak_ma_w(
     import awkward as ak
 
     thedata = [
-        ak.typetracer.length_zero_if_typetracer(datum)
-        if isinstance(datum, ak.Array)
-        else datum
+        (
+            ak.typetracer.length_zero_if_typetracer(datum)
+            if isinstance(datum, ak.Array)
+            else datum
+        )
         for datum in data[:-1]
     ]
     theweights = (
@@ -338,9 +342,11 @@ def _blocked_dak_ma_s(
     import awkward as ak
 
     thedata = [
-        ak.typetracer.length_zero_if_typetracer(datum)
-        if isinstance(datum, ak.Array)
-        else datum
+        (
+            ak.typetracer.length_zero_if_typetracer(datum)
+            if isinstance(datum, ak.Array)
+            else datum
+        )
         for datum in data[:-1]
     ]
     thesample = (
@@ -364,9 +370,11 @@ def _blocked_dak_ma_w_s(
     import awkward as ak
 
     thedata = [
-        ak.typetracer.length_zero_if_typetracer(datum)
-        if isinstance(datum, ak.Array)
-        else datum
+        (
+            ak.typetracer.length_zero_if_typetracer(datum)
+            if isinstance(datum, ak.Array)
+            else datum
+        )
         for datum in data[:-2]
     ]
     theweights = (
