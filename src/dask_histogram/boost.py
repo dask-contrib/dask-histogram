@@ -20,7 +20,7 @@ from dask.utils import is_arraylike, is_dataframe_like
 from tlz import first
 
 from dask_histogram.bins import normalize_bins_range
-from dask_histogram.core import AggHistogram, factory, optimize
+from dask_histogram.core import AggHistogram, _get_optimization_function, factory
 
 if TYPE_CHECKING:
     from dask_histogram.typing import (
@@ -201,7 +201,7 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
         return self._rebuild, ()
 
     __dask_optimize__ = globalmethod(
-        optimize, key="histogram_optimize", falsey=dont_optimize
+        _get_optimization_function(), key="histogram_optimize", falsey=dont_optimize
     )
 
     __dask_scheduler__ = staticmethod(tget)

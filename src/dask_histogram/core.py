@@ -401,27 +401,28 @@ def optimize(
     keys: Hashable | list[Hashable] | set[Hashable],
     **kwargs: Any,
 ) -> Mapping:
-    if not isinstance(keys, (list, set)):
-        keys = [keys]
-    keys = list(flatten(keys))
+    keys = tuple(flatten(keys))
 
     if not isinstance(dsk, HighLevelGraph):
-        dsk = HighLevelGraph.from_collections(id(dsk), dsk, dependencies=())
-
-    # Here we try to run optimizations from dask-awkward (if we detect
-    # that dask-awkward has been imported). There is no cost to
-    # running this optimization even in cases where it's unncessary
-    # because if no AwkwardInputLayers from daks-awkward are not
-    # detected then the original graph is returned unchanged.
-    if dask.config.get("awkward", default=False):
-        from dask_awkward.lib.optimize import optimize
-
-        dsk = optimize(dsk, keys=keys)  # type: ignore[arg-type]
+        dsk = HighLevelGraph.from_collections(str(id(dsk)), dsk, dependencies=())
 
     dsk = optimize_blockwise(dsk, keys=keys)
     dsk = fuse_roots(dsk, keys=keys)  # type: ignore
     dsk = dsk.cull(set(keys))  # type: ignore
     return dsk
+
+
+def _get_optimization_function():
+    # Here we try to run optimizations from dask-awkward (if we detect
+    # that dask-awkward has been imported). There is no cost to
+    # running this optimization even in cases where it's unncessary
+    # because if no AwkwardInputLayers from dask-awkward are
+    # detected then the original graph is returned unchanged.
+    if dask.config.get("awkward", default=False):
+        from dask_awkward.lib.optimize import all_optimizations
+
+        return all_optimizations
+    return optimize
 
 
 class AggHistogram(DaskMethodsMixin):
@@ -479,7 +480,7 @@ class AggHistogram(DaskMethodsMixin):
         return self._rebuild, ()
 
     __dask_optimize__ = globalmethod(
-        optimize, key="histogram_optimize", falsey=dont_optimize
+        _get_optimization_function(), key="histogram_optimize", falsey=dont_optimize
     )
 
     __dask_scheduler__ = staticmethod(tget)
@@ -706,7 +707,7 @@ class PartitionedHistogram(DaskMethodsMixin):
         return type(self)(dsk, name, self.npartitions, self.histref)
 
     __dask_optimize__ = globalmethod(
-        optimize, key="histogram_optimize", falsey=dont_optimize
+        _get_optimization_function(), key="histogram_optimize", falsey=dont_optimize
     )
 
     __dask_scheduler__ = staticmethod(tget)
