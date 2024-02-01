@@ -176,6 +176,10 @@ def test_obj_5D_strcat_intcat_rectangular_dak(use_weights):
         dhb.axis.Regular(9, -3.2, 3.2),
         storage=storage,
     )
+
+    # check that we are using the correct optimizer
+    assert h.__dask_optimize__ == dak.lib.optimize.all_optimizations
+
     for i in range(25):
         h.fill(f"testcat{i+1}", i + 1, x, y, z, weight=weights)
     h = h.compute()
