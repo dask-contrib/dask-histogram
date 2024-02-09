@@ -8,7 +8,13 @@ from typing import TYPE_CHECKING, Any, Callable, Hashable, Literal, Mapping, Seq
 import boost_histogram as bh
 import dask.config
 import numpy as np
-from dask.base import DaskMethodsMixin, dont_optimize, is_dask_collection, tokenize
+from dask.base import (
+    DaskMethodsMixin,
+    dont_optimize,
+    is_dask_collection,
+    tokenize,
+    unpack_collections,
+)
 from dask.blockwise import BlockwiseDep, blockwise, fuse_roots, optimize_blockwise
 from dask.context import globalmethod
 from dask.core import flatten
@@ -318,26 +324,46 @@ def _blocked_dak_ma_w(
 ) -> bh.Histogram:
     import awkward as ak
 
-    thedata = [
-        (
-            ak.typetracer.length_zero_if_typetracer(datum)
-            if isinstance(datum, ak.Array)
-            else datum
-        )
-        for datum in data[:-1]
-    ]
-    theweights = (
-        ak.typetracer.length_zero_if_typetracer(data[-1])
-        if isinstance(data[-1], ak.Array)
-        else data[-1]
-    )
+    tuple_lens = set()
+    for datum in data:
+        if isinstance(datum, tuple):
+            tuple_lens.add(len(datum))
+
+    assert len(tuple_lens) <= 1
+
+    tuple_len = 1 if len(tuple_lens) == 0 else tuple_lens.pop()
 
     thehist = (
         clone(histref)
         if not isinstance(histref, tuple)
         else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     )
-    return thehist.fill(*tuple(thedata), weight=theweights)
+
+    for i in range(tuple_len):
+        thedata = []
+        for datum in data[:-1]:
+            thedatum = datum
+            if isinstance(thedatum, tuple):
+                thedatum = thedatum[i]
+            thedatum = (
+                ak.typetracer.length_zero_if_typetracer(thedatum)
+                if isinstance(thedatum, ak.Array)
+                else thedatum
+            )
+            thedata.append(thedatum)
+
+        theweights = data[-1]
+        if isinstance(theweights, tuple):
+            theweights = theweights[i]
+        theweights = (
+            ak.typetracer.length_zero_if_typetracer(theweights)
+            if isinstance(theweights, ak.Array)
+            else theweights
+        )
+
+        thehist.fill(*tuple(thedata), weight=theweights)
+
+    return thehist
 
 
 def _blocked_dak_ma_s(
@@ -892,6 +918,9 @@ def _partitioned_histogram(
     if is_dask_collection(weights):
         _weight_sample_check(*dask_data, weights=weights)
 
+    is_packed = False
+    packed_deps = None
+
     # Single awkward array object.
     if len(data) == 1 and data_is_dak:
         from dask_awkward.lib.core import partitionwise_layer as dak_pwl
@@ -938,10 +967,47 @@ def _partitioned_histogram(
     else:
         # Awkward array collection detected as first argument
         if data_is_dak:
+            from dask_awkward.lib.core import ArgsKwargsPackedFunction as akpf
             from dask_awkward.lib.core import partitionwise_layer as dak_pwl
 
             if weights is not None and sample is None:
-                g = dak_pwl(_blocked_dak_ma_w, name, *data, weights, histref=histref)
+                is_packed = True
+                kwarg_flat_deps, kwarg_repacker = unpack_collections(
+                    {"histref": histref}, traverse=True
+                )
+                arg_flat_deps_expanded = []
+                arg_repackers = []
+                arg_lens_for_repackers = []
+                for arg in [*data, weights]:
+                    this_arg_flat_deps, repacker = unpack_collections(
+                        arg, traverse=True
+                    )
+                    if (
+                        len(this_arg_flat_deps) > 0
+                    ):  # if the deps list is empty this arg does not contain any dask collection, no need to repack!
+                        arg_flat_deps_expanded.extend(this_arg_flat_deps)
+                        arg_repackers.append(repacker)
+                        arg_lens_for_repackers.append(len(this_arg_flat_deps))
+                    else:
+                        arg_flat_deps_expanded.append(arg)
+                        arg_repackers.append(None)
+                        arg_lens_for_repackers.append(1)
+
+                blocked_dak_ma_w_packed = akpf(
+                    _blocked_dak_ma_w,
+                    arg_repackers,
+                    kwarg_repacker,
+                    arg_lens_for_repackers,
+                )
+
+                packed_deps = arg_flat_deps_expanded + kwarg_flat_deps
+
+                g = dak_pwl(
+                    blocked_dak_ma_w_packed,
+                    name,
+                    *arg_flat_deps_expanded,
+                    *kwarg_flat_deps,
+                )
             elif weights is not None and sample is not None:
                 g = dak_pwl(
                     _blocked_dak_ma_w_s,
@@ -968,6 +1034,8 @@ def _partitioned_histogram(
             g = _partitionwise(_blocked_ma, name, *data, histref=histref)
 
     dependencies = _dependencies(*data, weights=weights, sample=sample)
+    if is_packed:
+        dependencies = _dependencies(*packed_deps)
     hlg = HighLevelGraph.from_collections(name, g, dependencies=dependencies)
     return PartitionedHistogram(hlg, name, dask_data[0].npartitions, histref=histref)
 
