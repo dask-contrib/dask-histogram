@@ -164,12 +164,6 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
             self._staged += other._staged
         elif not self.staged_fills() and other.staged_fills():
             self._staged = other._staged
-        if self.staged_fills():
-            new_name, new_graph = _build_staged_tree_reduce(
-                self._staged, self._split_every
-            )
-            self._dask = new_graph
-            self._dask_name = new_name
         return self
 
     def __add__(self, other):
@@ -234,17 +228,17 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
 
     @property
     def dask_name(self) -> str:
-        if self._dask_name is None:
-            raise RuntimeError(
-                "The dask name should never be None when it's requested."
+        if self._staged is not None:
+            self._dask_name, self._dask = _build_staged_tree_reduce(
+                self._staged, self._split_every
             )
         return self._dask_name
 
     @property
     def dask(self) -> HighLevelGraph:
-        if self._dask is None:
-            raise RuntimeError(
-                "The dask graph should never be None when it's requested."
+        if self._staged is not None:
+            self._dask_name, self._dask = _build_staged_tree_reduce(
+                self._staged, self._split_every
             )
         return self._dask
 
@@ -323,9 +317,6 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
             self._staged = [new_fill]
         else:
             self._staged += [new_fill]
-        new_name, new_graph = _build_staged_tree_reduce(self._staged, self._split_every)
-        self._dask = new_graph
-        self._dask_name = new_name
 
         return self
 
