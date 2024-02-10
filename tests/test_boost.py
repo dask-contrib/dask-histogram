@@ -175,7 +175,7 @@ def test_obj_5D_strcat_intcat_rectangular_dak(use_weights):
         storage=storage,
     )
 
-    # check that we are using the correct optimizer
+    # check that we are using the correct optimize
     assert h.__dask_optimize__ == dak.lib.optimize.all_optimizations
 
     for i in range(25):

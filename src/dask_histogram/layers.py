@@ -321,7 +321,7 @@ class MockableMultiSourceTreeReduction(Layer):
         return MockableMultiSourceTreeReduction(
             name=self.name,
             names_inputs=self.names_inputs,
-            npartitions_inputs=(1 for _ in self.npartitions_inputs),
+            npartitions_inputs=tuple(1 for _ in self.npartitions_inputs),
             concat_func=self.concat_func,
             tree_node_func=self.tree_node_func,
             finalize_func=self.finalize_func,
