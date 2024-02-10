@@ -8,9 +8,7 @@ from typing import TYPE_CHECKING, Any, Mapping
 import boost_histogram as bh
 import boost_histogram.axis as axis
 import boost_histogram.storage as storage
-import dask
 import dask.array as da
-from dask.bag.core import empty_safe_aggregate, partition_all
 from dask.base import DaskMethodsMixin, dont_optimize, is_dask_collection, tokenize
 from dask.context import globalmethod
 from dask.delayed import Delayed, delayed
@@ -36,55 +34,6 @@ import dask_histogram
 __all__ = ("Histogram", "histogram", "histogram2d", "histogramdd")
 
 
-def _build_staged_tree_reduce(
-    stages: list[AggHistogram], split_every: int | bool
-) -> HighLevelGraph:
-    if not split_every:
-        split_every = len(stages)
-
-    reducer = sum
-
-    token = tokenize(stages, reducer, split_every)
-
-    k = len(stages)
-    b = ""
-    fmt = f"staged-fill-aggregate-{token}"
-    depth = 0
-
-    dsk = {}
-
-    if k > 1:
-        while k > split_every:
-            c = fmt + str(depth)
-            for i, inds in enumerate(partition_all(split_every, range(k))):
-                dsk[(c, i)] = (
-                    empty_safe_aggregate,
-                    reducer,
-                    [
-                        (stages[j].name if depth == 0 else b, 0 if depth == 0 else j)
-                        for j in inds
-                    ],
-                    False,
-                )
-
-            k = i + 1
-            b = c
-            depth += 1
-
-        dsk[(fmt, 0)] = (
-            empty_safe_aggregate,
-            reducer,
-            [
-                (stages[j].name if depth == 0 else b, 0 if depth == 0 else j)
-                for j in range(k)
-            ],
-            True,
-        )
-        return fmt, HighLevelGraph.from_collections(fmt, dsk, dependencies=stages)
-
-    return stages[0].name, stages[0].dask
-
-
 class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
     """Histogram object capable of lazy computation.
 
@@ -97,9 +46,6 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
         type is :py:class:`boost_histogram.storage.Double`.
     metadata : Any
         Data that is passed along if a new histogram is created.
-    split_every : int | bool | None, default None
-        Width of aggregation layers for staged fills.
-        If False, all staged fills are added in one layer (memory intensive!).
 
     See Also
     --------
@@ -135,11 +81,10 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
         *axes: bh.axis.Axis,
         storage: bh.storage.Storage = bh.storage.Double(),
         metadata: Any = None,
-        split_every: int | None = None,
     ) -> None:
         """Construct a Histogram object."""
         super().__init__(*axes, storage=storage, metadata=metadata)
-        self._staged: list[AggHistogram] | None = None
+        self._staged: AggHistogram | None = None
         self._dask_name: str | None = (
             f"empty-histogram-{tokenize(*axes, storage, metadata)}"
         )
@@ -147,15 +92,12 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
             {self._dask_name: {(self._dask_name, 0): (lambda: self,)}},
             {},
         )
-        self._split_every = split_every
-        if self._split_every is None:
-            self._split_every = dask.config.get("histogram.aggregation.split_every", 8)
 
     @property
     def _histref(self):
         return (
             tuple(self.axes),
-            self.storage_type,
+            self.storage_type(),
             self.metadata,
         )
 
@@ -165,11 +107,8 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
         elif not self.staged_fills() and other.staged_fills():
             self._staged = other._staged
         if self.staged_fills():
-            new_name, new_graph = _build_staged_tree_reduce(
-                self._staged, self._split_every
-            )
-            self._dask = new_graph
-            self._dask_name = new_name
+            self._dask = self._staged.__dask_graph__()
+            self._dask_name = self._staged.name
         return self
 
     def __add__(self, other):
@@ -320,12 +259,11 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
 
         new_fill = factory(*args, histref=self._histref, weights=weight, sample=sample)
         if self._staged is None:
-            self._staged = [new_fill]
+            self._staged = new_fill
         else:
-            self._staged += [new_fill]
-        new_name, new_graph = _build_staged_tree_reduce(self._staged, self._split_every)
-        self._dask = new_graph
-        self._dask_name = new_name
+            self._staged += new_fill
+        self._dask = self._staged.__dask_graph__()
+        self._dask_name = self._staged.name
 
         return self
 
@@ -383,7 +321,7 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
 
         """
         if self._staged is not None:
-            return sum(self._staged[1:], start=self._staged[0]).to_delayed()
+            return self._staged.to_delayed()
         return delayed(bh.Histogram(self))
 
     def __repr__(self) -> str:
@@ -449,7 +387,7 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
 
         """
         if self._staged is not None:
-            return sum(self._staged).to_dask_array(flow=flow, dd=dd)
+            return self._staged.to_dask_array(flow=flow, dd=dd)
         else:
             counts, edges = self.to_numpy(flow=flow, dd=True, view=False)
             counts = da.from_array(counts)

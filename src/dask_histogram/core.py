@@ -63,7 +63,7 @@ def _blocked_sa(
     thehist = (
         clone(histref)
         if not isinstance(histref, tuple)
-        else bh.Histogram(*histref[0], storage=histref[1](), metadata=histref[2])
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     )
     if data.ndim == 1:
         return thehist.fill(data)
@@ -83,7 +83,7 @@ def _blocked_sa_s(
     thehist = (
         clone(histref)
         if not isinstance(histref, tuple)
-        else bh.Histogram(*histref[0], storage=histref[1](), metadata=histref[2])
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     )
     if data.ndim == 1:
         return thehist.fill(data, sample=sample)
@@ -103,7 +103,7 @@ def _blocked_sa_w(
     thehist = (
         clone(histref)
         if not isinstance(histref, tuple)
-        else bh.Histogram(*histref[0], storage=histref[1](), metadata=histref[2])
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     )
     if data.ndim == 1:
         return thehist.fill(data, weight=weights)
@@ -124,7 +124,7 @@ def _blocked_sa_w_s(
     thehist = (
         clone(histref)
         if not isinstance(histref, tuple)
-        else bh.Histogram(*histref[0], storage=histref[1](), metadata=histref[2])
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     )
     if data.ndim == 1:
         return thehist.fill(data, weight=weights, sample=sample)
@@ -142,7 +142,7 @@ def _blocked_ma(
     thehist = (
         clone(histref)
         if not isinstance(histref, tuple)
-        else bh.Histogram(*histref[0], storage=histref[1](), metadata=histref[2])
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     )
     return thehist.fill(*data)
 
@@ -157,7 +157,7 @@ def _blocked_ma_s(
     thehist = (
         clone(histref)
         if not isinstance(histref, tuple)
-        else bh.Histogram(*histref[0], storage=histref[1](), metadata=histref[2])
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     )
     return thehist.fill(*data, sample=sample)
 
@@ -172,7 +172,7 @@ def _blocked_ma_w(
     thehist = (
         clone(histref)
         if not isinstance(histref, tuple)
-        else bh.Histogram(*histref[0], storage=histref[1](), metadata=histref[2])
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     )
     return thehist.fill(*data, weight=weights)
 
@@ -188,7 +188,7 @@ def _blocked_ma_w_s(
     thehist = (
         clone(histref)
         if not isinstance(histref, tuple)
-        else bh.Histogram(*histref[0], storage=histref[1](), metadata=histref[2])
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     )
     return thehist.fill(*data, weight=weights, sample=sample)
 
@@ -201,7 +201,7 @@ def _blocked_df(
     thehist = (
         clone(histref)
         if not isinstance(histref, tuple)
-        else bh.Histogram(*histref[0], storage=histref[1](), metadata=histref[2])
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     )
     return thehist.fill(*(data[c] for c in data.columns), weight=None)
 
@@ -215,7 +215,7 @@ def _blocked_df_s(
     thehist = (
         clone(histref)
         if not isinstance(histref, tuple)
-        else bh.Histogram(*histref[0], storage=histref[1](), metadata=histref[2])
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     )
     return thehist.fill(*(data[c] for c in data.columns), sample=sample)
 
@@ -230,7 +230,7 @@ def _blocked_df_w(
     thehist = (
         clone(histref)
         if not isinstance(histref, tuple)
-        else bh.Histogram(*histref[0], storage=histref[1](), metadata=histref[2])
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     )
     return thehist.fill(*(data[c] for c in data.columns), weight=weights)
 
@@ -246,7 +246,7 @@ def _blocked_df_w_s(
     thehist = (
         clone(histref)
         if not isinstance(histref, tuple)
-        else bh.Histogram(*histref[0], storage=histref[1](), metadata=histref[2])
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     )
     return thehist.fill(*(data[c] for c in data.columns), weight=weights, sample=sample)
 
@@ -279,7 +279,7 @@ def _blocked_dak(
     thehist = (
         clone(histref)
         if not isinstance(histref, tuple)
-        else bh.Histogram(*histref[0], storage=histref[1](), metadata=histref[2])
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     )
     return thehist.fill(thedata, weight=theweights, sample=thesample)
 
@@ -302,7 +302,7 @@ def _blocked_dak_ma(
     thehist = (
         clone(histref)
         if not isinstance(histref, tuple)
-        else bh.Histogram(*histref[0], storage=histref[1](), metadata=histref[2])
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     )
     return thehist.fill(*tuple(thedata))
 
@@ -330,7 +330,7 @@ def _blocked_dak_ma_w(
     thehist = (
         clone(histref)
         if not isinstance(histref, tuple)
-        else bh.Histogram(*histref[0], storage=histref[1](), metadata=histref[2])
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     )
     return thehist.fill(*tuple(thedata), weight=theweights)
 
@@ -358,7 +358,7 @@ def _blocked_dak_ma_s(
     thehist = (
         clone(histref)
         if not isinstance(histref, tuple)
-        else bh.Histogram(*histref[0], storage=histref[1](), metadata=histref[2])
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     )
     return thehist.fill(*tuple(thedata), sample=thesample)
 
@@ -391,7 +391,7 @@ def _blocked_dak_ma_w_s(
     thehist = (
         clone(histref)
         if not isinstance(histref, tuple)
-        else bh.Histogram(*histref[0], storage=histref[1](), metadata=histref[2])
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     )
     return thehist.fill(*tuple(thedata), weight=theweights, sample=thesample)
 
@@ -516,15 +516,11 @@ class AggHistogram(DaskMethodsMixin):
     @property
     def _storage_type(self) -> type[bh.storage.Storage]:
         """Storage type of the histogram."""
-        if isinstance(self.histref, tuple):
-            return self.histref[1]
         return self.histref.storage_type
 
     @property
     def ndim(self) -> int:
         """Total number of dimensions."""
-        if isinstance(self.histref, tuple):
-            return len(self.histref[0])
         return self.histref.ndim
 
     @property
@@ -751,11 +747,6 @@ class PartitionedHistogram(DaskMethodsMixin):
         return [Delayed(k, graph, layer=layer) for k in keys]
 
 
-def _hist_safe_sum(items):
-    safe_items = [item for item in items if not isinstance(item, tuple)]
-    return sum(safe_items)
-
-
 def _reduction(
     ph: PartitionedHistogram,
     split_every: int | None = None,
@@ -772,11 +763,15 @@ def _reduction(
     name_comb = f"{label}-combine-{token}"
     name_agg = f"{label}-agg-{token}"
 
+    def hist_safe_sum(items):
+        safe_items = [item for item in items if not isinstance(item, tuple)]
+        return sum(safe_items)
+
     mdftr = MockableDataFrameTreeReduction(
         name=name_agg,
         name_input=ph.name,
         npartitions_input=ph.npartitions,
-        concat_func=_hist_safe_sum,
+        concat_func=hist_safe_sum,
         tree_node_func=lambda x: x,
         finalize_func=lambda x: x,
         split_every=split_every,
@@ -1006,9 +1001,7 @@ def to_dask_array(agghist: AggHistogram, flow: bool = False, dd: bool = False) -
     thehist = agghist.histref
     if isinstance(thehist, tuple):
         thehist = bh.Histogram(
-            *agghist.histref[0],
-            storage=agghist.histref[1](),
-            metadata=agghist.histref[2],
+            *agghist.histref[0], storage=agghist.histref[1], metadata=agghist.histref[2]
         )
     zeros = (0,) * thehist.ndim
     dsk = {(name, *zeros): (lambda x, f: x.to_numpy(flow=f)[0], agghist.key, flow)}

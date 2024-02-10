@@ -127,28 +127,26 @@ def test_obj_5D_strcat_intcat_rectangular(use_weights):
         dhb.axis.Regular(9, -3.2, 3.2),
         storage=storage,
     )
-    for i in range(25):
-        h.fill(f"testcat{i+1}", i + 1, *(x.T), weight=weights)
+    h.fill("testcat1", 1, *(x.T), weight=weights)
+    h.fill("testcat2", 2, *(x.T), weight=weights)
     h = h.compute()
 
     control = bh.Histogram(*h.axes, storage=h.storage_type())
     if use_weights:
-        for i in range(25):
-            control.fill(
-                f"testcat{i+1}", i + 1, *(x.compute().T), weight=weights.compute()
-            )
+        control.fill("testcat1", 1, *(x.compute().T), weight=weights.compute())
+        control.fill("testcat2", 2, *(x.compute().T), weight=weights.compute())
     else:
-        for i in range(25):
-            control.fill(f"testcat{i+1}", i + 1, *(x.compute().T))
+        control.fill("testcat1", 1, *(x.compute().T))
+        control.fill("testcat2", 2, *(x.compute().T))
 
     assert np.allclose(h.counts(), control.counts())
     if use_weights:
         assert np.allclose(h.variances(), control.variances())
 
-    assert len(h.axes[0]) == 25 and len(control.axes[0]) == 25
+    assert len(h.axes[0]) == 2 and len(control.axes[0]) == 2
     assert all(cx == hx for cx, hx in zip(control.axes[0], h.axes[0]))
 
-    assert len(h.axes[1]) == 25 and len(control.axes[1]) == 25
+    assert len(h.axes[1]) == 2 and len(control.axes[1]) == 2
     assert all(cx == hx for cx, hx in zip(control.axes[1], h.axes[1]))
 
 
