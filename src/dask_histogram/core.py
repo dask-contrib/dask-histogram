@@ -17,7 +17,7 @@ from dask.highlevelgraph import HighLevelGraph
 from dask.threaded import get as tget
 from dask.utils import is_dataframe_like, key_split
 
-from dask_histogram.layers import MockableDataFrameTreeReduction
+from dask_histogram.layers import MockableMultiSourceTreeReduction
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -767,10 +767,10 @@ def _reduction(
         safe_items = [item for item in items if not isinstance(item, tuple)]
         return sum(safe_items)
 
-    mdftr = MockableDataFrameTreeReduction(
+    mmstr = MockableMultiSourceTreeReduction(
         name=name_agg,
-        name_input=ph.name,
-        npartitions_input=ph.npartitions,
+        names_inputs=(ph.name,),
+        npartitions_inputs=(ph.npartitions,),
         concat_func=hist_safe_sum,
         tree_node_func=lambda x: x,
         finalize_func=lambda x: x,
@@ -778,7 +778,7 @@ def _reduction(
         tree_node_name=name_comb,
     )
 
-    graph = HighLevelGraph.from_collections(name_agg, mdftr, dependencies=(ph,))
+    graph = HighLevelGraph.from_collections(name_agg, mmstr, dependencies=(ph,))
 
     return AggHistogram(graph, name_agg, histref=ph.histref)
 
