@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, Mapping
 import boost_histogram as bh
 import boost_histogram.axis as axis
 import boost_histogram.storage as storage
+import dask
 import dask.array as da
 from dask.base import DaskMethodsMixin, dont_optimize, is_dask_collection, tokenize
 from dask.context import globalmethod
@@ -18,7 +19,13 @@ from dask.utils import is_arraylike, is_dataframe_like
 from tlz import first
 
 from dask_histogram.bins import normalize_bins_range
-from dask_histogram.core import AggHistogram, _get_optimization_function, factory
+from dask_histogram.core import (
+    AggHistogram,
+    _get_optimization_function,
+    hist_safe_sum,
+    partitioned_factory,
+)
+from dask_histogram.layers import MockableMultiSourceTreeReduction
 
 if TYPE_CHECKING:
     from dask_histogram.typing import (
@@ -173,6 +180,8 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
 
     @property
     def dask_name(self) -> str:
+        if self._dask_name == "__not_yet_calculated__" and self._dask is None:
+            self._build_taskgraph()
         if self._dask_name is None:
             raise RuntimeError(
                 "The dask name should never be None when it's requested."
@@ -181,11 +190,57 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
 
     @property
     def dask(self) -> HighLevelGraph:
+        if self._dask_name == "__not_yet_calculated__" and self._dask is None:
+            self._build_taskgraph()
         if self._dask is None:
             raise RuntimeError(
                 "The dask graph should never be None when it's requested."
             )
         return self._dask
+
+    def _build_taskgraph(self):
+        first_args = self._staged.pop()
+        first_hist = partitioned_factory(
+            *first_args["args"], histref=self._histref, **first_args["kwargs"]
+        )
+        fills = [first_hist]
+        for filling_info in self._staged:
+            fills.append(
+                partitioned_factory(
+                    *filling_info["args"],
+                    histref=self._histref,
+                    **filling_info["kwargs"],
+                )
+            )
+
+        label = "histreduce"
+
+        split_every = dask.config.get("histogram.aggregation.split_every", 8)
+
+        token = tokenize(*fills, hist_safe_sum, split_every)
+
+        name_comb = f"{label}-combine-{token}"
+        name_agg = f"{label}-agg-{token}"
+
+        mmstr = MockableMultiSourceTreeReduction(
+            name=name_agg,
+            names_inputs=tuple(fill.name for fill in fills),
+            npartitions_inputs=tuple(fill.npartitions for fill in fills),
+            concat_func=hist_safe_sum,
+            tree_node_func=lambda x: x,
+            finalize_func=lambda x: x,
+            split_every=split_every,
+            tree_node_name=name_comb,
+        )
+
+        graph = HighLevelGraph.from_collections(
+            name_agg, mmstr, dependencies=tuple(fills)
+        )
+
+        output_hist = AggHistogram(graph, name_agg, histref=self._histref)
+
+        self._dask = output_hist.dask
+        self._dask_name = output_hist.name
 
     def fill(  # type: ignore
         self,
@@ -257,13 +312,14 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
         else:
             raise ValueError(f"Cannot interpret input data: {args}")
 
-        new_fill = factory(*args, histref=self._histref, weights=weight, sample=sample)
+        # new_fill = partitioned_factory(*args, histref=self._histref, weights=weight, sample=sample)
+        new_fill = {"args": args, "kwargs": {"weights": weight, "sample": sample}}
         if self._staged is None:
-            self._staged = new_fill
+            self._staged = [new_fill]
         else:
-            self._staged += new_fill
-        self._dask = self._staged.__dask_graph__()
-        self._dask_name = self._staged.name
+            self._staged.append(new_fill)
+        self._dask = None  # self._staged.__dask_graph__()
+        self._dask_name = "__not_yet_calculated__"
 
         return self
 
