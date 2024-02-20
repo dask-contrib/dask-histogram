@@ -113,9 +113,6 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
             self._staged += other._staged
         elif not self.staged_fills() and other.staged_fills():
             self._staged = other._staged
-        if self.staged_fills():
-            self._dask = self._staged.__dask_graph__()
-            self._dask_name = self._staged.name
         return self
 
     def __add__(self, other):
@@ -239,6 +236,7 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
 
         output_hist = AggHistogram(graph, name_agg, histref=self._histref)
 
+        self._staged_result = output_hist
         self._dask = output_hist.dask
         self._dask_name = output_hist.name
 
@@ -377,7 +375,8 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
 
         """
         if self._staged is not None:
-            return self._staged.to_delayed()
+            self._build_taskgraph()
+            return self._staged_result.to_delayed()
         return delayed(bh.Histogram(self))
 
     def __repr__(self) -> str:
@@ -443,7 +442,8 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
 
         """
         if self._staged is not None:
-            return self._staged.to_dask_array(flow=flow, dd=dd)
+            self._build_taskgraph()
+            return self._staged_result.to_dask_array(flow=flow, dd=dd)
         else:
             counts, edges = self.to_numpy(flow=flow, dd=True, view=False)
             counts = da.from_array(counts)
