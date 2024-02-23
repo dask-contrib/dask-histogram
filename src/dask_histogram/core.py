@@ -603,7 +603,7 @@ class AggHistogram(DaskMethodsMixin):
     def __array__(self) -> NDArray[Any]:
         return self.compute().__array__()
 
-    def __iadd__(self, other: Any) -> AggHistogram:        
+    def __iadd__(self, other: Any) -> AggHistogram:
         return _iadd(self, other)
 
     def __add__(self, other: Any) -> AggHistogram:
