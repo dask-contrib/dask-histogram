@@ -236,6 +236,7 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
 
         output_hist = AggHistogram(graph, name_agg, histref=self._histref)
 
+        self._staged = None
         self._staged_result = output_hist
         self._dask = output_hist.dask
         self._dask_name = output_hist.name
