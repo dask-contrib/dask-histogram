@@ -184,7 +184,6 @@ def test_obj_5D_strcat_intcat_rectangular_dak(use_weights):
 
     for i in range(25):
         h.fill(f"testcat{i+1}", i + 1, x, y, z, weight=weights[i] if weights else None)
-    h.visualize(filename="check_graph.pdf")
     h = h.compute()
 
     control = bh.Histogram(*h.axes, storage=h.storage_type())
