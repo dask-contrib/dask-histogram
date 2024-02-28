@@ -425,27 +425,16 @@ def _blocked_multi_dak(
         weight = None if weights is None else weights[idata]
         sample = None if samples is None else samples[idata]
 
-        thedata = [
-            (
-                ak.typetracer.length_zero_if_typetracer(datum)
-                if isinstance(datum, ak.Array)
-                else datum
-            )
-            for datum in data
-        ]
-        theweight = (
-            ak.typetracer.length_zero_if_typetracer(weight)
-            if isinstance(weight, ak.Array)
-            else weight
-        )
-        thesample = (
-            ak.typetracer.length_zero_if_typetracer(sample)
-            if isinstance(sample, ak.Array)
-            else sample
-        )
-
         if backend != "typetracer":
-            thehist.fill(*tuple(thedata), weight=theweight, sample=thesample)
+            thehist.fill(*tuple(data), weight=weight, sample=sample)
+        else:
+            for datum in data:
+                if isinstance(datum, ak.highlevel.Array):
+                    ak.typetracer.touch_data(datum)
+            if isinstance(weight, ak.highlevel.Array):
+                ak.typetracer.touch_data(weight)
+            if isinstance(sample, ak.highlevel.Array):
+                ak.typetracer.touch_data(sample)
 
     return thehist
 
