@@ -19,11 +19,11 @@ from dask.utils import is_arraylike, is_dataframe_like
 from tlz import first
 
 from dask_histogram.bins import normalize_bins_range
-from dask_histogram.core import (
+from dask_histogram.core import (  # partitioned_factory,
     AggHistogram,
     _get_optimization_function,
+    _partitioned_histogram_multifill,
     hist_safe_sum,
-    partitioned_factory,
 )
 from dask_histogram.layers import MockableMultiSourceTreeReduction
 
@@ -196,23 +196,49 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
         return self._dask
 
     def _build_taskgraph(self):
-        first_args = self._staged.pop()
-        first_hist = partitioned_factory(
-            *first_args["args"], histref=self._histref, **first_args["kwargs"]
-        )
-        fills = [first_hist]
-        for filling_info in self._staged:
-            fills.append(
-                partitioned_factory(
-                    *filling_info["args"],
-                    histref=self._histref,
-                    **filling_info["kwargs"],
-                )
-            )
+        # first_args = self._staged.pop()
+        # first_hist = partitioned_factory(
+        #    *first_args["args"], histref=self._histref, **first_args["kwargs"]
+        # )
+        # fills = [first_hist]
+        # for filling_info in self._staged:
+        #    fills.append(
+        #        partitioned_factory(
+        #            *filling_info["args"],
+        #            histref=self._histref,
+        #            **filling_info["kwargs"],
+        #        )
+        #    )
 
-        label = "histreduce"
+        data_list = []
+        weights = []
+        samples = []
+
+        for afill in self._staged:
+            data_list.append(afill["args"])
+            weights.append(afill["kwargs"]["weight"])
+            samples.append(afill["kwargs"]["sample"])
+
+        if all(weight is None for weight in weights):
+            weights = None
+
+        if not all(sample is None for sample in samples):
+            samples = None
 
         split_every = dask.config.get("histogram.aggregation.split_every", 8)
+
+        # fills = [_partitioned_histogram_multifill(
+        #    tuple(data_list[i:i+split_every]),
+        #    self._histref,
+        #    tuple(weights[i:i+split_every]),
+        #    tuple(samples[i:i+split_every]),
+        # ) for i in range(0,len(self._staged),split_every)]
+
+        fills = [
+            _partitioned_histogram_multifill(data_list, self._histref, weights, samples)
+        ]
+
+        label = "histreduce"
 
         token = tokenize(*fills, hist_safe_sum, split_every)
 
@@ -312,7 +338,7 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
             raise ValueError(f"Cannot interpret input data: {args}")
 
         # new_fill = partitioned_factory(*args, histref=self._histref, weights=weight, sample=sample)
-        new_fill = {"args": args, "kwargs": {"weights": weight, "sample": sample}}
+        new_fill = {"args": args, "kwargs": {"weight": weight, "sample": sample}}
         if self._staged is None:
             self._staged = [new_fill]
         else:

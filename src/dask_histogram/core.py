@@ -337,7 +337,11 @@ def _blocked_dak_ma_w(
         if not isinstance(histref, tuple)
         else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     )
-    return thehist.fill(*tuple(thedata), weight=theweights)
+
+    if ak.backend(*data) != "typetracer":
+        thehist.fill(*tuple(thedata), weight=theweights)
+
+    return thehist
 
 
 def _blocked_dak_ma_s(
@@ -399,6 +403,51 @@ def _blocked_dak_ma_w_s(
         else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     )
     return thehist.fill(*tuple(thedata), weight=theweights, sample=thesample)
+
+
+def _blocked_multi_dak(
+    data_list: tuple[tuple[Any]],
+    weights: tuple[Any] | None,
+    samples: tuple[Any] | None,
+    histref: tuple | bh.Histogram | None = None,
+) -> bh.Histogram:
+    import awkward as ak
+
+    thehist = (
+        clone(histref)
+        if not isinstance(histref, tuple)
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
+    )
+
+    backend = ak.backend(*data_list[0])
+
+    for idata, data in enumerate(data_list):
+        weight = None if weights is None else weights[idata]
+        sample = None if samples is None else samples[idata]
+
+        thedata = [
+            (
+                ak.typetracer.length_zero_if_typetracer(datum)
+                if isinstance(datum, ak.Array)
+                else datum
+            )
+            for datum in data
+        ]
+        theweight = (
+            ak.typetracer.length_zero_if_typetracer(weight)
+            if isinstance(weight, ak.Array)
+            else weight
+        )
+        thesample = (
+            ak.typetracer.length_zero_if_typetracer(sample)
+            if isinstance(sample, ak.Array)
+            else sample
+        )
+
+        if backend != "typetracer":
+            thehist.fill(*tuple(thedata), weight=theweight, sample=thesample)
+
+    return thehist
 
 
 def optimize(
@@ -871,6 +920,35 @@ def _partitionwise(func, layer_name, *args, **kwargs):
         numblocks=numblocks,
         concatenate=True,
         **kwargs,
+    )
+
+
+class PackedMultifill:
+    def __init__(self, repacker):
+        self.repacker = repacker
+
+    def __call__(self, *args):
+        return _blocked_multi_dak(*self.repacker(args))
+
+
+def _partitioned_histogram_multifill(
+    data: tuple[DaskCollection | tuple],
+    histref: bh.Histogram | tuple,
+    weights: tuple[DaskCollection] | None = None,
+    samples: tuple[DaskCollection] | None = None,
+):
+    name = f"hist-on-block-{tokenize(data, histref, weights, samples)}"
+
+    from dask.base import unpack_collections
+    from dask_awkward.lib.core import partitionwise_layer as dak_pwl
+
+    flattened_deps, repacker = unpack_collections(data, weights, samples, histref)
+
+    graph = dak_pwl(PackedMultifill(repacker), name, *flattened_deps)
+
+    hlg = HighLevelGraph.from_collections(name, graph, dependencies=flattened_deps)
+    return PartitionedHistogram(
+        hlg, name, flattened_deps[0].npartitions, histref=histref
     )
 
 
