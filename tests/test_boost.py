@@ -159,10 +159,12 @@ def test_obj_5D_strcat_intcat_rectangular_dak(use_weights):
     x = dak.from_dask_array(da.random.standard_normal(size=2000, chunks=400))
     y = dak.from_dask_array(da.random.standard_normal(size=2000, chunks=400))
     z = dak.from_dask_array(da.random.standard_normal(size=2000, chunks=400))
+    weights = []
     if use_weights:
-        weights = dak.from_dask_array(
-            da.random.uniform(0.5, 0.75, size=2000, chunks=400)
-        )
+        for i in range(25):
+            weights.append(
+                dak.from_dask_array(da.random.uniform(0.5, 0.75, size=2000, chunks=400))
+            )
         storage = dhb.storage.Weight()
     else:
         weights = None
@@ -181,7 +183,7 @@ def test_obj_5D_strcat_intcat_rectangular_dak(use_weights):
     assert h.__dask_optimize__ == dak.lib.optimize.all_optimizations
 
     for i in range(25):
-        h.fill(f"testcat{i+1}", i + 1, x, y, z, weight=weights)
+        h.fill(f"testcat{i+1}", i + 1, x, y, z, weight=weights[i] if weights else None)
     h = h.compute()
 
     control = bh.Histogram(*h.axes, storage=h.storage_type())
@@ -189,7 +191,7 @@ def test_obj_5D_strcat_intcat_rectangular_dak(use_weights):
     if use_weights:
         for i in range(25):
             control.fill(
-                f"testcat{i+1}", i + 1, x_c, y_c, z_c, weight=weights.compute()
+                f"testcat{i+1}", i + 1, x_c, y_c, z_c, weight=weights[i].compute()
             )
     else:
         for i in range(25):

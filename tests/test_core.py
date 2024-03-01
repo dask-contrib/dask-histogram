@@ -12,13 +12,13 @@ import dask_histogram.core as dhc
 
 def _gen_storage(weights, sample):
     if weights is not None and sample is not None:
-        store = bh.storage.WeightedMean
+        store = bh.storage.WeightedMean()
     elif weights is None and sample is not None:
-        store = bh.storage.Mean
+        store = bh.storage.Mean()
     elif weights is not None and sample is None:
-        store = bh.storage.Weight
+        store = bh.storage.Weight()
     else:
-        store = bh.storage.Double
+        store = bh.storage.Double()
     return store
 
 
@@ -31,7 +31,7 @@ def test_1d_array(weights, sample):
         sample = da.random.uniform(2, 8, size=(2000,), chunks=(250,))
     store = _gen_storage(weights, sample)
     histref = ((bh.axis.Regular(10, -3, 3),), store, None)
-    h = bh.Histogram(*histref[0], storage=histref[1](), metadata=histref[2])
+    h = bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     x = da.random.standard_normal(size=(2000,), chunks=(250,))
     dh = dhc.factory(x, histref=histref, weights=weights, split_every=4, sample=sample)
     h.fill(
@@ -59,7 +59,7 @@ def test_array_input(weights, shape, sample):
         sample = da.random.uniform(3, 9, size=(2000,), chunks=(200,))
     store = _gen_storage(weights, sample)
     histref = (axes, store, None)
-    h = bh.Histogram(*histref[0], storage=histref[1](), metadata=histref[2])
+    h = bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     dh = dhc.factory(x, histref=histref, weights=weights, split_every=4, sample=sample)
     h.fill(
         *xc,
@@ -76,12 +76,12 @@ def test_multi_array(weights):
             bh.axis.Regular(10, -3, 3),
             bh.axis.Regular(10, -3, 3),
         ),
-        bh.storage.Weight,
+        bh.storage.Weight(),
         None,
     )
     h = bh.Histogram(
         *histref[0],
-        storage=histref[1](),
+        storage=histref[1],
         metadata=histref[2],
     )
     if weights is not None:
@@ -105,12 +105,12 @@ def test_nd_array(weights):
             bh.axis.Regular(10, 0, 1),
             bh.axis.Regular(10, 0, 1),
         ),
-        bh.storage.Weight,
+        bh.storage.Weight(),
         None,
     )
     h = bh.Histogram(
         *histref[0],
-        storage=histref[1](),
+        storage=histref[1],
         metadata=histref[2],
     )
     if weights is not None:
@@ -134,10 +134,10 @@ def test_df_input(weights):
             bh.axis.Regular(12, 0, 1),
             bh.axis.Regular(12, 0, 1),
         ),
-        bh.storage.Weight,
+        bh.storage.Weight(),
         None,
     )
-    h = bh.Histogram(*histref[0], storage=histref[1](), metadata=histref[2])
+    h = bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     df = dds.timeseries(freq="600s", partition_freq="2d")
     dfc = df.compute()
     if weights is not None:
@@ -166,7 +166,7 @@ def test_to_dask_array(weights, shape):
     )
     h = bh.Histogram(*axes, storage=bh.storage.Weight())
     dh = dhc.factory(
-        x, histref=(axes, bh.storage.Weight, None), weights=weights, split_every=4
+        x, histref=(axes, bh.storage.Weight(), None), weights=weights, split_every=4
     )
     h.fill(*xc, weight=weights.compute() if weights is not None else None)
     c, _ = dh.to_dask_array(flow=False, dd=True)
@@ -181,7 +181,7 @@ def gen_hist_1D(
 ) -> dhc.AggHistogram:
     histref = (
         (bh.axis.Regular(bins, range[0], range[1]),),
-        bh.storage.Weight,
+        bh.storage.Weight(),
         None,
     )
     x = da.random.standard_normal(size=size, chunks=chunks)
@@ -319,12 +319,12 @@ def test_agghist_to_delayed(weights):
             bh.axis.Regular(10, 0, 1),
             bh.axis.Regular(10, 0, 1),
         ),
-        bh.storage.Weight,
+        bh.storage.Weight(),
         None,
     )
     h = bh.Histogram(
         *histref[0],
-        storage=histref[1](),
+        storage=histref[1],
         metadata=histref[2],
     )
     if weights is not None:
