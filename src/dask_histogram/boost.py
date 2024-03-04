@@ -297,13 +297,12 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
         else:
             raise ValueError(f"Cannot interpret input data: {args}")
 
-        # new_fill = partitioned_factory(*args, histref=self._histref, weights=weight, sample=sample)
         new_fill = {"args": args, "kwargs": {"weight": weight, "sample": sample}}
         if self._staged is None:
             self._staged = [new_fill]
         else:
             self._staged.append(new_fill)
-        self._dask = None  # self._staged.__dask_graph__()
+        self._dask = None
         self._dask_name = "__not_yet_calculated__"
 
         return self
