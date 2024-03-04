@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import operator
+from functools import partial
 from typing import TYPE_CHECKING, Any, Callable, Hashable, Literal, Mapping, Sequence
 
 import boost_histogram as bh
@@ -407,12 +408,12 @@ def _blocked_dak_ma_w_s(
 
 
 def _blocked_multi_dak(
-    data_list: tuple[tuple[Any]],
-    weights: tuple[Any] | None,
-    samples: tuple[Any] | None,
-    histref: tuple | bh.Histogram | None = None,
+    repacker: Callable,
+    *flattened_inputs: tuple[Any],
 ) -> bh.Histogram:
     import awkward as ak
+
+    data_list, weights, samples, histref = repacker(flattened_inputs)
 
     thehist = (
         clone(histref)
@@ -913,14 +914,6 @@ def _partitionwise(func, layer_name, *args, **kwargs):
     )
 
 
-class PackedMultifill:
-    def __init__(self, repacker):
-        self.repacker = repacker
-
-    def __call__(self, *args):
-        return _blocked_multi_dak(*self.repacker(args))
-
-
 def _partitioned_histogram_multifill(
     data: tuple[DaskCollection | tuple],
     histref: bh.Histogram | tuple,
@@ -934,7 +927,9 @@ def _partitioned_histogram_multifill(
 
     flattened_deps, repacker = unpack_collections(data, weights, samples, histref)
 
-    graph = dak_pwl(PackedMultifill(repacker), name, *flattened_deps)
+    unpacked_multifill = partial(_blocked_multi_dak, repacker)
+
+    graph = dak_pwl(unpacked_multifill, name, *flattened_deps)
 
     hlg = HighLevelGraph.from_collections(name, graph, dependencies=flattened_deps)
     return PartitionedHistogram(
