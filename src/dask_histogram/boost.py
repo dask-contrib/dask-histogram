@@ -110,11 +110,9 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
         )
 
     def __iadd__(self, other):
-        if self.staged_fills() and other.staged_fills():
-            self._staged += other._staged
-        elif not self.staged_fills() and other.staged_fills():
-            self._staged = other._staged
-        return self
+        raise NotImplementedError(
+            "dask-boost-histograms are not addable, please sum them after computation!"
+        )
 
     def __add__(self, other):
         return self.__iadd__(other)

@@ -485,14 +485,19 @@ def test_add(use_weights):
     h2 = dhb.Histogram(dhb.axis.Regular(12, -3, 3), storage=store())
     h2.fill(y, weight=yweights)
 
-    h3 = h1 + h2
+    with pytest.raises(NotImplementedError):
+        h3 = h1 + h2
 
-    h3 = h3.compute()
+    h3 = h1.compute() + h2.compute()
 
     h4 = dhb.Histogram(dhb.axis.Regular(12, -3, 3), storage=store())
     h4.fill(x, weight=xweights)
-    h4 += h2
+
+    with pytest.raises(NotImplementedError):
+        h4 += h2
+
     h4 = h4.compute()
+    h4 += h2.compute()
 
     controlx = bh.Histogram(*h1.axes, storage=h1.storage_type())
     controly = bh.Histogram(*h2.axes, storage=h2.storage_type())
