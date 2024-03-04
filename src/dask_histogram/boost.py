@@ -24,8 +24,6 @@ from dask_histogram.core import (
     _get_optimization_function,
     _partitioned_histogram_multifill,
     _reduction,
-    factory,
-    is_dask_awkward_like,
 )
 
 if TYPE_CHECKING:
@@ -203,54 +201,26 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
         weights = []
         samples = []
 
-        dask_data = tuple(
-            datum
-            for datum in (
-                self._staged[0]["args"] + tuple(self._staged[0]["kwargs"].values())
-            )
-            if is_dask_collection(datum)
+        for afill in self._staged:
+            data_list.append(afill["args"])
+            weights.append(afill["kwargs"]["weight"])
+            samples.append(afill["kwargs"]["sample"])
+
+        if all(weight is None for weight in weights):
+            weights = None
+
+        if not all(sample is None for sample in samples):
+            samples = None
+
+        split_every = self._split_every or dask.config.get(
+            "histogram.aggregation.split-every", 8
         )
 
-        if is_dask_awkward_like(dask_data[0]):
+        fills = _partitioned_histogram_multifill(
+            data_list, self._histref, weights, samples
+        )
 
-            for afill in self._staged:
-                data_list.append(afill["args"])
-                weights.append(afill["kwargs"]["weight"])
-                samples.append(afill["kwargs"]["sample"])
-
-            if all(weight is None for weight in weights):
-                weights = None
-
-            if not all(sample is None for sample in samples):
-                samples = None
-
-            split_every = self._split_every
-            if split_every is None:
-                split_every = dask.config.get("histogram.aggregation.split-every", 8)
-
-            fills = _partitioned_histogram_multifill(
-                data_list, self._histref, weights, samples
-            )
-
-            output_hist = _reduction(fills, split_every)
-        else:
-
-            first_fill = self._staged.pop()
-
-            output_hist = factory(
-                *first_fill["args"],
-                histref=self._histref,
-                weights=first_fill["kwargs"]["weight"],
-                sample=first_fill["kwargs"]["sample"],
-            )
-
-            for afill in self._staged:
-                output_hist += factory(
-                    *afill["args"],
-                    histref=self._histref,
-                    weights=afill["kwargs"]["weight"],
-                    sample=afill["kwargs"]["sample"],
-                )
+        output_hist = _reduction(fills, split_every)
 
         self._staged = None
         self._staged_result = output_hist

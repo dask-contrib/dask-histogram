@@ -406,6 +406,64 @@ def _blocked_dak_ma_w_s(
     return thehist.fill(*tuple(thedata), weight=theweights, sample=thesample)
 
 
+def _blocked_multi(
+    repacker: Callable,
+    *flattened_inputs: tuple[Any],
+) -> bh.Histogram:
+
+    data_list, weights, samples, histref = repacker(flattened_inputs)
+
+    weights = weights or (None for _ in range(len(data_list)))
+    samples = samples or (None for _ in range(len(data_list)))
+
+    thehist = (
+        clone(histref)
+        if not isinstance(histref, tuple)
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
+    )
+
+    for (
+        datatuple,
+        weight,
+        sample,
+    ) in zip(data_list, weights, samples):
+        data = datatuple
+        if len(data) == 1 and data[0].ndim == 2:
+            data = data[0].T
+        thehist.fill(*data, weight=weight, sample=sample)
+
+    return thehist
+
+
+def _blocked_multi_df(
+    repacker: Callable,
+    *flattened_inputs: tuple[Any],
+) -> bh.Histogram:
+
+    data_list, weights, samples, histref = repacker(flattened_inputs)
+
+    weights = weights or (None for _ in range(len(data_list)))
+    samples = samples or (None for _ in range(len(data_list)))
+
+    thehist = (
+        clone(histref)
+        if not isinstance(histref, tuple)
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
+    )
+
+    for (
+        datatuple,
+        weight,
+        sample,
+    ) in zip(data_list, weights, samples):
+        data = datatuple
+        if len(datatuple) == 1:
+            data = data[0]
+        thehist.fill(*(data[c] for c in data.columns), weight=weight, sample=sample)
+
+    return thehist
+
+
 def _blocked_multi_dak(
     repacker: Callable,
     *flattened_inputs: tuple[Any],
@@ -414,18 +472,22 @@ def _blocked_multi_dak(
 
     data_list, weights, samples, histref = repacker(flattened_inputs)
 
+    weights = weights or (None for _ in range(len(data_list)))
+    samples = samples or (None for _ in range(len(data_list)))
+
     thehist = (
         clone(histref)
         if not isinstance(histref, tuple)
         else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     )
 
-    backend = ak.backend(*data_list[0])
+    backend = ak.backend(*flattened_inputs)
 
-    for idata, data in enumerate(data_list):
-        weight = None if weights is None else weights[idata]
-        sample = None if samples is None else samples[idata]
-
+    for (
+        data,
+        weight,
+        sample,
+    ) in zip(data_list, weights, samples):
         if backend != "typetracer":
             thehist.fill(*data, weight=weight, sample=sample)
         else:
@@ -926,9 +988,15 @@ def _partitioned_histogram_multifill(
 
     flattened_deps, repacker = unpack_collections(data, weights, samples, histref)
 
-    unpacked_multifill = partial(_blocked_multi_dak, repacker)
-
-    graph = dak_pwl(unpacked_multifill, name, *flattened_deps)
+    if is_dask_awkward_like(flattened_deps[0]):
+        unpacked_multifill = partial(_blocked_multi_dak, repacker)
+        graph = dak_pwl(unpacked_multifill, name, *flattened_deps)
+    elif is_dataframe_like(flattened_deps[0]):
+        unpacked_multifill = partial(_blocked_multi_df, repacker)
+        graph = _partitionwise(unpacked_multifill, name, *flattened_deps)
+    else:
+        unpacked_multifill = partial(_blocked_multi, repacker)
+        graph = _partitionwise(unpacked_multifill, name, *flattened_deps)
 
     hlg = HighLevelGraph.from_collections(name, graph, dependencies=flattened_deps)
     return PartitionedHistogram(
