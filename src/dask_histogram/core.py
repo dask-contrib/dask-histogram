@@ -984,11 +984,12 @@ def _partitioned_histogram_multifill(
     name = f"hist-on-block-{tokenize(data, histref, weights, samples)}"
 
     from dask.base import unpack_collections
-    from dask_awkward.lib.core import partitionwise_layer as dak_pwl
 
     flattened_deps, repacker = unpack_collections(data, weights, samples, histref)
 
     if is_dask_awkward_like(flattened_deps[0]):
+        from dask_awkward.lib.core import partitionwise_layer as dak_pwl
+
         unpacked_multifill = partial(_blocked_multi_dak, repacker)
         graph = dak_pwl(unpacked_multifill, name, *flattened_deps)
     elif is_dataframe_like(flattened_deps[0]):
