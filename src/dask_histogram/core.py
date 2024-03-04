@@ -35,8 +35,7 @@ __all__ = (
 
 
 def hist_safe_sum(items):
-    safe_items = [item for item in items if not isinstance(item, tuple)]
-    return sum(safe_items)
+    return sum(item for item in items if not isinstance(item, tuple))
 
 
 def clone(histref: bh.Histogram | None = None) -> bh.Histogram:
