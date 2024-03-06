@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import operator
+from functools import partial
 from typing import TYPE_CHECKING, Any, Callable, Hashable, Literal, Mapping, Sequence
 
 import boost_histogram as bh
@@ -14,6 +15,7 @@ from dask.context import globalmethod
 from dask.core import flatten
 from dask.delayed import Delayed
 from dask.highlevelgraph import HighLevelGraph
+from dask.local import identity
 from dask.threaded import get as tget
 from dask.utils import is_dataframe_like, key_split
 
@@ -30,6 +32,10 @@ __all__ = (
     "clone",
     "factory",
 )
+
+
+def hist_safe_sum(items):
+    return sum(item for item in items if not isinstance(item, tuple))
 
 
 def clone(histref: bh.Histogram | None = None) -> bh.Histogram:
@@ -63,7 +69,7 @@ def _blocked_sa(
     thehist = (
         clone(histref)
         if not isinstance(histref, tuple)
-        else bh.Histogram(*histref[0], storage=histref[1](), metadata=histref[2])
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     )
     if data.ndim == 1:
         return thehist.fill(data)
@@ -83,7 +89,7 @@ def _blocked_sa_s(
     thehist = (
         clone(histref)
         if not isinstance(histref, tuple)
-        else bh.Histogram(*histref[0], storage=histref[1](), metadata=histref[2])
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     )
     if data.ndim == 1:
         return thehist.fill(data, sample=sample)
@@ -103,7 +109,7 @@ def _blocked_sa_w(
     thehist = (
         clone(histref)
         if not isinstance(histref, tuple)
-        else bh.Histogram(*histref[0], storage=histref[1](), metadata=histref[2])
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     )
     if data.ndim == 1:
         return thehist.fill(data, weight=weights)
@@ -124,7 +130,7 @@ def _blocked_sa_w_s(
     thehist = (
         clone(histref)
         if not isinstance(histref, tuple)
-        else bh.Histogram(*histref[0], storage=histref[1](), metadata=histref[2])
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     )
     if data.ndim == 1:
         return thehist.fill(data, weight=weights, sample=sample)
@@ -142,7 +148,7 @@ def _blocked_ma(
     thehist = (
         clone(histref)
         if not isinstance(histref, tuple)
-        else bh.Histogram(*histref[0], storage=histref[1](), metadata=histref[2])
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     )
     return thehist.fill(*data)
 
@@ -157,7 +163,7 @@ def _blocked_ma_s(
     thehist = (
         clone(histref)
         if not isinstance(histref, tuple)
-        else bh.Histogram(*histref[0], storage=histref[1](), metadata=histref[2])
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     )
     return thehist.fill(*data, sample=sample)
 
@@ -172,7 +178,7 @@ def _blocked_ma_w(
     thehist = (
         clone(histref)
         if not isinstance(histref, tuple)
-        else bh.Histogram(*histref[0], storage=histref[1](), metadata=histref[2])
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     )
     return thehist.fill(*data, weight=weights)
 
@@ -188,7 +194,7 @@ def _blocked_ma_w_s(
     thehist = (
         clone(histref)
         if not isinstance(histref, tuple)
-        else bh.Histogram(*histref[0], storage=histref[1](), metadata=histref[2])
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     )
     return thehist.fill(*data, weight=weights, sample=sample)
 
@@ -201,7 +207,7 @@ def _blocked_df(
     thehist = (
         clone(histref)
         if not isinstance(histref, tuple)
-        else bh.Histogram(*histref[0], storage=histref[1](), metadata=histref[2])
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     )
     return thehist.fill(*(data[c] for c in data.columns), weight=None)
 
@@ -215,7 +221,7 @@ def _blocked_df_s(
     thehist = (
         clone(histref)
         if not isinstance(histref, tuple)
-        else bh.Histogram(*histref[0], storage=histref[1](), metadata=histref[2])
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     )
     return thehist.fill(*(data[c] for c in data.columns), sample=sample)
 
@@ -230,7 +236,7 @@ def _blocked_df_w(
     thehist = (
         clone(histref)
         if not isinstance(histref, tuple)
-        else bh.Histogram(*histref[0], storage=histref[1](), metadata=histref[2])
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     )
     return thehist.fill(*(data[c] for c in data.columns), weight=weights)
 
@@ -246,7 +252,7 @@ def _blocked_df_w_s(
     thehist = (
         clone(histref)
         if not isinstance(histref, tuple)
-        else bh.Histogram(*histref[0], storage=histref[1](), metadata=histref[2])
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     )
     return thehist.fill(*(data[c] for c in data.columns), weight=weights, sample=sample)
 
@@ -279,7 +285,7 @@ def _blocked_dak(
     thehist = (
         clone(histref)
         if not isinstance(histref, tuple)
-        else bh.Histogram(*histref[0], storage=histref[1](), metadata=histref[2])
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     )
     return thehist.fill(thedata, weight=theweights, sample=thesample)
 
@@ -302,7 +308,7 @@ def _blocked_dak_ma(
     thehist = (
         clone(histref)
         if not isinstance(histref, tuple)
-        else bh.Histogram(*histref[0], storage=histref[1](), metadata=histref[2])
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     )
     return thehist.fill(*tuple(thedata))
 
@@ -330,9 +336,13 @@ def _blocked_dak_ma_w(
     thehist = (
         clone(histref)
         if not isinstance(histref, tuple)
-        else bh.Histogram(*histref[0], storage=histref[1](), metadata=histref[2])
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     )
-    return thehist.fill(*tuple(thedata), weight=theweights)
+
+    if ak.backend(*data) != "typetracer":
+        thehist.fill(*tuple(thedata), weight=theweights)
+
+    return thehist
 
 
 def _blocked_dak_ma_s(
@@ -358,7 +368,7 @@ def _blocked_dak_ma_s(
     thehist = (
         clone(histref)
         if not isinstance(histref, tuple)
-        else bh.Histogram(*histref[0], storage=histref[1](), metadata=histref[2])
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     )
     return thehist.fill(*tuple(thedata), sample=thesample)
 
@@ -391,9 +401,105 @@ def _blocked_dak_ma_w_s(
     thehist = (
         clone(histref)
         if not isinstance(histref, tuple)
-        else bh.Histogram(*histref[0], storage=histref[1](), metadata=histref[2])
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
     )
     return thehist.fill(*tuple(thedata), weight=theweights, sample=thesample)
+
+
+def _blocked_multi(
+    repacker: Callable,
+    *flattened_inputs: tuple[Any],
+) -> bh.Histogram:
+
+    data_list, weights, samples, histref = repacker(flattened_inputs)
+
+    weights = weights or (None for _ in range(len(data_list)))
+    samples = samples or (None for _ in range(len(data_list)))
+
+    thehist = (
+        clone(histref)
+        if not isinstance(histref, tuple)
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
+    )
+
+    for (
+        datatuple,
+        weight,
+        sample,
+    ) in zip(data_list, weights, samples):
+        data = datatuple
+        if len(data) == 1 and data[0].ndim == 2:
+            data = data[0].T
+        thehist.fill(*data, weight=weight, sample=sample)
+
+    return thehist
+
+
+def _blocked_multi_df(
+    repacker: Callable,
+    *flattened_inputs: tuple[Any],
+) -> bh.Histogram:
+
+    data_list, weights, samples, histref = repacker(flattened_inputs)
+
+    weights = weights or (None for _ in range(len(data_list)))
+    samples = samples or (None for _ in range(len(data_list)))
+
+    thehist = (
+        clone(histref)
+        if not isinstance(histref, tuple)
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
+    )
+
+    for (
+        datatuple,
+        weight,
+        sample,
+    ) in zip(data_list, weights, samples):
+        data = datatuple
+        if len(datatuple) == 1:
+            data = data[0]
+        thehist.fill(*(data[c] for c in data.columns), weight=weight, sample=sample)
+
+    return thehist
+
+
+def _blocked_multi_dak(
+    repacker: Callable,
+    *flattened_inputs: tuple[Any],
+) -> bh.Histogram:
+    import awkward as ak
+
+    data_list, weights, samples, histref = repacker(flattened_inputs)
+
+    weights = weights or (None for _ in range(len(data_list)))
+    samples = samples or (None for _ in range(len(data_list)))
+
+    thehist = (
+        clone(histref)
+        if not isinstance(histref, tuple)
+        else bh.Histogram(*histref[0], storage=histref[1], metadata=histref[2])
+    )
+
+    backend = ak.backend(*flattened_inputs)
+
+    for (
+        data,
+        weight,
+        sample,
+    ) in zip(data_list, weights, samples):
+        if backend != "typetracer":
+            thehist.fill(*data, weight=weight, sample=sample)
+        else:
+            for datum in data:
+                if isinstance(datum, ak.highlevel.Array):
+                    ak.typetracer.touch_data(datum)
+            if isinstance(weight, ak.highlevel.Array):
+                ak.typetracer.touch_data(weight)
+            if isinstance(sample, ak.highlevel.Array):
+                ak.typetracer.touch_data(sample)
+
+    return thehist
 
 
 def optimize(
@@ -516,15 +622,11 @@ class AggHistogram(DaskMethodsMixin):
     @property
     def _storage_type(self) -> type[bh.storage.Storage]:
         """Storage type of the histogram."""
-        if isinstance(self.histref, tuple):
-            return self.histref[1]
         return self.histref.storage_type
 
     @property
     def ndim(self) -> int:
         """Total number of dimensions."""
-        if isinstance(self.histref, tuple):
-            return len(self.histref[0])
         return self.histref.ndim
 
     @property
@@ -751,17 +853,12 @@ class PartitionedHistogram(DaskMethodsMixin):
         return [Delayed(k, graph, layer=layer) for k in keys]
 
 
-def _hist_safe_sum(items):
-    safe_items = [item for item in items if not isinstance(item, tuple)]
-    return sum(safe_items)
-
-
 def _reduction(
     ph: PartitionedHistogram,
     split_every: int | None = None,
 ) -> AggHistogram:
     if split_every is None:
-        split_every = dask.config.get("histogram.aggregation.split_every", 8)
+        split_every = dask.config.get("histogram.aggregation.split-every", 8)
     if split_every is False:
         split_every = ph.npartitions
 
@@ -776,9 +873,9 @@ def _reduction(
         name=name_agg,
         name_input=ph.name,
         npartitions_input=ph.npartitions,
-        concat_func=_hist_safe_sum,
-        tree_node_func=lambda x: x,
-        finalize_func=lambda x: x,
+        concat_func=hist_safe_sum,
+        tree_node_func=identity,
+        finalize_func=identity,
         split_every=split_every,
         tree_node_name=name_comb,
     )
@@ -875,6 +972,36 @@ def _partitionwise(func, layer_name, *args, **kwargs):
         numblocks=numblocks,
         concatenate=True,
         **kwargs,
+    )
+
+
+def _partitioned_histogram_multifill(
+    data: tuple[DaskCollection | tuple],
+    histref: bh.Histogram | tuple,
+    weights: tuple[DaskCollection] | None = None,
+    samples: tuple[DaskCollection] | None = None,
+):
+    name = f"hist-on-block-{tokenize(data, histref, weights, samples)}"
+
+    from dask.base import unpack_collections
+
+    flattened_deps, repacker = unpack_collections(data, weights, samples, histref)
+
+    if is_dask_awkward_like(flattened_deps[0]):
+        from dask_awkward.lib.core import partitionwise_layer as dak_pwl
+
+        unpacked_multifill = partial(_blocked_multi_dak, repacker)
+        graph = dak_pwl(unpacked_multifill, name, *flattened_deps)
+    elif is_dataframe_like(flattened_deps[0]):
+        unpacked_multifill = partial(_blocked_multi_df, repacker)
+        graph = _partitionwise(unpacked_multifill, name, *flattened_deps)
+    else:
+        unpacked_multifill = partial(_blocked_multi, repacker)
+        graph = _partitionwise(unpacked_multifill, name, *flattened_deps)
+
+    hlg = HighLevelGraph.from_collections(name, graph, dependencies=flattened_deps)
+    return PartitionedHistogram(
+        hlg, name, flattened_deps[0].npartitions, histref=histref
     )
 
 
@@ -1006,9 +1133,7 @@ def to_dask_array(agghist: AggHistogram, flow: bool = False, dd: bool = False) -
     thehist = agghist.histref
     if isinstance(thehist, tuple):
         thehist = bh.Histogram(
-            *agghist.histref[0],
-            storage=agghist.histref[1](),
-            metadata=agghist.histref[2],
+            *agghist.histref[0], storage=agghist.histref[1], metadata=agghist.histref[2]
         )
     zeros = (0,) * thehist.ndim
     dsk = {(name, *zeros): (lambda x, f: x.to_numpy(flow=f)[0], agghist.key, flow)}

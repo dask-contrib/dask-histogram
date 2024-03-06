@@ -7,4 +7,4 @@ histogram:
     # aggregated histogram this parameter controls how the tree
     # reduction is handled; this number of nodes will be combined at a
     # time as a new dask task.
-    split_every: 8
+    split-every: 8
