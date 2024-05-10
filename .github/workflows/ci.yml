@@ -33,6 +33,8 @@ jobs:
         python3 -m pip install -q --no-cache-dir -e .[complete]
         python3 -m pip list
     - name: test
+      env:
+        DASK_DATAFRAME__QUERY_PLANNING: False
       run: |
         python3 -m pytest
 
