@@ -166,7 +166,7 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
 
     @property
     def _in_memory_type(self) -> type[bh.Histogram]:
-        if type(self) != Histogram:
+        if type(self) is not Histogram:
             warnings.warn(
                 """dask_histogram.boost.Histogram has been subclassed without
                 overriding '_in_memory_type', please do so if you would like to
