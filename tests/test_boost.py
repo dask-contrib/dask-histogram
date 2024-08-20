@@ -520,7 +520,7 @@ def test_add(use_weights):
 def test_name_assignment():
     import dask.array as da
 
-    hist = pytest.importorskip("hist")
+    pytest.importorskip("hist")
     import hist.dask
 
     x = da.random.normal(size=100)
@@ -545,7 +545,7 @@ def test_histref_pickle():
 
     import dask.array as da
 
-    hist = pytest.importorskip("hist")
+    pytest.importorskip("hist")
     import hist.dask
 
     x = da.random.normal(size=100)
