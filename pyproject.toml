@@ -65,6 +65,11 @@ test = [
     "hist",
     "pytest",
 ]
+[tool.hatch.build.targets.sdist.force-include]
+"../src/dask_histogram_sizeof" = "src/dask_histogram_sizeof"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/dask_histogram", "src/dask_histogram_sizeof"]
 
 [project.urls]
 Homepage = "https://github.com/dask-contrib/dask-histogram"
@@ -72,7 +77,7 @@ Documentation = "https://dask-histogram.readthedocs.io/"
 "Bug Tracker" = "https://github.com/dask-contrib/dask-histogram/issues"
 
 [project.entry-points."dask.sizeof"]
-dask_histogram = "dask_histogram.sizeof:register"
+dask_histogram = "dask_histogram_sizeof:register"
 
 [tool.hatch.version]
 source = "vcs"
