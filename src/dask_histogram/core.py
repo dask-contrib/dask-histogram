@@ -526,10 +526,12 @@ def _get_optimization_function():
     # detected then the original graph is returned unchanged.
     import importlib.metadata
 
-    if importlib.metadata.distribution("dask_awkward"):
+    try:
         from dask_awkward.lib.optimize import all_optimizations
 
         return all_optimizations
+    except (ImportError, ModuleNotFoundError):
+        pass
     return optimize
 
 
