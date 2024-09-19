@@ -524,10 +524,12 @@ def _get_optimization_function():
     # running this optimization even in cases where it's unncessary
     # because if no AwkwardInputLayers from dask-awkward are
     # detected then the original graph is returned unchanged.
-    if dask.config.get("awkward", default=False):
+    try:
         from dask_awkward.lib.optimize import all_optimizations
 
         return all_optimizations
+    except (ImportError, ModuleNotFoundError):
+        pass
     return optimize
 
 
