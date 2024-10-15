@@ -560,6 +560,7 @@ def test_boost_output_pickles():
 
     import boost_histogram
     import dask
+
     import dask_histogram.boost
 
     h = dask_histogram.boost.Histogram(boost_histogram.axis.Regular(10, 0, 1))
