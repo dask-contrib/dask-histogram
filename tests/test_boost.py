@@ -553,3 +553,16 @@ def test_histref_pickle():
     h1.fill(x)  # forces the internal state histref update
 
     pickle.dumps(h1._histref)
+
+
+def test_boost_output_pickles():
+    import pickle
+
+    import boost_histogram
+    import dask
+    import dask_histogram.boost
+
+    h = dask_histogram.boost.Histogram(boost_histogram.axis.Regular(10, 0, 1))
+
+    o = dask.compute(h)
+    pickle.dumps(o)
