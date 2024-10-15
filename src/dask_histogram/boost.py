@@ -137,7 +137,13 @@ class Histogram(bh.Histogram, DaskMethodsMixin, family=dask_histogram):
         return self.dask_name
 
     def __dask_postcompute__(self) -> Any:
-        return lambda x: self._in_memory_type(first(x)), ()
+        def f(x):
+            out = self._in_memory_type(first(x))
+            if hasattr(out, "_dask"):
+                del out._dask
+            return out
+
+        return f, ()
 
     def __dask_postpersist__(self) -> Any:
         return self._rebuild, ()
