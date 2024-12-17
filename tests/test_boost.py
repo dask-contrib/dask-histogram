@@ -581,4 +581,4 @@ def test_155_boost_factory():
         arr,
         axes=(axis,),
     ).compute()
-    assert np.all(hist.values() == [3. 3. 3. 3. 3. 3. 3. 3. 3. 3.])
+    assert np.all(hist.values() == [3., 3., 3., 3., 3., 3., 3., 3., 3., 3.])
