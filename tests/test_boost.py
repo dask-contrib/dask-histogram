@@ -567,3 +567,17 @@ def test_boost_output_pickles():
 
     o = dask.compute(h)
     pickle.dumps(o)
+
+def test_155_boost_factory():
+    import boost_histogram as bh
+    import dask_awkward as dak
+    import dask_histogram as dh
+    import numpy as np
+
+    arr = dak.from_lists([list(range(10))] * 3)
+    axis = bh.axis.Regular(10, 0., 10.)
+    hist = dh.factory(
+        arr,
+        axes=(axis,),
+    ).compute()
+    assert np.all(hist.values() == [3. 3. 3. 3. 3. 3. 3. 3. 3. 3.])
