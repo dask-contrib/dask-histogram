@@ -1027,15 +1027,8 @@ def _partitioned_histogram(
     if len(data) == 1 and data_is_dak:
         from dask_awkward.lib.core import partitionwise_layer as dak_pwl
 
-        x = data[0]
-        if weights is not None and sample is not None:
-            g = dak_pwl(_blocked_dak, name, x, weights, sample, histref=histref)
-        elif weights is not None and sample is None:
-            g = dak_pwl(_blocked_dak, name, x, weights, None, histref=histref)
-        elif weights is None and sample is not None:
-            g = dak_pwl(_blocked_dak, name, x, None, sample, histref=histref)
-        else:
-            g = dak_pwl(_blocked_dak, name, x, None, None, histref=histref)
+        f = partial(_blocked_dak, weights=weights, sample=sample, histref=histref)
+        g = dak_pwl(f, name, data[0])
 
     # Single object, not a dataframe
     elif len(data) == 1 and not data_is_df:
