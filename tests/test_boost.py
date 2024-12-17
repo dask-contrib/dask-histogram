@@ -571,7 +571,7 @@ def test_boost_output_pickles():
 
 def test_155_boost_factory():
     import boost_histogram as bh
-    import dask_awkward as dak
+    dak = pytest.importorskip("dask_awkward")
     import numpy as np
 
     import dask_histogram as dh
