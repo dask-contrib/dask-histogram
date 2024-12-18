@@ -574,7 +574,6 @@ def test_155_boost_factory():
 
     dak = pytest.importorskip("dask_awkward")
 
-
     import dask_histogram as dh
 
     arr = dak.from_lists([list(range(10))] * 3)
@@ -588,6 +587,7 @@ def test_155_boost_factory():
 
 def test_155_2():
     import boost_histogram as bh
+
     import dask_histogram as dh
 
     dak = pytest.importorskip("dask_awkward")
