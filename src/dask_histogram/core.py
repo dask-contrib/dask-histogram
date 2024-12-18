@@ -410,7 +410,6 @@ def _blocked_multi(
     repacker: Callable,
     *flattened_inputs: tuple[Any],
 ) -> bh.Histogram:
-
     data_list, weights, samples, histref = repacker(flattened_inputs)
 
     weights = weights or (None for _ in range(len(data_list)))
@@ -439,7 +438,6 @@ def _blocked_multi_df(
     repacker: Callable,
     *flattened_inputs: tuple[Any],
 ) -> bh.Histogram:
-
     data_list, weights, samples, histref = repacker(flattened_inputs)
 
     weights = weights or (None for _ in range(len(data_list)))

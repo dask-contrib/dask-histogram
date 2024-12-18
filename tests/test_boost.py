@@ -584,3 +584,20 @@ def test_155_boost_factory():
         axes=(axis,),
     ).compute()
     assert np.all(hist.values() == [3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0])
+
+
+def test_155_2():
+    import boost_histogram as bh
+    import dask_awkward as dak
+    import dask_histogram as dh
+
+    arr = dak.from_lists([list(range(10))] * 3)
+    axis = bh.axis.Regular(10, 0.0, 10.0)
+    hist = dh.factory(
+        arr,
+        axes=(axis,),
+        weights=arr,
+    ).compute()
+    assert np.all(
+        hist.values() == [0.0, 3.0, 6.0, 9.0, 12.0, 15.0, 18.0, 21.0, 24.0, 27.0]
+    )
