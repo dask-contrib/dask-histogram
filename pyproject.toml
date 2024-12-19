@@ -83,11 +83,6 @@ include = ["/src"]
 addopts = "-v"
 testpaths = ["tests"]
 
-[tool.isort]
-profile = "black"
-line_length = 88
-src_paths = ["src", "tests"]
-
 [tool.mypy]
 python_version = "3.9"
 files = ["src", "tests"]
@@ -107,6 +102,10 @@ ignore_missing_imports = true
 
 [tool.pydocstyle]
 ignore = "D105"
+
+[tool.ruff]
+line-length = 88
+src = ["src", "tests"]
 
 [tool.ruff.lint]
 ignore = ["E501"]
