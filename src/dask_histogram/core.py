@@ -1027,15 +1027,7 @@ def _partitioned_histogram(
 
         f = partial(_blocked_dak, histref=histref)
 
-        x = data[0]
-        if weights is not None and sample is not None:
-            g = dak_pwl(f, name, x, weights, sample)
-        elif weights is not None and sample is None:
-            g = dak_pwl(f, name, x, weights, None)
-        elif weights is None and sample is not None:
-            g = dak_pwl(f, name, x, None, sample)
-        else:
-            g = dak_pwl(f, name, x, None, None)
+        g = dak_pwl(f, name, data[0], weights, sample)
 
     # Single object, not a dataframe
     elif len(data) == 1 and not data_is_df:
