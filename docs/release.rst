@@ -38,35 +38,6 @@ Push the tag to GitHub (assuming ``origin`` points to the
 Making the release
 ------------------
 
-To make a release of ``dask-histogram`` we just need the ``build`` and
-``twine`` packages:
-
-.. code-block::
-
-   $ pip install build twine
-
-The build-system that we use (``hatch`` with ``hatch-vcs``) will
-automatically set a version based on the latest tag in the repository;
-after making the tag we just need to generate the source distribution
-and wheel, this is handled by the ``build`` package:
-
-.. code-block::
-
-   $ python -m build
-
-Now a new ``dist/`` directory will appear, which contains the files
-(continuing to use our example version ``2023.3.1``):
-
-.. code-block::
-
-   dask_histogram-2023.3.1.tar.gz
-   dask_histogram-2023.3.1-py3-none-any.whl
-
-Now we just upload these files to PyPI with ``twine``:
-
-.. code-block::
-
-   $ twine upload dist/dask_histogram-2023.3.1*
-
-The GitHub ``regro-cf-autotick-bot`` account will automatically create
-a pull request to release a new version on ``conda-forge``.
+After pushing the tag, GitHub actions will take care of uploading the
+wheel and sdist to PyPI. Please go to the Releases page on the GitHub
+repository and Draft a new release associated with the tag.

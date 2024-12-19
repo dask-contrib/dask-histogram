@@ -7,7 +7,7 @@ name = "dask-histogram"
 description = "Histogramming with Dask."
 readme = "README.md"
 license = {text = "BSD-3-Clause"}
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 authors = [
     { name = "Doug Davis", email = "ddavis@ddavis.io" },
 ]
@@ -16,11 +16,11 @@ classifiers = [
     "License :: OSI Approved :: BSD License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Information Analysis",
     "Topic :: Scientific/Engineering :: Mathematics",
@@ -34,17 +34,7 @@ dynamic = ["version"]
 
 [project.optional-dependencies]
 complete = [
-    "dask-sphinx-theme >=3.0.2",
-    "dask[array,dataframe]",
-    "dask-awkward >=2023.10.0",
-    "hist",
-    "pytest",
-    "sphinx >=4.0.0",
-    "sphinxcontrib-applehelp>=1.0.0,<1.0.7",
-    "sphinxcontrib-devhelp>=1.0.0,<1.0.6",
-    "sphinxcontrib-htmlhelp>=2.0.0,<2.0.5",
-    "sphinxcontrib-serializinghtml>=1.1.0,<1.1.10",
-    "sphinxcontrib-qthelp>=1.0.0,<1.0.7",
+    "dask-histogram[docs,test]"
 ]
 docs = [
     "dask-sphinx-theme >=3.0.2",
@@ -93,11 +83,6 @@ include = ["/src"]
 addopts = "-v"
 testpaths = ["tests"]
 
-[tool.isort]
-profile = "black"
-line_length = 88
-src_paths = ["src", "tests"]
-
 [tool.mypy]
 python_version = "3.9"
 files = ["src", "tests"]
@@ -119,5 +104,11 @@ ignore_missing_imports = true
 ignore = "D105"
 
 [tool.ruff]
+target-version = "py38"
+line-length = 88
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
 ignore = ["E501"]
 per-file-ignores = {"__init__.py" = ["E402", "F401"]}
