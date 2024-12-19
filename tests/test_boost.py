@@ -573,7 +573,6 @@ def test_155_boost_factory():
     import boost_histogram as bh
 
     dak = pytest.importorskip("dask_awkward")
-    import numpy as np
 
     import dask_histogram as dh
 
@@ -584,3 +583,56 @@ def test_155_boost_factory():
         axes=(axis,),
     ).compute()
     assert np.all(hist.values() == [3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0])
+
+
+def test_155_2():
+    import boost_histogram as bh
+
+    import dask_histogram as dh
+
+    dak = pytest.importorskip("dask_awkward")
+
+    arr = dak.from_lists([list(range(10))] * 3)
+    axis = bh.axis.Regular(10, 0.0, 10.0)
+    hist = dh.factory(
+        arr,
+        axes=(axis,),
+        weights=arr,
+    ).compute()
+    assert np.all(
+        hist.values() == [0.0, 3.0, 6.0, 9.0, 12.0, 15.0, 18.0, 21.0, 24.0, 27.0]
+    )
+
+
+def test_155_3_2d():
+    import boost_histogram as bh
+
+    dak = pytest.importorskip("dask_awkward")
+
+    import dask_histogram as dh
+
+    arr1 = dak.from_lists([list(range(10))] * 3)
+    arr2 = dak.from_lists([list(reversed(range(10)))] * 3)
+    axis1 = bh.axis.Regular(10, 0.0, 10.0)
+    axis2 = bh.axis.Regular(10, 0.0, 10.0)
+    hist = dh.factory(
+        arr1,
+        arr2,
+        axes=(axis1, axis2),
+        weights=arr1,
+    ).compute()
+    should_be = (
+        [
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 3.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 6.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 9.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 12.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 15.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 18.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 21.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 24.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [27.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        ],
+    )
+    assert np.all(hist.values() == should_be)
