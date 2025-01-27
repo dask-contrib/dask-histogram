@@ -2,13 +2,17 @@ try:
     from dask.layers import DataFrameTreeReduction
 except ImportError:
     try:
-        from dask_awkward.layers import AwkwardTreeReductionLayer as DataFrameTreeReduction
+        from dask_awkward.layers import (
+            AwkwardTreeReductionLayer as DataFrameTreeReduction,
+        )
     except ImportError:
         DataFrameTreeReduction = None
 
 if DataFrameTreeReduction is None:
-    raise ImportError("DataFrameReduction is unimportable - either downgrade dask to <2025"
-                      "or install dask-awkward >=2025.")
+    raise ImportError(
+        "DataFrameReduction is unimportable - either downgrade dask to <2025"
+        "or install dask-awkward >=2025."
+    )
 
 
 class MockableDataFrameTreeReduction(DataFrameTreeReduction):
