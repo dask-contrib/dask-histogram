@@ -920,14 +920,14 @@ def _weight_sample_check(
 
 def _is_dask_dataframe(obj):
     return (
-        obj.__class__.__module__ == "dask.dataframe.core"
+        type(obj).__module__.startswith("dask.dataframe")
         and obj.__class__.__name__ == "DataFrame"
     )
 
 
 def _is_dask_series(obj):
     return (
-        obj.__class__.__module__ == "dask.dataframe.core"
+        type(obj).__module__.startswith("dask.dataframe")
         and obj.__class__.__name__ == "Series"
     )
 
