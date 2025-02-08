@@ -4,10 +4,11 @@ import boost_histogram as bh
 import dask
 import dask.array as da
 import dask.array.utils as dau
-import dask_histogram.core as dhc
 import numpy as np
 import pytest
 from dask.delayed import delayed
+
+import dask_histogram.core as dhc
 
 
 def _gen_storage(weights, sample):
