@@ -5,6 +5,7 @@ from typing import Any, Callable, Union
 import toolz
 from dask.layers import Layer
 
+CallableOrNone = Union[Callable, None]
 
 class MockableDataFrameTreeReduction(Layer):
     """Mockable Tree-Reduction Layer
@@ -48,7 +49,7 @@ class MockableDataFrameTreeReduction(Layer):
     npartitions_input: int
     concat_func: Callable
     tree_node_func: Callable
-    finalize_func: Union[Callable, None]
+    finalize_func: CallableOrNone
     split_every: int
     split_out: int
     output_partitions: list[int]
@@ -63,7 +64,7 @@ class MockableDataFrameTreeReduction(Layer):
         npartitions_input: int,
         concat_func: Callable,
         tree_node_func: Callable,
-        finalize_func: Callable | None = None,
+        finalize_func: CallableOrNone = None,
         split_every: int = 32,
         split_out: int | None = None,
         output_partitions: list[int] | None = None,
