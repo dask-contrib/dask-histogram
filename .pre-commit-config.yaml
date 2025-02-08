@@ -1,4 +1,14 @@
 repos:
+- repo: https://github.com/psf/black
+  rev: 25.1.0
+  hooks:
+  - id: black
+- repo: https://github.com/PyCQA/isort
+  rev: 6.0.0
+  hooks:
+  - id: isort
+    language_version: python3
+    args: ["--profile", "black", "--filter-files"]
 - repo: https://github.com/astral-sh/ruff-pre-commit
   rev: v0.9.1
   hooks:
