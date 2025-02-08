@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import boost_histogram as bh
+import dask
 import dask.array as da
 import dask.array.utils as dau
+import dask_histogram.core as dhc
 import numpy as np
 import pytest
 from dask.delayed import delayed
-
-import dask_histogram.core as dhc
 
 
 def _gen_storage(weights, sample):
@@ -123,7 +123,10 @@ def test_nd_array(weights):
     )
     np.testing.assert_allclose(h.counts(flow=True), dh.compute().counts(flow=True))
 
-
+@pytest.mark.xfail(
+    dask.__version__.startswith("2025"),
+    reason="major backwards incompatible changes to dataframe",
+)
 @pytest.mark.parametrize("weights", [True, None])
 def test_df_input(weights):
     pytest.importorskip("pandas")
