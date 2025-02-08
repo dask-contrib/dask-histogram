@@ -3,8 +3,8 @@ import boost_histogram.numpy as bhnp
 import dask
 import dask.array as da
 import numpy as np
-from packaging.version import parse as parse_version
 import pytest
+from packaging.version import parse as parse_version
 
 import dask_histogram.boost as dhb
 import dask_histogram.core as dhc
