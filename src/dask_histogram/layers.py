@@ -1,10 +1,9 @@
-import toolz
-import operator
 import math
-
+import operator
 from collections.abc import Callable
 from typing import Any
 
+import toolz
 from dask.layers import Layer
 
 
