@@ -157,9 +157,9 @@ class MockableDataFrameTreeReduction(Layer):
                         # Define task
                         if depth == self.height - 1:
                             # Final Node (Use fused `self.tree_finalize` task)
-                            assert (
-                                group == 0
-                            ), f"group = {group}, not 0 for final tree reduction task"
+                            assert group == 0, (
+                                f"group = {group}, not 0 for final tree reduction task"
+                            )
                             dsk[(self.name, s)] = self._define_task(
                                 input_keys, final_task=True
                             )
@@ -262,7 +262,7 @@ class MockableDataFrameTreeReduction(Layer):
             return culled_layer, deps
         else:
             return self, deps
-    
+
     def mock(self):
         return MockableDataFrameTreeReduction(
             name=self.name,
