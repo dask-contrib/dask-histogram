@@ -1,11 +1,11 @@
 import boost_histogram as bh
 import boost_histogram.numpy as bhnp
+import dask
 import dask.array as da
-import numpy as np
-import pytest
-
 import dask_histogram.boost as dhb
 import dask_histogram.core as dhc
+import numpy as np
+import pytest
 
 
 def test_empty():
