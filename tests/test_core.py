@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import boost_histogram as bh
+import dask
 import dask.array as da
 import dask.array.utils as dau
 import numpy as np
