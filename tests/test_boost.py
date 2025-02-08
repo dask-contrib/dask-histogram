@@ -1,8 +1,10 @@
 import boost_histogram as bh
 import boost_histogram.numpy as bhnp
+import dask
 import dask.array as da
 import numpy as np
 import pytest
+from packaging.version import parse as parse_version
 
 import dask_histogram.boost as dhb
 import dask_histogram.core as dhc
@@ -247,6 +249,10 @@ def test_histogramdd_multicolumn_input():
     np.testing.assert_array_almost_equal(h1.view(), h2.view())
 
 
+@pytest.mark.xfail(
+    parse_version(dask.__version__) >= parse_version("2025"),
+    reason="to_dataframe is broken with dask 2025.1.0",
+)
 def test_histogramdd_series():
     pytest.importorskip("pandas")
 
@@ -276,6 +282,10 @@ def test_histogramdd_series():
     np.testing.assert_array_almost_equal(h1.view()["variance"], h2.view()["variance"])
 
 
+@pytest.mark.xfail(
+    parse_version(dask.__version__) >= parse_version("2025"),
+    reason="to_dataframe is broken with dask 2025.1.0",
+)
 def test_histogramdd_arrays_and_series():
     pytest.importorskip("pandas")
 
@@ -305,6 +315,10 @@ def test_histogramdd_arrays_and_series():
     np.testing.assert_array_almost_equal(h1.view()["variance"], h2.view()["variance"])
 
 
+@pytest.mark.xfail(
+    parse_version(dask.__version__) >= parse_version("2025"),
+    reason="to_dataframe is broken with dask 2025.1.0",
+)
 def test_histogramdd_dataframe():
     pytest.importorskip("pandas")
     x = da.random.standard_normal(size=(1000, 3), chunks=(200, 3))
