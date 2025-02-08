@@ -6,6 +6,7 @@ import dask.array.utils as dau
 import numpy as np
 import pytest
 from dask.delayed import delayed
+from packaging.version import parse as parse_version
 
 import dask_histogram.core as dhc
 
@@ -124,6 +125,10 @@ def test_nd_array(weights):
     np.testing.assert_allclose(h.counts(flow=True), dh.compute().counts(flow=True))
 
 
+@pytest.mark.xfail(
+    parse_version(dask.__version__) >= parse_version("2025"),
+    reason="dask dataframe changed substantially in 2025.1.0",
+)
 @pytest.mark.parametrize("weights", [True, None])
 def test_df_input(weights):
     pytest.importorskip("pandas")
