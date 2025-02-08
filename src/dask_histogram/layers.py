@@ -1,8 +1,10 @@
-from collections.abc import Callable
-from typing import Any
 import toolz
 import operator
 import math
+
+from collections.abc import Callable
+from typing import Any
+
 from dask.layers import Layer
 
 
