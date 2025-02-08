@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Optional, Sequence, Tuple, Union
 
 from dask.array.core import Array
-from dask.dataframe.core import DataFrame, Series
+from dask.dataframe import DataFrame, Series
 from numpy.typing import ArrayLike
 
 BinType = Union[int, ArrayLike]
