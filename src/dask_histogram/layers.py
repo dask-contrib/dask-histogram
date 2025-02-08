@@ -7,6 +7,7 @@ from dask.layers import Layer
 
 CallableOrNone = Union[Callable, None]
 
+
 class MockableDataFrameTreeReduction(Layer):
     """Mockable Tree-Reduction Layer
     Parameters
