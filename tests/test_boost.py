@@ -247,7 +247,10 @@ def test_histogramdd_multicolumn_input():
     np.testing.assert_array_almost_equal(h1.view(), h2.view())
 
 
-@pytest.mark.xfail(dask.__version__.startswith("2025"), reason="major backwards incompatible changes to dataframe")
+@pytest.mark.xfail(
+    dask.__version__.startswith("2025"),
+    reason="major backwards incompatible changes to dataframe",
+)
 def test_histogramdd_series():
     pytest.importorskip("pandas")
 
@@ -277,7 +280,10 @@ def test_histogramdd_series():
     np.testing.assert_array_almost_equal(h1.view()["variance"], h2.view()["variance"])
 
 
-@pytest.mark.xfail(dask.__version__.startswith("2025"), reason="major backwards incompatible changes to dataframe")
+@pytest.mark.xfail(
+    dask.__version__.startswith("2025"),
+    reason="major backwards incompatible changes to dataframe",
+)
 def test_histogramdd_arrays_and_series():
     pytest.importorskip("pandas")
 
@@ -307,7 +313,10 @@ def test_histogramdd_arrays_and_series():
     np.testing.assert_array_almost_equal(h1.view()["variance"], h2.view()["variance"])
 
 
-@pytest.mark.xfail(dask.__version__.startswith("2025"), reason="major backwards incompatible changes to dataframe")
+@pytest.mark.xfail(
+    dask.__version__.startswith("2025"),
+    reason="major backwards incompatible changes to dataframe",
+)
 def test_histogramdd_dataframe():
     pytest.importorskip("pandas")
     x = da.random.standard_normal(size=(1000, 3), chunks=(200, 3))
