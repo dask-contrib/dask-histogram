@@ -1,5 +1,6 @@
 import boost_histogram as bh
 import boost_histogram.numpy as bhnp
+import dask
 import dask.array as da
 import numpy as np
 from packaging.version import parse as parse_version
