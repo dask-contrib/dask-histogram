@@ -240,7 +240,7 @@ class MockableDataFrameTreeReduction(Layer):
         return splits
 
     def _cull(self, output_partitions):
-        return AwkwardTreeReductionLayer(
+        return MockableDataFrameTreeReduction(
             self.name,
             self.name_input,
             self.npartitions_input,
