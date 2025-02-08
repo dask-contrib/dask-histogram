@@ -1,6 +1,6 @@
 import math
 import operator
-from typing import Any, Callable
+from typing import Any, Callable, Union
 
 import toolz
 from dask.layers import Layer
@@ -48,7 +48,7 @@ class MockableDataFrameTreeReduction(Layer):
     npartitions_input: int
     concat_func: Callable
     tree_node_func: Callable
-    finalize_func: Callable | None
+    finalize_func: Union[Callable, None]
     split_every: int
     split_out: int
     output_partitions: list[int]
