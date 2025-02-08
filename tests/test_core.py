@@ -123,6 +123,7 @@ def test_nd_array(weights):
     )
     np.testing.assert_allclose(h.counts(flow=True), dh.compute().counts(flow=True))
 
+
 @pytest.mark.xfail(
     dask.__version__.startswith("2025"),
     reason="major backwards incompatible changes to dataframe",
