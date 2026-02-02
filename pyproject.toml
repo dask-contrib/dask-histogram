@@ -38,9 +38,9 @@ dev = [
     "dask-histogram[test,docs]"
 ]
 docs = [
-    "dask-sphinx-theme >=3.0.2",
+    "dask-sphinx-theme>=4.0.0; python_version>='3.11'",
     "dask[array,dataframe]",
-    "sphinx >=5.0.0",
+    "sphinx>=5.0.0; python_version>='3.11'",
 ]
 test = [
     "dask[array,dataframe]",
