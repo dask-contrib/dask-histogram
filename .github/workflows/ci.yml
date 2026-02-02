@@ -18,19 +18,19 @@ jobs:
       fail-fast: false
       matrix:
         platform: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
     runs-on: ${{matrix.platform}}
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v6
     - name: setup Python ${{matrix.python-version}}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v6
       with:
         python-version: ${{matrix.python-version}}
     - name: install
       run: |
-        python3 -m pip install pip wheel
-        python3 -m pip install -q --no-cache-dir -e .[complete]
+        python3 -m pip install --upgrade pip wheel
+        python3 -m pip install -v --no-cache-dir -e .[test]
         python3 -m pip install git+https://github.com/dask-contrib/dask-awkward
         python3 -m pip list
     - name: test
@@ -42,17 +42,17 @@ jobs:
     runs-on: "ubuntu-latest"
     steps:
     - name: Checkout source
-      uses: actions/checkout@v3
+      uses: actions/checkout@v6
 
     - name: Setup Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v6
       with:
-        python-version: "3.10"
+        python-version: "3.13"
 
     - name: Install
       run: |
-        python3 -m pip install pip wheel
-        python3 -m pip install -q --no-cache-dir -e .[complete]
+        python3 -m pip install --upgrade pip wheel
+        python3 -m pip install -q --no-cache-dir -e .[dev]
         python3 -m pip list
 
     - name: Run doctests
@@ -64,16 +64,16 @@ jobs:
     runs-on: "ubuntu-latest"
     steps:
     - name: Checkout source
-      uses: actions/checkout@v3
+      uses: actions/checkout@v6
 
     - name: Setup Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v6
       with:
         python-version: "3.10"
 
     - name: Install
       run: |
-        python3 -m pip install pip wheel pytest
+        python3 -m pip install --upgrade pip wheel pytest
         python3 -m pip install -q --no-cache-dir -e .
         python3 -m pip list
 

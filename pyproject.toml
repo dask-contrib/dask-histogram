@@ -7,7 +7,7 @@ name = "dask-histogram"
 description = "Histogramming with Dask."
 readme = "README.md"
 license = {text = "BSD-3-Clause"}
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [
     { name = "Doug Davis", email = "ddavis@ddavis.io" },
 ]
@@ -16,11 +16,11 @@ classifiers = [
     "License :: OSI Approved :: BSD License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Information Analysis",
     "Topic :: Scientific/Engineering :: Mathematics",
@@ -34,20 +34,13 @@ dependencies = [
 dynamic = ["version"]
 
 [project.optional-dependencies]
-complete = [
-    "dask-histogram[docs,test]"
+dev = [
+    "dask-histogram[test,docs]"
 ]
 docs = [
-    "dask-sphinx-theme >=3.0.2",
+    "dask-sphinx-theme>=4.0.0; python_version>='3.11'",
     "dask[array,dataframe]",
-    # FIXME: `sphinxcontrib-*` pins are a workaround until we have sphinx>=5.
-    #        See https://github.com/dask/dask-sphinx-theme/issues/68.
-    "sphinx >=4.0.0",
-    "sphinxcontrib-applehelp>=1.0.0,<1.0.7",
-    "sphinxcontrib-devhelp>=1.0.0,<1.0.6",
-    "sphinxcontrib-htmlhelp>=2.0.0,<2.0.5",
-    "sphinxcontrib-serializinghtml>=1.1.0,<1.1.10",
-    "sphinxcontrib-qthelp>=1.0.0,<1.0.7",
+    "sphinx>=5.0.0; python_version>='3.11'",
 ]
 test = [
     "dask[array,dataframe]",
@@ -83,7 +76,7 @@ addopts = "-v"
 testpaths = ["tests"]
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.10"
 files = ["src", "tests"]
 warn_unused_configs = true
 show_error_codes = true
@@ -103,7 +96,7 @@ ignore_missing_imports = true
 ignore = "D105"
 
 [tool.ruff]
-target-version = "py38"
+target-version = "py310"
 line-length = 88
 src = ["src", "tests"]
 
