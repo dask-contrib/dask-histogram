@@ -34,8 +34,8 @@ dependencies = [
 dynamic = ["version"]
 
 [project.optional-dependencies]
-complete = [
-    "dask-histogram[docs,test]"
+dev = [
+    "dask-histogram[test,docs]"
 ]
 docs = [
     "dask-sphinx-theme >=3.0.2",

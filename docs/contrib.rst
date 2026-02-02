@@ -15,9 +15,9 @@ virtual environment.
    $ cd dask-histogram
    $ git remote add upstream https://github.com/dask-contrib/dask-histogram.git
    $ git checkout -b my-feature upstream/main
-   $ pip install -e .[complete]
+   $ pip install -e .[dev]
 
-The use of ``[complete]`` ensures that you install the dependencies
+The use of ``[dev]`` ensures that you install the dependencies
 for testing and building the documentation. You can also use
 ``[test]`` or ``[docs]`` to install only the dependencies for running
 tests or building documentation, respectively.
@@ -29,7 +29,7 @@ Testing, etc.
 ^^^^^^^^^^^^^
 
 We use ``pytest`` for testing; after installing with the
-``[complete]`` option you can run (from the top level of the
+``[dev]`` option you can run (from the top level of the
 repository):
 
 .. code-block:: bash
