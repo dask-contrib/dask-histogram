@@ -103,7 +103,7 @@ ignore_missing_imports = true
 ignore = "D105"
 
 [tool.ruff]
-target-version = "py38"
+target-version = "py310"
 line-length = 88
 src = ["src", "tests"]
 
